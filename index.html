@@ -356,8 +356,8 @@ async function registerDeviceForPush(){
 const ownersCol = collection(db, 'proprietarios');
 const buyersCol = collection(db, 'compradores');
 
-const OVERDUE_DAYS_BUYER = 4;
-const OWNER_THRESH = { quente:2, morno:5, frio:10 };
+const OVERDUE_DAYS_BUYER = 2;
+const OWNER_THRESH = { quente:2, morno:2, frio:2 };
 const OWNER_STATUS_COLOR = { quente:'#E1653D', morno:'#C9A24C', frio:'#7A8C84' };
 
 const BUYER_STAGES = [

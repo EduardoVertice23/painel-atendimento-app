@@ -444,13 +444,15 @@ function suggestBuyer(c){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const bairro = chipsFrom(c.bairros)[0];
   const buscaTexto = c.operacao==='aluguel' ? 'sua busca por locação' : 'sua busca pelo imóvel';
-  const ready = `Oi ${first}! Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
+  const intro = c.stage==='novo' ? 'Sou o Paulo, consultor da Baru Imóveis. ' : '';
+  const ready = `Oi ${first}! ${intro}Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
   return { tip: (stageMsg+personaTip+extra).trim(), ready };
 }
 function suggestOwner(o){
   const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
   const first = (o.nome||'').split(' ')[0] || 'tudo bem';
-  const ready = `Oi ${first}! Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}`;
+  const intro = o.stage==='contato' ? 'Sou o Paulo, consultor da Baru Imóveis. ' : '';
+  const ready = `Oi ${first}! ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}`;
   return { tip: line, ready };
 }
 async function copyText(text, btn){

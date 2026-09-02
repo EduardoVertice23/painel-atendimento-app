@@ -24,7 +24,7 @@
   --text-faint:#8A968F;
 }
 *{box-sizing:border-box;}
-body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 0;flex-wrap:wrap;gap:12px;position:sticky;top:0;background:var(--bg);z-index:30;padding-bottom:12px;}
@@ -671,7 +671,7 @@ function renderPersonaBar(){
   }).join('');
   document.querySelectorAll('.pchip').forEach(el=>{ el.onclick = ()=>{ personaFilter = personaFilter===el.dataset.p?null:el.dataset.p; renderPersonaBar(); renderBoard(); }; });
 }
-let viewMode = 'kanban';
+let viewMode = window.matchMedia('(max-width: 640px)').matches ? 'grid' : 'kanban';
 
 function renderViewSwitcher(){
   const opts = [

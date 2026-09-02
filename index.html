@@ -458,8 +458,12 @@ function waLink(contato, texto){
 function suggestOptionsMessage(c){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const opcoes = c.imoveisOpcoes||[];
-  const list = opcoes.map((o,i)=> `${i+1}. ${o.nota?o.nota+' — ':''}${o.url}`).join('\n');
-  return `Oi ${first}, tudo bem? Separei algumas opções que combinam com o que você procura:\n\n${list}\n\nMe conta o que achou! Posso agendar uma visita em qualquer uma delas.`;
+  const list = opcoes.map((o,i)=>{
+    const titulo = o.nota ? `*${i+1}. ${o.nota}*` : `*Opção ${i+1}*`;
+    return `${titulo}\n${o.url}`;
+  }).join('\n\n');
+  const plural = opcoes.length===1 ? 'opção' : 'opções';
+  return `Oi ${first}, tudo bem? Separei ${opcoes.length} ${plural} que combinam com o que você procura:\n\n${list}\n\nMe conta o que achou! Posso agendar uma visita em qualquer uma delas 🙂`;
 }
 function suggestBuyer(c){
   const stageDict = c.operacao==='aluguel' ? BUYER_STAGE_MSG_ALUGUEL : BUYER_STAGE_MSG_COMPRA;

@@ -787,7 +787,7 @@ function openBuyerModal(c){
   document.getElementById('f-data').value = c ? c.ultimoContato : new Date().toISOString().slice(0,10);
   fillBuyerStageSelect(c ? c.stage : 'novo');
   updatePriceLabels();
-  selectedPersona = c ? c.persona : null;
+  selectedPersona = c ? (c.persona || null) : null;
   renderPersonaGrid();
   document.getElementById('personaTip').textContent = selectedPersona ? personaOf(selectedPersona).tip : '';
   document.getElementById('overlayBuyer').classList.add('open');

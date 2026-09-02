@@ -327,7 +327,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
@@ -352,6 +352,15 @@ async function registerDeviceForPush(){
       console.log('Dispositivo registrado pra avisos.');
     }
   }catch(e){ console.warn('Não foi possível registrar o dispositivo pra push', e); }
+}
+if(messaging){
+  onMessage(messaging, payload=>{
+    const title = (payload.notification && payload.notification.title) || 'Atendimento pendente';
+    const body = (payload.notification && payload.notification.body) || '';
+    if('Notification' in window && Notification.permission==='granted'){
+      try{ new Notification(title, { body, icon:'icon-192.png' }); }catch(e){}
+    }
+  });
 }
 const ownersCol = collection(db, 'proprietarios');
 const buyersCol = collection(db, 'compradores');

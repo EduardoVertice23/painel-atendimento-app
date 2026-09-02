@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#11241F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Atendimento Cliente BV</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+:root{
+  --ink:#11241F;
+  --bg:#F2F6F4;
+  --board-bg:#E8EFEB;
+  --card:#FFFFFF;
+  --line:#DCE6E1;
+  --primary:#2F8F6E;
+  --urgent:#E1653D;
+  --gold:#C9A24C;
+  --text:#1B2A24;
+  --text-dim:#5B6B63;
+  --text-faint:#8A968F;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 0;flex-wrap:wrap;gap:12px;position:sticky;top:0;background:var(--bg);z-index:30;padding-bottom:12px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Newsreader',serif;font-weight:700;font-size:15px;}
+.brand h1{font-size:20px;font-weight:600;letter-spacing:-0.01em;}
+.brand p{margin:1px 0 0;font-size:12px;color:var(--text-dim);}
+.syncdot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);}
+.syncdot .d{width:7px;height:7px;border-radius:50%;background:var(--primary);}
+.syncdot .d.off{background:var(--urgent);}
+.tabs{display:flex;gap:6px;background:var(--card);padding:4px;border-radius:12px;border:1px solid var(--line);}
+.tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;transition:all .15s ease;}
+.tab.active{background:var(--ink);color:#fff;}
+.addbtn{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+
+.view{padding:16px 20px 60px;display:none;}
+.view.active{display:block;}
+
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
+.kpi{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-top:3px solid var(--kpi-color, var(--ink));}
+.kpi .num{font-family:'Newsreader',serif;font-weight:700;font-size:28px;color:var(--ink);line-height:1;}
+.kpi .lbl{font-size:12px;color:var(--text-dim);margin-top:6px;}
+
+.panel-row{display:flex;gap:16px;flex-wrap:wrap;}
+.panel{flex:1;min-width:300px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px;}
+.panel h3{font-size:15px;font-weight:600;margin-bottom:14px;}
+.funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.funnel-lbl{width:120px;font-size:12px;color:var(--text-dim);flex:0 0 auto;text-align:right;}
+.funnel-track{flex:1;height:20px;background:var(--bg);border-radius:5px;overflow:hidden;}
+.funnel-fill{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;transition:width .3s ease;}
+.funnel-fill span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#fff;font-weight:600;}
+
+.mini-bars{display:flex;height:14px;border-radius:7px;overflow:hidden;border:1px solid var(--line);}
+.mini-bars div{height:100%;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+.legend span{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-dim);}
+.legend .dot{width:8px;height:8px;border-radius:50%;}
+
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0;}
+.chip{font-size:10.5px;background:var(--bg);color:var(--text-dim);padding:2px 7px;border-radius:6px;border:1px solid var(--line);}
+.mono-sm{width:16px;height:16px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-weight:700;font-size:7px;color:#fff;margin-top:1px;}
+.pri-badge{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--pri-color);white-space:nowrap;}
+.pri-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--pri-color);flex:0 0 auto;}
+.gauge{flex:1;height:6px;background:var(--line);border-radius:4px;overflow:hidden;}
+.gauge-fill{height:100%;border-radius:4px;transition:width .3s ease;}
+.days-label{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-dim);white-space:nowrap;}
+.days-label.overdue{color:var(--urgent);font-weight:600;}
+
+.filterlabel{padding:0 0 4px;font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;}
+.chipbar{display:flex;gap:6px;padding-bottom:14px;overflow-x:auto;}
+.pchip{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:5px 11px 5px 5px;border-radius:20px;background:var(--card);border:1px solid var(--line);cursor:pointer;font-size:12px;font-weight:500;color:var(--text-dim);transition:all .15s ease;white-space:nowrap;}
+.pchip.active{border-color:var(--mono-color);background:color-mix(in srgb, var(--mono-color) 10%, white);color:var(--ink);}
+.mono{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-weight:700;font-size:9px;color:#fff;background:var(--mono-color);}
+.pri-chip{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:6px 12px;border-radius:20px;background:var(--card);border:1.5px solid var(--line);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-dim);transition:all .15s ease;white-space:nowrap;}
+.pri-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--dot-color);}
+.pri-chip.active{border-color:var(--dot-color);color:var(--ink);background:color-mix(in srgb, var(--dot-color) 10%, white);}
+
+.board{display:flex;gap:12px;padding:16px 0 4px;overflow-x:auto;align-items:flex-start;background:var(--board-bg);margin:0 0 20px;border-radius:16px;padding-left:14px;padding-right:14px;}
+.col{flex:0 0 250px;min-width:250px;}
+.col-head{display:flex;align-items:center;justify-content:space-between;padding:0 4px 10px;}
+.col-title{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--stage-color);}
+.col-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);background:#fff;padding:1px 7px;border-radius:10px;}
+.dropzone{min-height:60px;border-radius:12px;transition:background .15s;padding-bottom:6px;}
+.dropzone.over{background:rgba(47,143,110,.08);outline:1.5px dashed var(--primary);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:9px;cursor:grab;border-top:3px solid var(--stage-color);}
+.card:active{cursor:grabbing;}
+.card.dim{opacity:.3;}
+.card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;}
+.card-name{font-family:'Newsreader',serif;font-weight:600;font-size:14.5px;color:var(--ink);flex:1;line-height:1.25;}
+.op-tag{font-size:10px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.03em;}
+.price-range{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink);margin:4px 0;font-weight:500;}
+.next-action{font-size:12px;color:var(--text);margin:6px 0 4px;padding-top:6px;border-top:1px solid var(--line);}
+.next-action b{color:var(--text-dim);font-weight:600;}
+.card-foot{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+.stage-select{flex:1;font-family:inherit;font-size:11.5px;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px 6px;background:var(--bg);}
+.editbtn,.delbtn,.sugbtn{border:1px solid var(--line);background:var(--bg);border-radius:7px;font-size:11.5px;padding:5px 9px;cursor:pointer;font-family:inherit;color:var(--text-dim);}
+.delbtn{color:var(--urgent);}
+.sugbtn{color:var(--ink);font-weight:600;}
+.suggestion{display:none;background:var(--bg);border:1px dashed var(--line);border-radius:9px;padding:9px 10px;margin-top:9px;font-size:12px;color:var(--text);line-height:1.45;}
+.suggestion.open{display:block;}
+.suggestion .copyln{display:flex;justify-content:flex-end;margin-top:6px;}
+.suggestion button{background:var(--ink);color:#fff;border:none;border-radius:6px;font-size:11px;padding:4px 9px;cursor:pointer;font-family:inherit;}
+.empty-col{text-align:center;color:var(--text-faint);font-size:12px;padding:24px 8px;border:1.5px dashed var(--line);border-radius:12px;}
+
+.stage-group{margin-bottom:22px;}
+.stage-group-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.stage-group-head .dot{width:9px;height:9px;border-radius:50%;background:var(--sg-color);}
+.stage-group-head h3{font-size:14px;}
+.stage-group-head .cnt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);}
+.owner-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--status-color);}
+.owner-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.owner-name{font-family:'Newsreader',serif;font-weight:600;font-size:15.5px;color:var(--ink);}
+.owner-imovel{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+.status-pill{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;color:#fff;background:var(--status-color);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+.gauge-row{display:flex;align-items:center;gap:10px;margin:11px 0 8px;}
+.owner-meta{font-size:12.5px;color:var(--text);margin-bottom:6px;}
+.owner-meta b{color:var(--text-dim);font-weight:500;}
+.owner-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.owner-actions button{border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:7px;cursor:pointer;}
+.owner-actions select{flex:1;font-family:inherit;font-size:11.5px;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px 6px;background:var(--bg);}
+.owner-actions .danger{color:var(--urgent);}
+
+.overlay{position:fixed;inset:0;background:rgba(17,36,31,.5);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+.overlay.open{display:flex;}
+.modal{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:22px 20px 26px;max-height:90vh;overflow-y:auto;animation:slideup .2s ease;}
+@media (min-width:600px){.overlay{align-items:center;}.modal{border-radius:18px;}}
+@keyframes slideup{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal h2{font-size:19px;margin:0 0 16px;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
+.field label span{text-transform:none;font-weight:400;}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:inherit;font-size:13.5px;color:var(--text);background:var(--bg);}
+.field textarea{resize:vertical;min-height:46px;}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+.persona-grid{display:flex;flex-wrap:wrap;gap:7px;}
+.persona-opt{display:flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:12px;color:var(--text-dim);background:#fff;}
+.persona-opt.sel{border-color:var(--p-color);background:color-mix(in srgb, var(--p-color) 12%, white);color:var(--ink);font-weight:600;}
+.persona-tip{font-size:11.5px;color:var(--text-faint);margin-top:6px;font-style:italic;min-height:16px;}
+.modal-actions{display:flex;gap:10px;margin-top:16px;}
+.modal-actions button{flex:1;padding:12px;border-radius:10px;font-family:inherit;font-weight:600;font-size:14px;border:none;cursor:pointer;}
+.modal-actions .cancel{background:var(--bg);color:var(--text-dim);}
+.modal-actions .save{background:var(--primary);color:#fff;}
+.empty{text-align:center;padding:50px 20px;color:var(--text-dim);}
+.empty .big{font-family:'Newsreader',serif;font-size:17px;color:var(--ink);margin-bottom:6px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">AC</div>
+    <div>
+      <h1>Atendimento Cliente</h1>
+      <p>Proprietários e leads</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="syncdot"><span class="d" id="syncDot"></span><span id="syncLabel">conectando...</span></div>
+    <button id="notifBtn" class="addbtn" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔔 Ativar avisos</button>
+    <div class="tabs">
+      <div class="tab active" data-view="dash">Dashboard</div>
+      <div class="tab" data-view="owners">Proprietários</div>
+      <div class="tab" data-view="buyers">Leads</div>
+    </div>
+  </div>
+</div>
+
+<div class="view active" id="view-dash">
+  <div class="kpi-row" id="kpiRow"></div>
+  <div class="panel-row">
+    <div class="panel"><h3>Funil · Leads</h3><div id="funnelBuyers"></div></div>
+    <div class="panel"><h3>Funil · Captação</h3><div id="funnelOwners"></div></div>
+  </div>
+  <div class="panel-row">
+    <div class="panel"><h3>Prioridade dos leads</h3><div class="mini-bars" id="priBars"></div><div class="legend" id="priLegend"></div></div>
+    <div class="panel"><h3>Temperatura dos proprietários</h3><div class="mini-bars" id="statusBars"></div><div class="legend" id="statusLegend"></div></div>
+  </div>
+</div>
+
+<div class="view" id="view-owners">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;">
+    <button class="addbtn" id="openImportOwner" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
+    <button class="addbtn" id="openAddOwner">+ Novo proprietário</button>
+  </div>
+  <div id="ownersList"></div>
+</div>
+
+<div class="view" id="view-buyers">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;">
+    <button class="addbtn" id="openImportBuyer" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
+    <button class="addbtn" id="openAddBuyer">+ Novo cliente</button>
+  </div>
+  <div class="filterlabel">Tipo de operação</div>
+  <div class="chipbar" id="operationbar"></div>
+  <div class="filterlabel">Prioridade (triagem)</div>
+  <div class="chipbar" id="prioritybar"></div>
+  <div class="filterlabel">Perfil (opcional)</div>
+  <div class="chipbar" id="personabar"></div>
+  <div class="board" id="board"></div>
+</div>
+
+<div class="overlay" id="overlayOwner">
+  <div class="modal">
+    <h2 id="ownerModalTitle">Novo proprietário</h2>
+    <div class="field"><label>Proprietário</label><input type="text" id="o-nome" placeholder="Nome"></div>
+    <div class="field"><label>Telefone / WhatsApp</label><input type="text" id="o-contato" placeholder="(11) 99999-9999"></div>
+    <div class="field"><label>Imóvel</label><input type="text" id="o-imovel" placeholder="Ex: Apto Higienópolis 90m²"></div>
+    <div class="field-row">
+      <div class="field"><label>Etapa</label><select id="o-stage"></select></div>
+      <div class="field"><label>Status</label><select id="o-status"><option value="quente">Quente</option><option value="morno">Morno</option><option value="frio">Frio</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Último contato</label><input type="date" id="o-data"></div>
+      <div class="field"><label>Método sugerido</label>
+        <select id="o-metodo"><option value="">—</option><option value="A">A · Especialização</option><option value="B">B · Prova Social</option><option value="C">C · Pergunta Calibrada</option><option value="D">D · Urgência</option><option value="E">E · Permissão</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Próxima ação</label><div class="persona-grid" id="acaoPickerOwner"></div></div>
+    <div class="field"><label>Observações</label><textarea id="o-notas" placeholder="Qualquer detalhe importante sobre esse proprietário"></textarea></div>
+    <div class="modal-actions"><button class="cancel" id="ownerCancelBtn">Cancelar</button><button class="save" id="ownerSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayBuyer">
+  <div class="modal">
+    <h2 id="buyerModalTitle">Novo cliente</h2>
+    <div class="field-row">
+      <div class="field"><label>Cliente</label><input type="text" id="f-nome" placeholder="Nome"></div>
+      <div class="field"><label>Operação</label><select id="f-op"><option value="compra">Compra</option><option value="aluguel">Aluguel</option></select></div>
+    </div>
+    <div class="field"><label>Telefone / WhatsApp</label><input type="text" id="f-contato" placeholder="(11) 99999-9999"></div>
+    <div class="field-row">
+      <div class="field"><label>Responde?</label><select id="f-responde"><option value="">Não avaliado</option><option value="sim">Sim</option><option value="nao">Não</option><option value="sumiu">Sumiu</option></select></div>
+      <div class="field"><label>Orçamento compatível?</label><select id="f-orcamento"><option value="">Não avaliado</option><option value="compativel">Compatível</option><option value="incompativel">Incompatível</option><option value="nao_informado">Não informou</option></select></div>
+    </div>
+    <div class="field"><label>Tem motivo concreto pra fechar?</label>
+      <select id="f-motivo"><option value="">Não avaliado</option><option value="sim">Sim, motivo claro</option><option value="nao">Não, só olhando</option><option value="nao_sabe">Não sei ainda</option></select>
+    </div>
+    <div class="field">
+      <label>Perfil de comprador <span>(opcional — só se já teve conversa de verdade)</span></label>
+      <div class="persona-grid" id="personaGrid"></div>
+      <div class="persona-tip" id="personaTip"></div>
+    </div>
+    <div class="field">
+      <label>Bairros / localização desejada</label>
+      <div class="persona-grid" id="bairrosPicker"></div>
+    </div>
+    <div class="field">
+      <label>Tipo de imóvel <span>(pode marcar mais de um)</span></label>
+      <div class="persona-grid" id="tipoPicker"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Dormitórios (mín.)</label>
+        <div class="persona-grid" id="quartosPicker"></div>
+      </div>
+      <div class="field"><label>Metros quadrados (aprox.)</label><input type="number" id="f-m2" min="0" placeholder="m²"></div>
+    </div>
+    <div class="field">
+      <label>Vaga de garagem</label>
+      <select id="f-vaga"><option value="">Não avaliado</option><option value="indiferente">Indiferente</option><option value="sim">Precisa ter</option><option value="nao">Não precisa</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label id="lbl-precomin">Valor mín.</label><input type="number" id="f-precomin" placeholder="R$"></div>
+      <div class="field"><label id="lbl-precomax">Valor máx.</label><input type="number" id="f-precomax" placeholder="R$"></div>
+    </div>
+    <div class="field">
+      <label>Exigências / diferenciais <span>(pode marcar mais de um)</span></label>
+      <div class="persona-grid" id="musthavePicker"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Etapa</label><select id="f-stage"></select></div>
+      <div class="field"><label>Último contato</label><input type="date" id="f-data"></div>
+    </div>
+    <div class="field"><label>Próxima ação</label><div class="persona-grid" id="acaoPickerBuyer"></div></div>
+    <div class="field"><label>Observações</label><textarea id="f-notas" placeholder="Qualquer detalhe importante sobre esse cliente"></textarea></div>
+    <div class="modal-actions"><button class="cancel" id="buyerCancelBtn">Cancelar</button><button class="save" id="buyerSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayImport">
+  <div class="modal" style="max-width:600px;">
+    <h2 id="importTitle">Importar em massa</h2>
+    <div class="field">
+      <label>Colunas esperadas, nesta ordem</label>
+      <div id="importColumnsHint" style="font-size:12.5px;color:var(--text-dim);background:var(--bg);border-radius:9px;padding:10px 12px;line-height:1.6;"></div>
+    </div>
+    <div class="field">
+      <button id="downloadTemplateBtn" class="editbtn" style="width:100%;padding:9px;">⬇️ Baixar planilha modelo (.csv)</button>
+    </div>
+    <div class="field">
+      <label>Cole aqui as linhas (copiadas do Excel/Google Planilhas, ou separadas por vírgula)</label>
+      <textarea id="importText" style="min-height:160px;font-family:'JetBrains Mono',monospace;font-size:12px;" placeholder="Cole os dados aqui..."></textarea>
+    </div>
+    <div id="importPreview" style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="importCancelBtn">Cancelar</button>
+      <button class="save" id="importConfirmBtn">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
+  authDomain: "atendimentoclientebv-658e7.firebaseapp.com",
+  projectId: "atendimentoclientebv-658e7",
+  storageBucket: "atendimentoclientebv-658e7.firebasestorage.app",
+  messagingSenderId: "641137924211",
+  appId: "1:641137924211:web:30adb0e6924abed1b7b206"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const VAPID_KEY = "BHOdLVf9ZXx1oXSEuhrLO8il8mAQ3Z1SNG-EFKSZuA3-vNqo62nxduJUDSHVtd4_Hov8xYokymvLxaOweXnzJ2w";
+let messaging = null;
+try{ messaging = getMessaging(app); }catch(e){ console.warn('Messaging indisponível neste navegador', e); }
+
+async function registerDeviceForPush(){
+  if(!messaging) return;
+  try{
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    if(token){
+      await setDoc(doc(db,'device_tokens', token), { criadoEm: new Date().toISOString() });
+      console.log('Dispositivo registrado pra avisos.');
+    }
+  }catch(e){ console.warn('Não foi possível registrar o dispositivo pra push', e); }
+}
+const ownersCol = collection(db, 'proprietarios');
+const buyersCol = collection(db, 'compradores');
+
+const OVERDUE_DAYS_BUYER = 4;
+const OWNER_THRESH = { quente:2, morno:5, frio:10 };
+const OWNER_STATUS_COLOR = { quente:'#E1653D', morno:'#C9A24C', frio:'#7A8C84' };
+
+const BUYER_STAGES = [
+  {id:'novo', label:'Novo', color:'#7A8C84'},
+  {id:'qualificando', label:'Qualificando', color:'#3E7C93'},
+  {id:'visitando', label:'Visitando', color:'#2F8F6E'},
+  {id:'proposta', label:'Proposta', color:'#C9A24C'},
+  {id:'negociacao', label:'Negociação', color:'#E1653D'},
+  {id:'fechado', label:'Fechado', color:'#1E6B4F'},
+  {id:'perdido', label:'Perdido/Pausado', color:'#A7B2AB'},
+];
+const OWNER_STAGES = [
+  {id:'contato', label:'Contato inicial', color:'#7A8C84'},
+  {id:'negociando', label:'Negociando captação', color:'#3E7C93'},
+  {id:'documentacao', label:'Documentação', color:'#C9A24C'},
+  {id:'publicado', label:'Publicado/Ativo', color:'#1E6B4F'},
+  {id:'perdido', label:'Perdido', color:'#A7B2AB'},
+];
+
+const PERSONAS = [
+  {id:'realizador', label:'O Realizador', mono:'RE', color:'#B8562B', tip:'Destaque exclusividade, status e diferenciais raros do imóvel.'},
+  {id:'escalador', label:'O Escalador', mono:'ES', color:'#3E7C93', tip:'Compare com o que ele tem hoje — enfatize crescimento e evolução.'},
+  {id:'guardiao', label:'O Guardião', mono:'GU', color:'#2F8F6E', tip:'Foque segurança, estrutura familiar, escolas e estabilidade do bairro.'},
+  {id:'estrategista', label:'O Estrategista', mono:'ST', color:'#5B4E8C', tip:'Traga dados: preço/m², comparativo ITBI, valorização histórica.'},
+  {id:'curador', label:'O Curador', mono:'CU', color:'#A8477A', tip:'Valorize estética, design, acabamento e a narrativa do espaço.'},
+  {id:'pragmatico', label:'O Pragmático', mono:'PR', color:'#7A8C84', tip:'Vá direto ao custo-benefício e às condições de pagamento.'},
+  {id:'consolidado', label:'O Consolidado', mono:'CO', color:'#8A6D3B', tip:'Enfatize tradição do bairro, baixo risco e estabilidade a longo prazo.'},
+];
+const PRIORITY_GROUPS = [
+  {id:'prioridade', label:'Prioridade', color:'#E1653D', rank:4},
+  {id:'acompanhar', label:'Acompanhar', color:'#C9A24C', rank:3},
+  {id:'baixa', label:'Baixa prioridade', color:'#A7B2AB', rank:2},
+  {id:'descartar', label:'Descartar', color:'#D8DEDA', rank:1},
+];
+const METHOD_NAMES = {A:'Especialização',B:'Prova Social',C:'Pergunta Calibrada',D:'Urgência',E:'Permissão'};
+const METHOD_LINE = {
+  A:'Compartilhar um dado de mercado específico do bairro dele, mostrando domínio da região.',
+  B:'Mencionar outro imóvel semelhante que você vendeu/alugou recentemente na região.',
+  C:'Perguntar: "o que faria você considerar colocar o imóvel à venda/locação agora?"',
+  D:'Comunicar uma janela de oportunidade — ex: aumento de procura no bairro este mês.',
+  E:'Perguntar se pode enviar uma avaliação de valor, sem compromisso.',
+};
+const BUYER_STAGE_MSG = {
+  novo:'Enviar mensagem de boas-vindas e perguntar critérios de busca.',
+  qualificando:'Confirmar orçamento e o motivo real da busca.',
+  visitando:'Agendar visita e confirmar horário com antecedência.',
+  proposta:'Enviar a proposta formal com prazo claro de resposta.',
+  negociacao:'Retomar com uma nova oferta ou contraproposta objetiva.',
+  fechado:'Parabenizar e iniciar o encaminhamento da documentação.',
+  perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
+};
+
+let data = { proprietarios:[], compradores:[] };
+let personaFilter=null, priorityFilter=null, operationFilter=null;
+let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
+
+function daysSince(dateStr){
+  if(!dateStr) return 999;
+  const d = new Date(dateStr+'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((now-d)/86400000);
+}
+function money(n){ if(n===undefined||n===null||n==='') return null; return 'R$ '+Number(n).toLocaleString('pt-BR'); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function chipsFrom(str){ return (str||'').split(',').map(s=>s.trim()).filter(Boolean); }
+function personaOf(id){ return PERSONAS.find(p=>p.id===id); }
+
+function priorityInfo(c){
+  if(c.responde==='sumiu') return {...PRIORITY_GROUPS[3], label:'Sumiu'};
+  const anyFilled = c.responde || c.orcamento || c.motivo;
+  if(!anyFilled) return {...PRIORITY_GROUPS[2], label:'Não avaliado'};
+  let score=0;
+  if(c.responde==='sim') score++;
+  if(c.orcamento==='compativel') score++;
+  if(c.motivo==='sim') score++;
+  if(score>=3) return PRIORITY_GROUPS[0];
+  if(score===2) return PRIORITY_GROUPS[1];
+  return c.orcamento==='incompativel' ? {...PRIORITY_GROUPS[2], label:'Reencaixar orçamento'} : PRIORITY_GROUPS[2];
+}
+function waLink(contato, texto){
+  const digits = (contato||'').replace(/\D/g,'');
+  if(!digits) return null;
+  const withCountry = digits.length<=11 ? '55'+digits : digits;
+  return `https://wa.me/${withCountry}?text=${encodeURIComponent(texto||'')}`;
+}
+function suggestBuyer(c){
+  const stageMsg = BUYER_STAGE_MSG[c.stage] || '';
+  const pri = priorityInfo(c);
+  let extra = pri.id==='descartar' ? ' Antes de desistir, vale uma mensagem curta de reengajamento com senso de urgência.' : '';
+  const personaTip = c.persona && personaOf(c.persona) ? ' '+personaOf(c.persona).tip : '';
+  const first = (c.nome||'').split(' ')[0] || 'tudo bem';
+  const bairro = chipsFrom(c.bairros)[0];
+  const ready = `Oi ${first}! Passando aqui pra seguir com sua busca${bairro?' em '+bairro:''}. ${stageMsg}`;
+  return { tip: (stageMsg+personaTip+extra).trim(), ready };
+}
+function suggestOwner(o){
+  const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
+  const first = (o.nome||'').split(' ')[0] || 'tudo bem';
+  const ready = `Oi ${first}! Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}`;
+  return { tip: line, ready };
+}
+async function copyText(text, btn){
+  try{ await navigator.clipboard.writeText(text); const old=btn.textContent; btn.textContent='Copiado!'; setTimeout(()=>btn.textContent=old,1400); }
+  catch(e){ alert(text); }
+}
+
+/* ---------- Firestore sync ---------- */
+let firstOwnerSnap=true, firstBuyerSnap=true;
+function markSynced(){
+  document.getElementById('syncDot').classList.remove('off');
+  document.getElementById('syncLabel').textContent = 'sincronizado';
+}
+onSnapshot(ownersCol, snap=>{
+  data.proprietarios = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderOwners(); renderDashboard(); markSynced();
+}, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
+onSnapshot(buyersCol, snap=>{
+  data.compradores = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderBoard(); renderDashboard(); markSynced();
+}, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
+
+/* ---------- TABS ---------- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('view-'+t.dataset.view).classList.add('active');
+  };
+});
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  const buyers = data.compradores, owners = data.proprietarios;
+  const overdueBuyers = buyers.filter(c=>daysSince(c.ultimoContato)>=OVERDUE_DAYS_BUYER && c.stage!=='fechado' && c.stage!=='perdido').length;
+  const overdueOwners = owners.filter(o=>daysSince(o.ultimoContato)>=(OWNER_THRESH[o.status]||5) && o.stage!=='publicado' && o.stage!=='perdido').length;
+  const buyersActive = buyers.filter(c=>c.stage!=='perdido');
+  const ownersActive = owners.filter(o=>o.stage!=='perdido');
+  const convBuyers = buyersActive.length ? Math.round(buyers.filter(c=>c.stage==='fechado').length/buyersActive.length*100) : 0;
+  const convOwners = ownersActive.length ? Math.round(owners.filter(o=>o.stage==='publicado').length/ownersActive.length*100) : 0;
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi" style="--kpi-color:#3E7C93"><div class="num">${buyers.length+owners.length}</div><div class="lbl">Contatos ativos no CRM</div></div>
+    <div class="kpi" style="--kpi-color:#E1653D"><div class="num">${overdueBuyers+overdueOwners}</div><div class="lbl">Atrasados (precisam de retorno)</div></div>
+    <div class="kpi" style="--kpi-color:#1E6B4F"><div class="num">${convBuyers}%</div><div class="lbl">Conversão leads → fechado</div></div>
+    <div class="kpi" style="--kpi-color:#8A6D3B"><div class="num">${convOwners}%</div><div class="lbl">Conversão captação → publicado</div></div>
+  `;
+  const buyerCounts = BUYER_STAGES.filter(s=>s.id!=='perdido').map(s=>({...s, n: buyers.filter(c=>c.stage===s.id).length}));
+  const maxB = Math.max(1, ...buyerCounts.map(s=>s.n));
+  document.getElementById('funnelBuyers').innerHTML = buyerCounts.map(s=>`
+    <div class="funnel-row"><div class="funnel-lbl">${s.label}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,s.n/maxB*100)}%;background:${s.color}"><span>${s.n}</span></div></div></div>`).join('');
+  const ownerCounts = OWNER_STAGES.filter(s=>s.id!=='perdido').map(s=>({...s, n: owners.filter(o=>o.stage===s.id).length}));
+  const maxO = Math.max(1, ...ownerCounts.map(s=>s.n));
+  document.getElementById('funnelOwners').innerHTML = ownerCounts.map(s=>`
+    <div class="funnel-row"><div class="funnel-lbl">${s.label}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,s.n/maxO*100)}%;background:${s.color}"><span>${s.n}</span></div></div></div>`).join('');
+
+  const priCounts = PRIORITY_GROUPS.map(g=>({...g, n: buyers.filter(c=>priorityInfo(c).id===g.id).length}));
+  const totalPri = Math.max(1, priCounts.reduce((a,g)=>a+g.n,0));
+  document.getElementById('priBars').innerHTML = priCounts.map(g=> g.n? `<div style="width:${g.n/totalPri*100}%;background:${g.color}"></div>` : '').join('');
+  document.getElementById('priLegend').innerHTML = priCounts.map(g=>`<span><span class="dot" style="background:${g.color}"></span>${g.label} (${g.n})</span>`).join('');
+
+  const stCounts = ['quente','morno','frio'].map(s=>({id:s, color:OWNER_STATUS_COLOR[s], n: owners.filter(o=>o.status===s).length}));
+  const totalSt = Math.max(1, stCounts.reduce((a,g)=>a+g.n,0));
+  document.getElementById('statusBars').innerHTML = stCounts.map(g=> g.n? `<div style="width:${g.n/totalSt*100}%;background:${g.color}"></div>` : '').join('');
+  document.getElementById('statusLegend').innerHTML = stCounts.map(g=>`<span><span class="dot" style="background:${g.color}"></span>${g.id} (${g.n})</span>`).join('');
+}
+
+/* ---------- OWNERS VIEW ---------- */
+function renderOwners(){
+  const list = document.getElementById('ownersList');
+  if(data.proprietarios.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nenhum proprietário ainda</div><div>Adicione o primeiro contato de captação.</div></div>`;
+    return;
+  }
+  list.innerHTML = OWNER_STAGES.map(stage=>{
+    const items = data.proprietarios.filter(o=>o.stage===stage.id)
+      .sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
+    if(items.length===0) return '';
+    return `<div class="stage-group">
+      <div class="stage-group-head" style="--sg-color:${stage.color}"><span class="dot"></span><h3>${stage.label}</h3><span class="cnt">${items.length}</span></div>
+      ${items.map(o=>ownerCardHtml(o)).join('')}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-oact]').forEach(b=>{ b.onclick = ()=>ownerAction(b.dataset.oact, b.dataset.id); });
+  document.querySelectorAll('.owner-stage-select').forEach(sel=>{
+    sel.onchange = async ()=>{ await setDoc(doc(db,'proprietarios',sel.dataset.id), {stage:sel.value}, {merge:true}); };
+  });
+  document.querySelectorAll('.owner-sug-btn').forEach(b=>{ b.onclick = ()=>document.getElementById('osug-'+b.dataset.id).classList.toggle('open'); });
+  document.querySelectorAll('.owner-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
+}
+function ownerCardHtml(o){
+  const days = daysSince(o.ultimoContato);
+  const thresh = OWNER_THRESH[o.status]||5;
+  const overdue = days>=thresh;
+  const pct = Math.min(100, Math.round((days/thresh)*100));
+  const color = OWNER_STATUS_COLOR[o.status];
+  const sug = suggestOwner(o);
+  const wa = waLink(o.contato, sug.ready);
+  return `<div class="owner-card" style="--status-color:${color}">
+    <div class="owner-top"><div><div class="owner-name">${escapeHtml(o.nome)}</div>${o.imovel?`<div class="owner-imovel">${escapeHtml(o.imovel)}</div>`:''}${o.contato?`<div class="owner-imovel">📞 ${escapeHtml(o.contato)}</div>`:''}</div><span class="status-pill">${o.status}</span></div>
+    <div class="gauge-row"><div class="gauge"><div class="gauge-fill" style="width:${pct}%;background:${color}"></div></div><span class="days-label ${overdue?'overdue':''}">${days===0?'hoje':days+'d'}</span></div>
+    ${o.proximaAcao?`<div class="owner-meta"><b>Próxima ação:</b> ${escapeHtml(o.proximaAcao)}</div>`:''}
+    ${o.metodo?`<div class="owner-meta"><b>Método:</b> ${o.metodo} · ${METHOD_NAMES[o.metodo]}</div>`:''}
+    ${o.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(o.notas)}</div>`:''}
+    <div class="owner-actions">
+      <select class="owner-stage-select" data-id="${o.id}">${OWNER_STAGES.map(s=>`<option value="${s.id}" ${s.id===o.stage?'selected':''}>${s.label}</option>`).join('')}</select>
+      <button data-oact="contato" data-id="${o.id}">Contato hoje</button>
+      <button class="owner-sug-btn" data-id="${o.id}">Sugestão</button>
+      ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button type="button">💬 WhatsApp</button></a>`:''}
+      <button data-oact="edit" data-id="${o.id}">Editar</button>
+      <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
+    </div>
+    <div class="suggestion" id="osug-${o.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="owner-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
+  </div>`;
+}
+async function ownerAction(act, id){
+  const o = data.proprietarios.find(x=>x.id===id);
+  if(!o) return;
+  if(act==='contato'){ await setDoc(doc(db,'proprietarios',id), {ultimoContato: new Date().toISOString().slice(0,10)}, {merge:true}); }
+  else if(act==='edit'){ openOwnerModal(o); }
+  else if(act==='del'){ if(confirm(`Remover "${o.nome}"?`)){ await deleteDoc(doc(db,'proprietarios',id)); } }
+}
+function fillOwnerStageSelect(current){
+  document.getElementById('o-stage').innerHTML = OWNER_STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.label}</option>`).join('');
+}
+function openOwnerModal(o){
+  editingOwnerId = o ? o.id : null;
+  document.getElementById('ownerModalTitle').textContent = o ? 'Editar proprietário' : 'Novo proprietário';
+  document.getElementById('o-nome').value = o ? o.nome : '';
+  document.getElementById('o-contato').value = o ? o.contato||'' : '';
+  document.getElementById('o-imovel').value = o ? o.imovel||'' : '';
+  document.getElementById('o-status').value = o ? o.status : 'morno';
+  document.getElementById('o-metodo').value = o ? o.metodo||'' : '';
+  acaoPickerOwnerHandle = initChipPicker('acaoPickerOwner', OWNER_ACAO_OPTIONS, o ? o.proximaAcao||'' : '', false);
+  document.getElementById('o-notas').value = o ? o.notas||'' : '';
+  document.getElementById('o-data').value = o ? o.ultimoContato : new Date().toISOString().slice(0,10);
+  fillOwnerStageSelect(o ? o.stage : 'contato');
+  document.getElementById('overlayOwner').classList.add('open');
+}
+document.getElementById('openAddOwner').onclick = ()=>openOwnerModal(null);
+document.getElementById('ownerCancelBtn').onclick = ()=>document.getElementById('overlayOwner').classList.remove('open');
+document.getElementById('overlayOwner').onclick = e=>{ if(e.target.id==='overlayOwner') e.target.classList.remove('open'); };
+document.getElementById('ownerSaveBtn').onclick = async ()=>{
+  const nome = document.getElementById('o-nome').value.trim();
+  if(!nome){ alert('Digite o nome do proprietário'); return; }
+  const rec = {
+    nome, imovel: document.getElementById('o-imovel').value.trim(),
+    contato: document.getElementById('o-contato').value.trim(),
+    stage: document.getElementById('o-stage').value,
+    status: document.getElementById('o-status').value,
+    ultimoContato: document.getElementById('o-data').value || new Date().toISOString().slice(0,10),
+    metodo: document.getElementById('o-metodo').value,
+    proximaAcao: acaoPickerOwnerHandle.getValue(),
+    notas: document.getElementById('o-notas').value.trim(),
+  };
+  const id = editingOwnerId || doc(ownersCol).id;
+  await setDoc(doc(db,'proprietarios',id), rec, {merge:true});
+  document.getElementById('overlayOwner').classList.remove('open');
+};
+
+/* ---------- BUYERS VIEW ---------- */
+function renderOperationBar(){
+  const opts = [ {id:'compra', label:'Compra', color:'#3E7C93'}, {id:'aluguel', label:'Locação', color:'#2F8F6E'} ];
+  document.getElementById('operationbar').innerHTML = opts.map(o=>{
+    const active = operationFilter===o.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${o.color}" data-o="${o.id}"><span class="dot"></span>${o.label}</div>`;
+  }).join('');
+  document.querySelectorAll('#operationbar .pri-chip').forEach(el=>{
+    el.onclick = ()=>{ operationFilter = operationFilter===el.dataset.o?null:el.dataset.o; renderOperationBar(); renderBoard(); };
+  });
+}
+function renderPriorityBar(){
+  document.getElementById('prioritybar').innerHTML = PRIORITY_GROUPS.map(g=>{
+    const active = priorityFilter===g.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${g.color}" data-g="${g.id}"><span class="dot"></span>${g.label}</div>`;
+  }).join('');
+  document.querySelectorAll('.pri-chip').forEach(el=>{ el.onclick = ()=>{ priorityFilter = priorityFilter===el.dataset.g?null:el.dataset.g; renderPriorityBar(); renderBoard(); }; });
+}
+function renderPersonaBar(){
+  document.getElementById('personabar').innerHTML = PERSONAS.map(p=>{
+    const active = personaFilter===p.id;
+    return `<div class="pchip ${active?'active':''}" style="--mono-color:${p.color}" data-p="${p.id}"><span class="mono">${p.mono}</span>${p.label.replace('O ','')}</div>`;
+  }).join('');
+  document.querySelectorAll('.pchip').forEach(el=>{ el.onclick = ()=>{ personaFilter = personaFilter===el.dataset.p?null:el.dataset.p; renderPersonaBar(); renderBoard(); }; });
+}
+function renderBoard(){
+  document.getElementById('board').innerHTML = BUYER_STAGES.map(stage=>{
+    const items = data.compradores.filter(c=>c.stage===stage.id && (!operationFilter || c.operacao===operationFilter)).sort((a,b)=>priorityInfo(b).rank-priorityInfo(a).rank);
+    return `<div class="col">
+      <div class="col-head"><span class="col-title" style="--stage-color:${stage.color}">${stage.label}</span><span class="col-count">${items.length}</span></div>
+      <div class="dropzone" data-stage="${stage.id}">${items.length===0?`<div class="empty-col">vazio</div>`:items.map(c=>buyerCardHtml(c, stage.color)).join('')}</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.dropzone').forEach(zone=>{
+    zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', ()=>zone.classList.remove('over'));
+    zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('over'); moveBuyer(e.dataTransfer.getData('text/plain'), zone.dataset.stage); });
+  });
+  document.querySelectorAll('.card').forEach(el=>{ el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id)); });
+  document.querySelectorAll('.stage-select').forEach(sel=>{ sel.onchange = ()=>moveBuyer(sel.dataset.id, sel.value); });
+  document.querySelectorAll('[data-bact="edit"]').forEach(b=>{ b.onclick=()=>openBuyerModal(data.compradores.find(c=>c.id===b.dataset.id)); });
+  document.querySelectorAll('[data-bact="del"]').forEach(b=>{
+    b.onclick = async ()=>{ const c=data.compradores.find(x=>x.id===b.dataset.id); if(confirm(`Remover "${c.nome}"?`)){ await deleteDoc(doc(db,'compradores',c.id)); } };
+  });
+  document.querySelectorAll('.sugbtn').forEach(b=>{ b.onclick = ()=> document.getElementById('bsug-'+b.dataset.id).classList.toggle('open'); });
+  document.querySelectorAll('.buyer-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
+}
+function buyerCardHtml(c, stageColor){
+  const persona = personaOf(c.persona);
+  const pri = priorityInfo(c);
+  const days = daysSince(c.ultimoContato);
+  const overdue = days>=OVERDUE_DAYS_BUYER;
+  const bairroChips = chipsFrom(c.bairros);
+  const mustChips = chipsFrom(c.musthave);
+  const priceRange = (c.precomin||c.precomax) ? `${c.precomin?money(c.precomin):'—'} – ${c.precomax?money(c.precomax):'—'}` : '';
+  const specChips = [];
+  if(c.m2) specChips.push(c.m2+'m²');
+  if(c.quartos) specChips.push(c.quartos==='Studio' ? 'Studio' : c.quartos+' dorm.');
+  if(c.vaga==='sim') specChips.push('com vaga');
+  if(c.vaga==='nao') specChips.push('sem vaga');
+  const dim = (personaFilter && c.persona!==personaFilter) || (priorityFilter && pri.id!==priorityFilter) || (operationFilter && c.operacao!==operationFilter);
+  const sug = suggestBuyer(c);
+  const wa = waLink(c.contato, sug.ready);
+  return `<div class="card ${dim?'dim':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
+    <div class="pri-badge" style="--pri-color:${pri.color};margin-bottom:6px;"><span class="dot"></span>${pri.label}</div>
+    <div class="card-top">
+      ${persona?`<span class="mono-sm" style="background:${persona.color}" title="${persona.label}">${persona.mono}</span>`:''}
+      <span class="card-name">${escapeHtml(c.nome)}</span>
+      <span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span>
+    </div>
+    ${c.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
+    ${bairroChips.length?`<div class="chips">${bairroChips.map(b=>`<span class="chip">${escapeHtml(b)}</span>`).join('')}</div>`:''}
+    ${c.tipo||priceRange?`<div class="price-range">${escapeHtml(c.tipo||'')}${c.tipo&&priceRange?' · ':''}${priceRange}</div>`:''}
+    ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
+    ${mustChips.length?`<div class="chips">${mustChips.map(m=>`<span class="chip">${escapeHtml(m)}</span>`).join('')}</div>`:''}
+    ${c.proximaAcao?`<div class="next-action"><b>Próxima ação:</b> ${escapeHtml(c.proximaAcao)}<span class="days-label ${overdue?'overdue':''}" style="float:right">${days===0?'hoje':days+'d'}</span></div>`:''}
+    ${c.notas?`<div class="next-action"><b>Obs.:</b> ${escapeHtml(c.notas)}</div>`:''}
+    <div class="card-foot">
+      <select class="stage-select" data-id="${c.id}">${BUYER_STAGES.map(s=>`<option value="${s.id}" ${s.id===c.stage?'selected':''}>${s.label}</option>`).join('')}</select>
+      <button class="sugbtn" data-id="${c.id}">Sugestão</button>
+      ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button type="button" class="editbtn">💬 WhatsApp</button></a>`:''}
+      <button class="editbtn" data-bact="edit" data-id="${c.id}">Editar</button>
+      <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
+    </div>
+    <div class="suggestion" id="bsug-${c.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="buyer-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
+  </div>`;
+}
+async function moveBuyer(id, stage){ await setDoc(doc(db,'compradores',id), {stage}, {merge:true}); }
+function fillBuyerStageSelect(current){
+  document.getElementById('f-stage').innerHTML = BUYER_STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.label}</option>`).join('');
+}
+const TIPO_IMOVEL_OPTIONS = ['Apartamento','Casa','Sobrado','Studio','Kitnet','Cobertura','Flat','Loft','Sala Comercial','Conjunto Comercial','Galpão','Terreno','Loja'];
+const BAIRRO_OPTIONS = ['Centro Histórico','Higienópolis','Santa Cecília','Vila Buarque','Consolação','República','Pinheiros','Alto de Pinheiros','Perdizes','Pompeia','Vila Madalena','Sumaré','Barra Funda','Jardins'];
+const DIFERENCIAIS_OPTIONS = ['Pet friendly','Mobiliado','Vaga de garagem','Vaga dupla','Elevador','Portaria 24h','Piscina','Academia','Salão de festas','Varanda/Sacada','Perto do metrô','Perto da CPTM','Área de serviço','Churrasqueira'];
+const QUARTOS_OPTIONS = ['Studio','1','2','3','4+'];
+const BUYER_ACAO_OPTIONS = ['Agendar visita','Enviar opções de imóveis','Enviar proposta','Cobrar retorno','Confirmar orçamento','Solicitar documentação','Follow-up pós-visita','Renegociar condições','Ligar pra atualização','Enviar contrato'];
+const OWNER_ACAO_OPTIONS = ['Retornar com avaliação de valor','Enviar proposta de captação','Solicitar documentação do imóvel','Agendar visita para fotos','Assinar contrato de exclusividade','Follow-up pós-publicação','Negociar comissão','Atualizar anúncio'];
+
+function initChipPicker(containerId, options, initialCsv, multi=true){
+  const selected = new Set(chipsFrom(initialCsv));
+  function render(){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    el.innerHTML = options.map(o=>{
+      const sel = selected.has(o);
+      return `<div class="persona-opt ${sel?'sel':''}" style="--p-color:#2F8F6E" data-v="${escapeHtml(o)}">${escapeHtml(o)}</div>`;
+    }).join('') + `<input type="text" class="chip-custom-input" placeholder="+ outro (Enter)" style="border:1.5px dashed var(--line);border-radius:20px;padding:6px 12px;font-size:12px;width:110px;background:#fff;color:var(--text);">`;
+    el.querySelectorAll('.persona-opt').forEach(chip=>{
+      chip.onclick = ()=>{
+        const v = chip.dataset.v;
+        if(!multi){
+          if(selected.has(v)) selected.clear();
+          else{ selected.clear(); selected.add(v); }
+        } else {
+          if(selected.has(v)) selected.delete(v); else selected.add(v);
+        }
+        render();
+      };
+    });
+    const inp = el.querySelector('.chip-custom-input');
+    inp.addEventListener('keydown', e=>{
+      if(e.key==='Enter' && inp.value.trim()){
+        e.preventDefault();
+        if(!multi) selected.clear();
+        selected.add(inp.value.trim());
+        render();
+      }
+    });
+  }
+  render();
+  return { getValue: ()=> Array.from(selected).join(', ') };
+}
+let bairrosPickerHandle=null, tipoPickerHandle=null, musthavePickerHandle=null, quartosPickerHandle=null, acaoPickerOwnerHandle=null, acaoPickerBuyerHandle=null;
+
+function renderPersonaGrid(){
+  document.getElementById('personaGrid').innerHTML = PERSONAS.map(p=>{
+    const sel = selectedPersona===p.id;
+    return `<div class="persona-opt ${sel?'sel':''}" style="--p-color:${p.color}" data-p="${p.id}"><span class="mono" style="background:${p.color}">${p.mono}</span>${p.label}</div>`;
+  }).join('');
+  document.querySelectorAll('#personaGrid .persona-opt').forEach(el=>{
+    el.onclick = ()=>{ selectedPersona = selectedPersona===el.dataset.p?null:el.dataset.p; renderPersonaGrid(); document.getElementById('personaTip').textContent = selectedPersona?personaOf(selectedPersona).tip:''; };
+  });
+}
+function openBuyerModal(c){
+  editingBuyerId = c ? c.id : null;
+  document.getElementById('buyerModalTitle').textContent = c ? 'Editar cliente' : 'Novo cliente';
+  document.getElementById('f-nome').value = c ? c.nome : '';
+  document.getElementById('f-contato').value = c ? c.contato||'' : '';
+  document.getElementById('f-op').value = c ? c.operacao : 'compra';
+  document.getElementById('f-responde').value = c ? c.responde||'' : '';
+  document.getElementById('f-orcamento').value = c ? c.orcamento||'' : '';
+  document.getElementById('f-motivo').value = c ? c.motivo||'' : '';
+  bairrosPickerHandle = initChipPicker('bairrosPicker', BAIRRO_OPTIONS, c ? c.bairros||'' : '');
+  tipoPickerHandle = initChipPicker('tipoPicker', TIPO_IMOVEL_OPTIONS, c ? c.tipo||'' : '');
+  quartosPickerHandle = initChipPicker('quartosPicker', QUARTOS_OPTIONS, c ? String(c.quartos||'') : '', false);
+  document.getElementById('f-m2').value = c ? c.m2||'' : '';
+  document.getElementById('f-vaga').value = c ? c.vaga||'' : '';
+  document.getElementById('f-precomin').value = c ? c.precomin||'' : '';
+  document.getElementById('f-precomax').value = c ? c.precomax||'' : '';
+  musthavePickerHandle = initChipPicker('musthavePicker', DIFERENCIAIS_OPTIONS, c ? c.musthave||'' : '');
+  acaoPickerBuyerHandle = initChipPicker('acaoPickerBuyer', BUYER_ACAO_OPTIONS, c ? c.proximaAcao||'' : '', false);
+  document.getElementById('f-notas').value = c ? c.notas||'' : '';
+  document.getElementById('f-data').value = c ? c.ultimoContato : new Date().toISOString().slice(0,10);
+  fillBuyerStageSelect(c ? c.stage : 'novo');
+  updatePriceLabels();
+  selectedPersona = c ? c.persona : null;
+  renderPersonaGrid();
+  document.getElementById('personaTip').textContent = selectedPersona ? personaOf(selectedPersona).tip : '';
+  document.getElementById('overlayBuyer').classList.add('open');
+}
+document.getElementById('f-op').addEventListener('change', updatePriceLabels);
+function updatePriceLabels(){
+  const isAluguel = document.getElementById('f-op').value === 'aluguel';
+  document.getElementById('lbl-precomin').textContent = isAluguel ? 'Valor mín. do pacote' : 'Valor mín.';
+  document.getElementById('lbl-precomax').textContent = isAluguel ? 'Valor máx. do pacote (aluguel+cond+IPTU)' : 'Valor máximo';
+}
+document.getElementById('openAddBuyer').onclick = ()=>openBuyerModal(null);
+document.getElementById('buyerCancelBtn').onclick = ()=>document.getElementById('overlayBuyer').classList.remove('open');
+document.getElementById('overlayBuyer').onclick = e=>{ if(e.target.id==='overlayBuyer') e.target.classList.remove('open'); };
+document.getElementById('buyerSaveBtn').onclick = async ()=>{
+  const nome = document.getElementById('f-nome').value.trim();
+  if(!nome){ alert('Digite o nome do cliente'); return; }
+  const rec = {
+    nome, operacao: document.getElementById('f-op').value,
+    contato: document.getElementById('f-contato').value.trim(),
+    responde: document.getElementById('f-responde').value,
+    orcamento: document.getElementById('f-orcamento').value,
+    motivo: document.getElementById('f-motivo').value,
+    persona: selectedPersona,
+    bairros: bairrosPickerHandle.getValue(),
+    tipo: tipoPickerHandle.getValue(),
+    quartos: quartosPickerHandle.getValue(),
+    m2: document.getElementById('f-m2').value,
+    vaga: document.getElementById('f-vaga').value,
+    precomin: document.getElementById('f-precomin').value,
+    precomax: document.getElementById('f-precomax').value,
+    musthave: musthavePickerHandle.getValue(),
+    stage: document.getElementById('f-stage').value,
+    ultimoContato: document.getElementById('f-data').value || new Date().toISOString().slice(0,10),
+    proximaAcao: acaoPickerBuyerHandle.getValue(),
+    notas: document.getElementById('f-notas').value.trim(),
+  };
+  const id = editingBuyerId || doc(buyersCol).id;
+  await setDoc(doc(db,'compradores',id), rec, {merge:true});
+  document.getElementById('overlayBuyer').classList.remove('open');
+};
+
+renderOperationBar();
+renderPriorityBar();
+renderPersonaBar();
+
+/* ---------- NOTIFICAÇÕES DE ATRASO ---------- */
+const notifBtn = document.getElementById('notifBtn');
+function updateNotifBtn(){
+  if(!('Notification' in window)){ notifBtn.textContent='Avisos indisponíveis'; notifBtn.disabled=true; return; }
+  if(Notification.permission==='granted'){ notifBtn.textContent='🔔 Avisos ativados'; }
+  else if(Notification.permission==='denied'){ notifBtn.textContent='🔕 Avisos bloqueados'; }
+  else{ notifBtn.textContent='🔔 Ativar avisos'; }
+}
+notifBtn.onclick = async ()=>{
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='default'){
+    const perm = await Notification.requestPermission();
+    updateNotifBtn();
+    checkOverdueNotifications();
+    if(perm==='granted') await registerDeviceForPush();
+  } else if(Notification.permission==='denied'){
+    alert('As notificações estão bloqueadas nas configurações do navegador/celular pra este site. Ative manualmente nas permissões do site pra receber avisos.');
+  } else if(Notification.permission==='granted'){
+    await registerDeviceForPush();
+  }
+};
+function checkOverdueNotifications(){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const today = new Date().toISOString().slice(0,10);
+  const storeKey = 'avisados-'+today;
+  let avisados = [];
+  try{ avisados = JSON.parse(localStorage.getItem(storeKey)||'[]'); }catch(e){ avisados=[]; }
+  const pendentes = [];
+  data.compradores.forEach(c=>{
+    if(daysSince(c.ultimoContato)>=OVERDUE_DAYS_BUYER && c.stage!=='fechado' && c.stage!=='perdido'){
+      pendentes.push({id:'b-'+c.id, nome:c.nome, dias:daysSince(c.ultimoContato), tipo:'comprador/locatário'});
+    }
+  });
+  data.proprietarios.forEach(o=>{
+    const th = OWNER_THRESH[o.status]||5;
+    if(daysSince(o.ultimoContato)>=th && o.stage!=='publicado' && o.stage!=='perdido'){
+      pendentes.push({id:'o-'+o.id, nome:o.nome, dias:daysSince(o.ultimoContato), tipo:'proprietário'});
+    }
+  });
+  pendentes.forEach(p=>{
+    if(!avisados.includes(p.id)){
+      try{
+        new Notification('Atendimento pendente', { body: `${p.nome} (${p.tipo}) está ${p.dias===0?'sem contato hoje':p.dias+' dias sem contato'}.`, icon: 'icon-192.png' });
+      }catch(e){}
+      avisados.push(p.id);
+    }
+  });
+  localStorage.setItem(storeKey, JSON.stringify(avisados));
+}
+updateNotifBtn();
+if('Notification' in window && Notification.permission==='granted'){ registerDeviceForPush(); }
+setInterval(checkOverdueNotifications, 30*60*1000);
+setTimeout(checkOverdueNotifications, 4000);
+
+/* ---------- IMPORTAÇÃO EM MASSA ---------- */
+const OWNER_IMPORT_COLS = ['nome','contato','imovel','status','ultimoContato','proximaAcao','notas'];
+const OWNER_IMPORT_LABELS = ['Nome','Telefone/WhatsApp','Imóvel','Status (quente/morno/frio)','Último contato (AAAA-MM-DD ou DD/MM/AAAA)','Próxima ação','Observações'];
+const BUYER_IMPORT_COLS = ['nome','contato','operacao','bairros','tipo','precomax','ultimoContato','proximaAcao','notas'];
+const BUYER_IMPORT_LABELS = ['Nome','Telefone/WhatsApp','Operação (compra/aluguel)','Bairros','Tipo de imóvel','Valor máximo','Último contato (AAAA-MM-DD ou DD/MM/AAAA)','Próxima ação','Observações'];
+
+let importType = null; // 'owner' | 'buyer'
+
+function normalizeDate(v){
+  if(!v) return new Date().toISOString().slice(0,10);
+  v = v.trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(m){
+    let [_, d, mo, y] = m;
+    if(y.length===2) y = '20'+y;
+    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  return new Date().toISOString().slice(0,10);
+}
+function splitLine(line, expectedCols){
+  const tabSplit = line.split('\t');
+  if(tabSplit.length >= expectedCols - 1) return tabSplit.map(s=>s.trim());
+  const semiSplit = line.split(';');
+  if(semiSplit.length >= expectedCols - 1) return semiSplit.map(s=>s.trim());
+  return line.split(',').map(s=>s.trim());
+}
+function looksLikeHeader(fields, labels){
+  const first = (fields[0]||'').toLowerCase();
+  return first.includes('nome');
+}
+
+function openImportModal(type){
+  importType = type;
+  const isOwner = type==='owner';
+  document.getElementById('importTitle').textContent = isOwner ? 'Importar proprietários em massa' : 'Importar leads em massa';
+  const labels = isOwner ? OWNER_IMPORT_LABELS : BUYER_IMPORT_LABELS;
+  document.getElementById('importColumnsHint').innerHTML = labels.map((l,i)=>`${i+1}. ${l}`).join('<br>');
+  document.getElementById('importText').value = '';
+  document.getElementById('importPreview').textContent = '';
+  document.getElementById('overlayImport').classList.add('open');
+}
+document.getElementById('openImportOwner').onclick = ()=>openImportModal('owner');
+document.getElementById('openImportBuyer').onclick = ()=>openImportModal('buyer');
+document.getElementById('importCancelBtn').onclick = ()=>document.getElementById('overlayImport').classList.remove('open');
+document.getElementById('overlayImport').onclick = e=>{ if(e.target.id==='overlayImport') e.target.classList.remove('open'); };
+
+document.getElementById('downloadTemplateBtn').onclick = ()=>{
+  const isOwner = importType==='owner';
+  const cols = isOwner ? OWNER_IMPORT_COLS : BUYER_IMPORT_COLS;
+  const labels = isOwner ? OWNER_IMPORT_LABELS : BUYER_IMPORT_LABELS;
+  const headerRow = labels.map(l=>l.split(' (')[0]).join(';');
+  const exampleRow = isOwner
+    ? 'Maria Silva;(11) 98888-7777;Apto 90m² Higienópolis;morno;2026-08-20;Retornar com avaliação;Prefere contato à tarde'
+    : 'João Souza;(11) 97777-6666;compra;Pinheiros, Vila Madalena;Apartamento;900000;2026-08-20;Agendar visita;Trabalha em home office';
+  const csv = '\uFEFF' + headerRow + '\n' + exampleRow + '\n';
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = isOwner ? 'modelo-proprietarios.csv' : 'modelo-leads.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById('importText').addEventListener('input', updateImportPreview);
+function updateImportPreview(){
+  const isOwner = importType==='owner';
+  const cols = isOwner ? OWNER_IMPORT_COLS : BUYER_IMPORT_COLS;
+  const raw = document.getElementById('importText').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length===0){ document.getElementById('importPreview').textContent = ''; return; }
+  let dataLines = lines;
+  const firstFields = splitLine(lines[0], cols.length);
+  if(looksLikeHeader(firstFields)) dataLines = lines.slice(1);
+  document.getElementById('importPreview').textContent = `${dataLines.length} registro(s) detectado(s).`;
+}
+
+document.getElementById('importConfirmBtn').onclick = async ()=>{
+  const isOwner = importType==='owner';
+  const cols = isOwner ? OWNER_IMPORT_COLS : BUYER_IMPORT_COLS;
+  const raw = document.getElementById('importText').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length===0){ alert('Cole ao menos uma linha pra importar.'); return; }
+  let dataLines = lines;
+  const firstFields = splitLine(lines[0], cols.length);
+  if(looksLikeHeader(firstFields)) dataLines = lines.slice(1);
+  if(dataLines.length===0){ alert('Nenhum registro encontrado, só o cabeçalho.'); return; }
+
+  const btn = document.getElementById('importConfirmBtn');
+  const oldLabel = btn.textContent;
+  btn.textContent = 'Importando...'; btn.disabled = true;
+
+  let count = 0, skipped = 0;
+  for(const line of dataLines){
+    const fields = splitLine(line, cols.length);
+    const nome = (fields[0]||'').trim();
+    if(!nome){ skipped++; continue; }
+
+    if(isOwner){
+      const rec = {
+        nome,
+        contato: (fields[1]||'').trim(),
+        imovel: (fields[2]||'').trim(),
+        status: ['quente','morno','frio'].includes((fields[3]||'').trim().toLowerCase()) ? fields[3].trim().toLowerCase() : 'morno',
+        stage: 'contato',
+        ultimoContato: normalizeDate(fields[4]),
+        proximaAcao: (fields[5]||'').trim(),
+        notas: (fields[6]||'').trim(),
+      };
+      const id = doc(ownersCol).id;
+      await setDoc(doc(db,'proprietarios',id), rec, {merge:true});
+    } else {
+      const opRaw = (fields[2]||'').trim().toLowerCase();
+      const rec = {
+        nome,
+        contato: (fields[1]||'').trim(),
+        operacao: opRaw==='aluguel' ? 'aluguel' : 'compra',
+        bairros: (fields[3]||'').trim(),
+        tipo: (fields[4]||'').trim(),
+        precomax: (fields[5]||'').trim(),
+        stage: 'novo',
+        ultimoContato: normalizeDate(fields[6]),
+        proximaAcao: (fields[7]||'').trim(),
+        notas: (fields[8]||'').trim(),
+      };
+      const id = doc(buyersCol).id;
+      await setDoc(doc(db,'compradores',id), rec, {merge:true});
+    }
+    count++;
+  }
+
+  btn.textContent = oldLabel; btn.disabled = false;
+  document.getElementById('overlayImport').classList.remove('open');
+  alert(`Importação concluída: ${count} registro(s) adicionado(s)${skipped?`, ${skipped} ignorado(s) por falta de nome`:''}.`);
+};
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>

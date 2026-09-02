@@ -103,7 +103,7 @@ p.sub{color:var(--text-dim);font-size:14px;margin:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
@@ -176,9 +176,11 @@ document.getElementById('submitBtn').onclick = async ()=>{
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'Enviando...';
 
-  const rec = {
+  const contatoDigits = contato.replace(/\D/g,'');
+  const baseRec = {
     nome,
     contato,
+    contatoDigits,
     operacao: state.operacao || 'compra',
     bairros: Array.from(state.bairros).join(', '),
     tipo: Array.from(state.tipo).join(', '),
@@ -186,16 +188,25 @@ document.getElementById('submitBtn').onclick = async ()=>{
     vaga: state.vaga || '',
     precomax: document.getElementById('precomax').value || '',
     musthave: Array.from(state.dif).join(', '),
-    stage: 'novo',
     responde: 'sim',
     ultimoContato: new Date().toISOString().slice(0,10),
-    proximaAcao: 'Enviar opções de imóveis',
-    notas: 'Preenchido pelo próprio cliente via formulário público.',
   };
 
   try{
-    const id = doc(buyersCol).id;
-    await setDoc(doc(db,'compradores',id), rec, {merge:true});
+    let existingId = null;
+    if(contatoDigits){
+      const q = query(buyersCol, where('contatoDigits','==',contatoDigits), limit(1));
+      const snap = await getDocs(q);
+      if(!snap.empty) existingId = snap.docs[0].id;
+    }
+    if(existingId){
+      // Já existe um card com esse telefone — atualiza os critérios sem sobrescrever etapa/observações que o consultor já tenha definido.
+      await setDoc(doc(db,'compradores',existingId), baseRec, {merge:true});
+    } else {
+      const rec = { ...baseRec, stage:'novo', proximaAcao:'Enviar opções de imóveis', notas:'Preenchido pelo próprio cliente via formulário público.' };
+      const id = doc(buyersCol).id;
+      await setDoc(doc(db,'compradores',id), rec, {merge:true});
+    }
     document.getElementById('formCard').classList.add('hidden');
     document.getElementById('successCard').classList.remove('hidden');
   }catch(e){

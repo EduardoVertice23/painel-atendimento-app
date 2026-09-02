@@ -808,6 +808,7 @@ document.getElementById('buyerSaveBtn').onclick = async ()=>{
   const rec = {
     nome, operacao: document.getElementById('f-op').value,
     contato: document.getElementById('f-contato').value.trim(),
+    contatoDigits: document.getElementById('f-contato').value.replace(/\D/g,''),
     linkAnuncio: document.getElementById('f-linkAnuncio').value.trim(),
     responde: document.getElementById('f-responde').value,
     orcamento: document.getElementById('f-orcamento').value,
@@ -1007,9 +1008,11 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
       await setDoc(doc(db,'proprietarios',id), rec, {merge:true});
     } else {
       const opRaw = (fields[2]||'').trim().toLowerCase();
+      const contatoVal = (fields[1]||'').trim();
       const rec = {
         nome,
-        contato: (fields[1]||'').trim(),
+        contato: contatoVal,
+        contatoDigits: contatoVal.replace(/\D/g,''),
         operacao: opRaw==='aluguel' ? 'aluguel' : 'compra',
         bairros: (fields[3]||'').trim(),
         tipo: (fields[4]||'').trim(),

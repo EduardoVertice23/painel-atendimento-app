@@ -92,6 +92,10 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:9px;cursor:grab;border-top:3px solid var(--stage-color);}
 .card:active{cursor:grabbing;}
 .card.dim{opacity:.3;}
+.card-summary{cursor:pointer;}
+.card-details{display:none;}
+.card.expanded .card-details{display:block;}
+.expand-hint{font-size:10.5px;color:var(--text-faint);text-align:center;margin-top:6px;}
 .card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;}
 .card-name{font-family:'Newsreader',serif;font-weight:600;font-size:14.5px;color:var(--ink);flex:1;line-height:1.25;}
 .op-tag{font-size:10px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.03em;}
@@ -241,6 +245,15 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     </div>
     <div class="field"><label>Telefone / WhatsApp</label><input type="text" id="f-contato" placeholder="(11) 99999-9999"></div>
     <div class="field"><label>Link do imóvel de interesse <span>(opcional, usado na 1ª mensagem)</span></label><input type="text" id="f-linkAnuncio" placeholder="Cole o link do anúncio (Kenlo, etc)"></div>
+    <div class="field">
+      <label>Opções de imóveis pra enviar <span>(vai montando uma mensagem com a lista)</span></label>
+      <div id="imoveisOpcoesList" style="margin-bottom:8px;"></div>
+      <div class="field-row">
+        <input type="text" id="novoImovelLink" placeholder="Cole o link do imóvel">
+        <input type="text" id="novoImovelNota" placeholder="Nota curta (opcional)">
+      </div>
+      <button type="button" id="addImovelOpcaoBtn" class="editbtn" style="width:100%;margin-top:6px;">+ Adicionar à lista</button>
+    </div>
     <div class="field-row">
       <div class="field"><label>Responde?</label><select id="f-responde"><option value="">Não avaliado</option><option value="sim">Sim</option><option value="nao">Não</option><option value="sumiu">Sumiu</option></select></div>
       <div class="field"><label>Orçamento compatível?</label><select id="f-orcamento"><option value="">Não avaliado</option><option value="compativel">Compatível</option><option value="incompativel">Incompatível</option><option value="nao_informado">Não informou</option></select></div>
@@ -441,6 +454,12 @@ function waLink(contato, texto){
   if(!digits) return null;
   const withCountry = digits.length<=11 ? '55'+digits : digits;
   return `https://wa.me/${withCountry}?text=${encodeURIComponent(texto||'')}`;
+}
+function suggestOptionsMessage(c){
+  const first = (c.nome||'').split(' ')[0] || 'tudo bem';
+  const opcoes = c.imoveisOpcoes||[];
+  const list = opcoes.map((o,i)=> `${i+1}. ${o.nota?o.nota+' — ':''}${o.url}`).join('\n');
+  return `Oi ${first}, tudo bem? Separei algumas opções que combinam com o que você procura:\n\n${list}\n\nMe conta o que achou! Posso agendar uma visita em qualquer uma delas.`;
 }
 function suggestBuyer(c){
   const stageDict = c.operacao==='aluguel' ? BUYER_STAGE_MSG_ALUGUEL : BUYER_STAGE_MSG_COMPRA;
@@ -670,6 +689,13 @@ function renderViewSwitcher(){
 }
 
 function bindBuyerCardEvents(){
+  document.querySelectorAll('.card-summary').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.toggle;
+      if(expandedCards.has(id)) expandedCards.delete(id); else expandedCards.add(id);
+      renderBoard();
+    };
+  });
   document.querySelectorAll('.stage-select').forEach(sel=>{ sel.onchange = ()=>moveBuyer(sel.dataset.id, sel.value); });
   document.querySelectorAll('[data-bact="edit"]').forEach(b=>{ b.onclick=()=>openBuyerModal(data.compradores.find(c=>c.id===b.dataset.id)); });
   document.querySelectorAll('[data-bact="del"]').forEach(b=>{
@@ -768,6 +794,7 @@ function renderBoardTable(){
   </div>`;
   bindBuyerCardEvents();
 }
+let expandedCards = new Set();
 function buyerCardHtml(c, stageColor){
   const persona = personaOf(c.persona);
   const pri = priorityInfo(c);
@@ -784,28 +811,39 @@ function buyerCardHtml(c, stageColor){
   const dim = (personaFilter && c.persona!==personaFilter) || (priorityFilter && pri.id!==priorityFilter) || (operationFilter && c.operacao!==operationFilter);
   const sug = suggestBuyer(c);
   const wa = waLink(c.contato, sug.ready);
-  return `<div class="card ${dim?'dim':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
-    <div class="pri-badge" style="--pri-color:${pri.color};margin-bottom:6px;"><span class="dot"></span>${pri.label}</div>
-    <div class="card-top">
-      ${persona?`<span class="mono-sm" style="background:${persona.color}" title="${persona.label}">${persona.mono}</span>`:''}
-      <span class="card-name">${escapeHtml(c.nome)}</span>
-      <span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span>
+  const opcoes = c.imoveisOpcoes||[];
+  const waOpcoes = opcoes.length ? waLink(c.contato, suggestOptionsMessage(c)) : null;
+  const expanded = expandedCards.has(c.id);
+
+  return `<div class="card ${dim?'dim':''} ${expanded?'expanded':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
+    <div class="card-summary" data-toggle="${c.id}">
+      <div class="pri-badge" style="--pri-color:${pri.color};margin-bottom:6px;"><span class="dot"></span>${pri.label}</div>
+      <div class="card-top">
+        ${persona?`<span class="mono-sm" style="background:${persona.color}" title="${persona.label}">${persona.mono}</span>`:''}
+        <span class="card-name">${escapeHtml(c.nome)}</span>
+        <span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span>
+      </div>
+      ${c.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
+      ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
-    ${c.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
-    ${bairroChips.length?`<div class="chips">${bairroChips.map(b=>`<span class="chip">${escapeHtml(b)}</span>`).join('')}</div>`:''}
-    ${c.tipo||priceRange?`<div class="price-range">${escapeHtml(c.tipo||'')}${c.tipo&&priceRange?' · ':''}${priceRange}</div>`:''}
-    ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
-    ${mustChips.length?`<div class="chips">${mustChips.map(m=>`<span class="chip">${escapeHtml(m)}</span>`).join('')}</div>`:''}
-    ${c.proximaAcao?`<div class="next-action"><b>Próxima ação:</b> ${escapeHtml(c.proximaAcao)}<span class="days-label ${overdue?'overdue':''}" style="float:right">${days===0?'hoje':days+'d'}</span></div>`:''}
-    ${c.notas?`<div class="next-action"><b>Obs.:</b> ${escapeHtml(c.notas)}</div>`:''}
-    <div class="card-foot">
-      <select class="stage-select" data-id="${c.id}">${BUYER_STAGES.map(s=>`<option value="${s.id}" ${s.id===c.stage?'selected':''}>${s.label}</option>`).join('')}</select>
-      <button class="sugbtn" data-id="${c.id}">Sugestão</button>
-      ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button type="button" class="editbtn">💬 WhatsApp</button></a>`:''}
-      <button class="editbtn" data-bact="edit" data-id="${c.id}">Editar</button>
-      <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
+    <div class="card-details">
+      ${bairroChips.length?`<div class="chips">${bairroChips.map(b=>`<span class="chip">${escapeHtml(b)}</span>`).join('')}</div>`:''}
+      ${c.tipo||priceRange?`<div class="price-range">${escapeHtml(c.tipo||'')}${c.tipo&&priceRange?' · ':''}${priceRange}</div>`:''}
+      ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
+      ${mustChips.length?`<div class="chips">${mustChips.map(m=>`<span class="chip">${escapeHtml(m)}</span>`).join('')}</div>`:''}
+      ${c.proximaAcao?`<div class="next-action"><b>Próxima ação:</b> ${escapeHtml(c.proximaAcao)}<span class="days-label ${overdue?'overdue':''}" style="float:right">${days===0?'hoje':days+'d'}</span></div>`:''}
+      ${c.notas?`<div class="next-action"><b>Obs.:</b> ${escapeHtml(c.notas)}</div>`:''}
+      ${opcoes.length?`<div class="next-action"><b>Opções enviadas:</b> ${opcoes.length}</div>`:''}
+      <div class="card-foot">
+        <select class="stage-select" data-id="${c.id}">${BUYER_STAGES.map(s=>`<option value="${s.id}" ${s.id===c.stage?'selected':''}>${s.label}</option>`).join('')}</select>
+        <button class="sugbtn" data-id="${c.id}">Sugestão</button>
+        ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button type="button" class="editbtn">💬 WhatsApp</button></a>`:''}
+        ${waOpcoes?`<a href="${waOpcoes}" target="_blank" rel="noopener" style="text-decoration:none;"><button type="button" class="editbtn">📨 Enviar opções (${opcoes.length})</button></a>`:''}
+        <button class="editbtn" data-bact="edit" data-id="${c.id}">Editar</button>
+        <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
+      </div>
+      <div class="suggestion" id="bsug-${c.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="buyer-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
     </div>
-    <div class="suggestion" id="bsug-${c.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="buyer-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
   </div>`;
 }
 async function moveBuyer(id, stage){ await setDoc(doc(db,'compradores',id), {stage}, {merge:true}); }
@@ -855,6 +893,32 @@ function initChipPicker(containerId, options, initialCsv, multi=true){
 }
 let bairrosPickerHandle=null, tipoPickerHandle=null, musthavePickerHandle=null, quartosPickerHandle=null, acaoPickerOwnerHandle=null, acaoPickerBuyerHandle=null;
 
+let imoveisOpcoesState = [];
+function renderImoveisOpcoesList(){
+  const el = document.getElementById('imoveisOpcoesList');
+  if(imoveisOpcoesState.length===0){ el.innerHTML = `<div style="font-size:12px;color:var(--text-faint);">Nenhuma opção adicionada ainda.</div>`; return; }
+  el.innerHTML = imoveisOpcoesState.map((o,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-bottom:6px;">
+      <div style="flex:1;min-width:0;">
+        ${o.nota?`<div style="font-size:12.5px;font-weight:600;color:var(--ink);">${escapeHtml(o.nota)}</div>`:''}
+        <div style="font-size:11.5px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(o.url)}</div>
+      </div>
+      <button type="button" data-i="${i}" class="removeOpcaoBtn" style="border:none;background:none;color:var(--urgent);font-size:15px;cursor:pointer;padding:0 4px;">✕</button>
+    </div>`).join('');
+  el.querySelectorAll('.removeOpcaoBtn').forEach(b=>{
+    b.onclick = ()=>{ imoveisOpcoesState.splice(Number(b.dataset.i),1); renderImoveisOpcoesList(); };
+  });
+}
+document.getElementById('addImovelOpcaoBtn').onclick = ()=>{
+  const link = document.getElementById('novoImovelLink').value.trim();
+  const nota = document.getElementById('novoImovelNota').value.trim();
+  if(!link) return;
+  imoveisOpcoesState.push({url:link, nota});
+  document.getElementById('novoImovelLink').value = '';
+  document.getElementById('novoImovelNota').value = '';
+  renderImoveisOpcoesList();
+};
+
 function renderPersonaGrid(){
   document.getElementById('personaGrid').innerHTML = PERSONAS.map(p=>{
     const sel = selectedPersona===p.id;
@@ -870,6 +934,10 @@ function openBuyerModal(c){
   document.getElementById('f-nome').value = c ? c.nome : '';
   document.getElementById('f-contato').value = c ? c.contato||'' : '';
   document.getElementById('f-linkAnuncio').value = c ? c.linkAnuncio||'' : '';
+  imoveisOpcoesState = c && Array.isArray(c.imoveisOpcoes) ? [...c.imoveisOpcoes] : [];
+  document.getElementById('novoImovelLink').value = '';
+  document.getElementById('novoImovelNota').value = '';
+  renderImoveisOpcoesList();
   document.getElementById('f-op').value = c ? c.operacao : 'compra';
   document.getElementById('f-responde').value = c ? c.responde||'' : '';
   document.getElementById('f-orcamento').value = c ? c.orcamento||'' : '';
@@ -909,6 +977,7 @@ document.getElementById('buyerSaveBtn').onclick = async ()=>{
     contato: document.getElementById('f-contato').value.trim(),
     contatoDigits: document.getElementById('f-contato').value.replace(/\D/g,''),
     linkAnuncio: document.getElementById('f-linkAnuncio').value.trim(),
+    imoveisOpcoes: imoveisOpcoesState,
     responde: document.getElementById('f-responde').value,
     orcamento: document.getElementById('f-orcamento').value,
     motivo: document.getElementById('f-motivo').value,

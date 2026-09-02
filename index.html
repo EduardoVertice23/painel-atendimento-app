@@ -383,13 +383,22 @@ const METHOD_LINE = {
   D:'Comunicar uma janela de oportunidade — ex: aumento de procura no bairro este mês.',
   E:'Perguntar se pode enviar uma avaliação de valor, sem compromisso.',
 };
-const BUYER_STAGE_MSG = {
-  novo:'Enviar mensagem de boas-vindas e perguntar critérios de busca.',
-  qualificando:'Confirmar orçamento e o motivo real da busca.',
+const BUYER_STAGE_MSG_COMPRA = {
+  novo:'Enviar mensagem de boas-vindas e perguntar critérios de busca (bairro, tipo, faixa de preço).',
+  qualificando:'Confirmar orçamento disponível (à vista/financiado) e o motivo real da busca.',
   visitando:'Agendar visita e confirmar horário com antecedência.',
-  proposta:'Enviar a proposta formal com prazo claro de resposta.',
+  proposta:'Enviar a proposta formal de compra com prazo claro de resposta.',
   negociacao:'Retomar com uma nova oferta ou contraproposta objetiva.',
-  fechado:'Parabenizar e iniciar o encaminhamento da documentação.',
+  fechado:'Parabenizar e iniciar o encaminhamento da documentação e financiamento/escritura.',
+  perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
+};
+const BUYER_STAGE_MSG_ALUGUEL = {
+  novo:'Enviar mensagem de boas-vindas e perguntar critérios de busca (bairro, valor do pacote, urgência da mudança).',
+  qualificando:'Confirmar renda/comprovação exigida e se tem fiador ou vai usar seguro-fiança.',
+  visitando:'Agendar visita e confirmar horário com antecedência.',
+  proposta:'Enviar a proposta de locação com valores (aluguel+condomínio+IPTU) e prazo claro de resposta.',
+  negociacao:'Retomar negociação de valor do aluguel ou condições (caução, fiador, seguro-fiança).',
+  fechado:'Parabenizar e iniciar o processo de análise cadastral e assinatura do contrato de locação.',
   perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
 };
 
@@ -427,13 +436,15 @@ function waLink(contato, texto){
   return `https://wa.me/${withCountry}?text=${encodeURIComponent(texto||'')}`;
 }
 function suggestBuyer(c){
-  const stageMsg = BUYER_STAGE_MSG[c.stage] || '';
+  const stageDict = c.operacao==='aluguel' ? BUYER_STAGE_MSG_ALUGUEL : BUYER_STAGE_MSG_COMPRA;
+  const stageMsg = stageDict[c.stage] || '';
   const pri = priorityInfo(c);
   let extra = pri.id==='descartar' ? ' Antes de desistir, vale uma mensagem curta de reengajamento com senso de urgência.' : '';
   const personaTip = c.persona && personaOf(c.persona) ? ' '+personaOf(c.persona).tip : '';
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const bairro = chipsFrom(c.bairros)[0];
-  const ready = `Oi ${first}! Passando aqui pra seguir com sua busca${bairro?' em '+bairro:''}. ${stageMsg}`;
+  const buscaTexto = c.operacao==='aluguel' ? 'sua busca por locação' : 'sua busca pelo imóvel';
+  const ready = `Oi ${first}! Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
   return { tip: (stageMsg+personaTip+extra).trim(), ready };
 }
 function suggestOwner(o){

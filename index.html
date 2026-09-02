@@ -449,7 +449,8 @@ function suggestBuyer(c){
   let ready;
   if(c.stage==='novo'){
     const linkTxt = c.linkAnuncio ? c.linkAnuncio : '[cole aqui o link do imóvel]';
-    ready = `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Poderia me passar seus critérios de busca? Assim já posso te mandar outras opções também.`;
+    const formLink = window.location.origin + '/formulario-lead.html';
+    ready = `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Pra eu já te adiantar outras opções parecidas, me conta rapidinho o que você procura aqui (leva 1 minutinho): ${formLink}`;
   } else {
     ready = `Oi ${first}, tudo bem? Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
   }

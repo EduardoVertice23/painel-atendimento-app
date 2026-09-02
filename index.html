@@ -194,7 +194,8 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="view" id="view-buyers">
-  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="addbtn" id="copyFormLinkBtn" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔗 Copiar link do formulário</button>
     <button class="addbtn" id="openImportBuyer" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddBuyer">+ Novo cliente</button>
   </div>
@@ -237,6 +238,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
       <div class="field"><label>Operação</label><select id="f-op"><option value="compra">Compra</option><option value="aluguel">Aluguel</option></select></div>
     </div>
     <div class="field"><label>Telefone / WhatsApp</label><input type="text" id="f-contato" placeholder="(11) 99999-9999"></div>
+    <div class="field"><label>Link do imóvel de interesse <span>(opcional, usado na 1ª mensagem)</span></label><input type="text" id="f-linkAnuncio" placeholder="Cole o link do anúncio (Kenlo, etc)"></div>
     <div class="field-row">
       <div class="field"><label>Responde?</label><select id="f-responde"><option value="">Não avaliado</option><option value="sim">Sim</option><option value="nao">Não</option><option value="sumiu">Sumiu</option></select></div>
       <div class="field"><label>Orçamento compatível?</label><select id="f-orcamento"><option value="">Não avaliado</option><option value="compativel">Compatível</option><option value="incompativel">Incompatível</option><option value="nao_informado">Não informou</option></select></div>
@@ -444,15 +446,20 @@ function suggestBuyer(c){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const bairro = chipsFrom(c.bairros)[0];
   const buscaTexto = c.operacao==='aluguel' ? 'sua busca por locação' : 'sua busca pelo imóvel';
-  const intro = c.stage==='novo' ? 'Sou o Paulo, consultor da Baru Imóveis. ' : '';
-  const ready = `Oi ${first}! ${intro}Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
+  let ready;
+  if(c.stage==='novo'){
+    const linkTxt = c.linkAnuncio ? c.linkAnuncio : '[cole aqui o link do imóvel]';
+    ready = `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Poderia me passar seus critérios de busca? Assim já posso te mandar outras opções também.`;
+  } else {
+    ready = `Oi ${first}, tudo bem? Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
+  }
   return { tip: (stageMsg+personaTip+extra).trim(), ready };
 }
 function suggestOwner(o){
   const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
   const first = (o.nome||'').split(' ')[0] || 'tudo bem';
   const intro = o.stage==='contato' ? 'Sou o Paulo, consultor da Baru Imóveis. ' : '';
-  const ready = `Oi ${first}! ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}`;
+  const ready = `Oi ${first}, tudo bem? ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}`;
   return { tip: line, ready };
 }
 async function copyText(text, btn){
@@ -762,6 +769,7 @@ function openBuyerModal(c){
   document.getElementById('buyerModalTitle').textContent = c ? 'Editar cliente' : 'Novo cliente';
   document.getElementById('f-nome').value = c ? c.nome : '';
   document.getElementById('f-contato').value = c ? c.contato||'' : '';
+  document.getElementById('f-linkAnuncio').value = c ? c.linkAnuncio||'' : '';
   document.getElementById('f-op').value = c ? c.operacao : 'compra';
   document.getElementById('f-responde').value = c ? c.responde||'' : '';
   document.getElementById('f-orcamento').value = c ? c.orcamento||'' : '';
@@ -799,6 +807,7 @@ document.getElementById('buyerSaveBtn').onclick = async ()=>{
   const rec = {
     nome, operacao: document.getElementById('f-op').value,
     contato: document.getElementById('f-contato').value.trim(),
+    linkAnuncio: document.getElementById('f-linkAnuncio').value.trim(),
     responde: document.getElementById('f-responde').value,
     orcamento: document.getElementById('f-orcamento').value,
     motivo: document.getElementById('f-motivo').value,
@@ -921,6 +930,10 @@ function openImportModal(type){
   document.getElementById('importPreview').textContent = '';
   document.getElementById('overlayImport').classList.add('open');
 }
+document.getElementById('copyFormLinkBtn').onclick = ()=>{
+  const link = window.location.origin + '/formulario-lead.html';
+  copyText(link, document.getElementById('copyFormLinkBtn'));
+};
 document.getElementById('openImportOwner').onclick = ()=>openImportModal('owner');
 document.getElementById('openImportBuyer').onclick = ()=>openImportModal('buyer');
 document.getElementById('importCancelBtn').onclick = ()=>document.getElementById('overlayImport').classList.remove('open');

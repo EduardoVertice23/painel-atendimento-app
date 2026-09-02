@@ -638,7 +638,7 @@ function renderPriorityBar(){
     const active = priorityFilter===g.id;
     return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${g.color}" data-g="${g.id}"><span class="dot"></span>${g.label}</div>`;
   }).join('');
-  document.querySelectorAll('.pri-chip').forEach(el=>{ el.onclick = ()=>{ priorityFilter = priorityFilter===el.dataset.g?null:el.dataset.g; renderPriorityBar(); renderBoard(); }; });
+  document.querySelectorAll('#prioritybar .pri-chip').forEach(el=>{ el.onclick = ()=>{ priorityFilter = priorityFilter===el.dataset.g?null:el.dataset.g; renderPriorityBar(); renderBoard(); }; });
 }
 function renderPersonaBar(){
   document.getElementById('personabar').innerHTML = PERSONAS.map(p=>{

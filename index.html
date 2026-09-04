@@ -619,6 +619,7 @@ function renderOwners(){
   });
   document.querySelectorAll('.owner-sug-btn').forEach(b=>{ b.onclick = ()=>document.getElementById('osug-'+b.dataset.id).classList.toggle('open'); });
   document.querySelectorAll('.owner-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
+  bindMsgPanels();
 }
 function ownerCardHtml(o){
   const days = daysSince(o.ultimoContato);
@@ -643,6 +644,7 @@ function ownerCardHtml(o){
       <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
     </div>
     <div class="suggestion" id="osug-${o.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="owner-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
+    <div id="msgpanel-owner-${o.id}">${buildMsgPanelHtml('owner', o)}</div>
   </div>`;
 }
 async function ownerAction(act, id){
@@ -733,6 +735,7 @@ function renderViewSwitcher(){
 }
 
 function bindBuyerCardEvents(){
+  bindMsgPanels();
   document.querySelectorAll('.card-summary').forEach(el=>{
     el.onclick = ()=>{
       const id = el.dataset.toggle;
@@ -839,7 +842,143 @@ function renderBoardTable(){
   </div>`;
   bindBuyerCardEvents();
 }
+const MSG_TONES = [ {id:'gentil', label:'Gentil'}, {id:'direta', label:'Direta'}, {id:'urgencia', label:'Urgência'} ];
+
+const BUYER_MSG_TYPES = [
+  {id:'primeiro', label:'Primeiro contato'},
+  {id:'retorno', label:'Cobrar retorno'},
+  {id:'visita', label:'Confirmar visita'},
+  {id:'posvisita', label:'Pós-visita'},
+  {id:'proposta', label:'Proposta'},
+  {id:'reengajar', label:'Reengajar'},
+];
+function buildBuyerMessage(c, typeId, toneId){
+  const first = (c.nome||'').split(' ')[0] || 'tudo bem';
+  const bairro = chipsFrom(c.bairros)[0];
+  const linkTxt = c.linkAnuncio ? c.linkAnuncio : '[cole aqui o link do imóvel]';
+  const formLink = window.location.origin + '/formulario-lead.html';
+  const T = {
+    primeiro: {
+      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Pra eu já te adiantar outras opções parecidas, me conta rapidinho o que você procura aqui (leva 1 minutinho): ${formLink}`,
+      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Vi seu interesse no imóvel abaixo:\n${linkTxt}\nVou checar a disponibilidade. Preenche seus critérios aqui pra eu já te mandar mais opções: ${formLink}`,
+      urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Esse imóvel está com bastante procura:\n${linkTxt}\nPra eu te trazer opções rápido (inclusive de reserva, se precisar), preenche seus critérios aqui: ${formLink}`,
+    },
+    retorno: {
+      gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu seguir te ajudando na busca${bairro?' em '+bairro:''} — sem pressa nenhuma, só quero saber se sigo por aqui.`,
+      direta: `Oi ${first}, tudo bem? Ainda está buscando imóvel${bairro?' em '+bairro:''}? Fico no aguardo do seu retorno.`,
+      urgencia: `Oi ${first}! Surgiram novas opções que combinam com o que você procura${bairro?' em '+bairro:''}, mas preciso saber se ainda está buscando pra eu te passar antes que fechem.`,
+    },
+    visita: {
+      gentil: `Oi ${first}, tudo bem? Vamos marcar aquela visita quando for melhor pra você? Fico à disposição pros horários.`,
+      direta: `Oi ${first}! Podemos agendar a visita? Me fala um dia e horário que funciona.`,
+      urgencia: `Oi ${first}! Esse imóvel tem tido bastante procura — se quiser garantir um horário de visita, me avisa logo qual dia funciona pra você.`,
+    },
+    posvisita: {
+      gentil: `Oi ${first}, tudo bem? Queria saber com calma o que você achou da visita — gostou de algo em especial, ou teve algum ponto que pesou contra?`,
+      direta: `Oi ${first}! O que achou do imóvel? Quer seguir com alguma proposta?`,
+      urgencia: `Oi ${first}! Outros interessados também gostaram desse imóvel — se fizer sentido pra você, o ideal é avançarmos logo com uma proposta.`,
+    },
+    proposta: {
+      gentil: `Oi ${first}, tudo bem? Preparei a proposta com cuidado pra encaixar no que você me contou. Posso te enviar os detalhes agora?`,
+      direta: `Oi ${first}! Segue a proposta pra esse imóvel. Aguardo seu retorno.`,
+      urgencia: `Oi ${first}! Segue a proposta. Como tem outros interessados, seria bom uma resposta o quanto antes pra garantirmos as condições.`,
+    },
+    reengajar: {
+      gentil: `Oi ${first}, tudo bem? Sumimos um pouco no papo :) Só queria saber se ainda faz sentido eu te ajudar, sem compromisso nenhum.`,
+      direta: `Oi ${first}, tudo bem? Faz um tempo que não conversamos — ainda tem interesse em encontrar um imóvel?`,
+      urgencia: `Oi ${first}! Antes de encerrar por aqui, queria confirmar: ainda tem interesse? Tenho opções novas que podem combinar com você.`,
+    },
+  };
+  return T[typeId][toneId];
+}
+
+const OWNER_MSG_TYPES = [
+  {id:'primeiro', label:'Primeiro contato'},
+  {id:'retorno', label:'Cobrar retorno'},
+  {id:'reforcar', label:'Reforçar captação'},
+  {id:'pospublicacao', label:'Pós-publicação'},
+  {id:'reengajar', label:'Reengajar'},
+];
+function buildOwnerMessage(o, typeId, toneId){
+  const first = (o.nome||'').split(' ')[0] || 'tudo bem';
+  const imv = o.imovel ? ` (${o.imovel})` : '';
+  const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
+  const T = {
+    primeiro: {
+      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Passando aqui sobre o imóvel${imv}. ${line}`,
+      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line}`,
+      urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line} A procura na região está aquecida agora, vale a pena conversarmos logo.`,
+    },
+    retorno: {
+      gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu te ajudar com o imóvel${imv} — sem pressa, só quero saber se sigo por aqui.`,
+      direta: `Oi ${first}, tudo bem? Ainda tem interesse em avançar com o imóvel${imv}? Fico no aguardo do seu retorno.`,
+      urgencia: `Oi ${first}! Tenho interessados perguntando sobre imóveis parecidos com o seu${imv} — preciso saber se ainda podemos seguir, pra eu não perder essa janela.`,
+    },
+    reforcar: {
+      gentil: `Oi ${first}, tudo bem? Queria retomar a conversa sobre o imóvel${imv} com calma — posso te mostrar como tem sido a procura na região ultimamente?`,
+      direta: `Oi ${first}! Sobre o imóvel${imv}: posso te enviar uma avaliação atualizada de valor, sem compromisso?`,
+      urgencia: `Oi ${first}! A procura por imóveis como o seu${imv} está bem aquecida esse mês — vale a pena avançarmos logo com a captação.`,
+    },
+    pospublicacao: {
+      gentil: `Oi ${first}, tudo bem? Só passando pra te atualizar sobre o andamento do seu imóvel${imv} publicado — posso te contar como está o retorno até agora.`,
+      direta: `Oi ${first}! Atualização sobre o imóvel${imv}: posso te passar o retorno de visitas/interesse até aqui.`,
+      urgencia: `Oi ${first}! Tivemos bom interesse no imóvel${imv}, mas pode valer ajustar algo (valor ou condição) pra acelerar o fechamento. Podemos conversar?`,
+    },
+    reengajar: {
+      gentil: `Oi ${first}, tudo bem? Sumimos um pouco no papo sobre o imóvel${imv} :) Só queria saber se ainda faz sentido eu te ajudar.`,
+      direta: `Oi ${first}, tudo bem? Faz um tempo que não conversamos sobre o imóvel${imv} — ainda tem interesse em avançar?`,
+      urgencia: `Oi ${first}! Antes de encerrar por aqui, queria confirmar: ainda tem interesse em captar o imóvel${imv}? Tenho interessados esperando opções assim.`,
+    },
+  };
+  return T[typeId][toneId];
+}
+let msgPickerState = new Map();
+function msgKey(kind,id){ return kind+':'+id; }
+function getMsgState(kind, id, defaultType){
+  const k = msgKey(kind,id);
+  if(!msgPickerState.has(k)) msgPickerState.set(k, {type:defaultType, tone:'gentil'});
+  return msgPickerState.get(k);
+}
+
 let expandedCards = new Set();
+function buildMsgPanelHtml(kind, item){
+  const isBuyer = kind==='buyer';
+  const defaultType = isBuyer ? (item.stage==='novo'?'primeiro':'retorno') : (item.stage==='contato'?'primeiro':'retorno');
+  const state = getMsgState(kind, item.id, defaultType);
+  const types = isBuyer ? BUYER_MSG_TYPES : OWNER_MSG_TYPES;
+  const text = isBuyer ? buildBuyerMessage(item, state.type, state.tone) : buildOwnerMessage(item, state.type, state.tone);
+  const wa = waLink(item.contato, text);
+  return `<div class="field" style="margin-top:10px;margin-bottom:0;">
+    <label>Mensagem por situação</label>
+    <div class="chips msgtype-chips" data-kind="${kind}" data-id="${item.id}">
+      ${types.map(t=>`<span class="chip msgtype-chip ${state.type===t.id?'sel-chip':''}" data-t="${t.id}" style="cursor:pointer;${state.type===t.id?'background:var(--primary);color:#fff;border-color:var(--primary);':''}">${t.label}</span>`).join('')}
+    </div>
+    <div class="chips msgtone-chips" data-kind="${kind}" data-id="${item.id}" style="margin-top:5px;">
+      ${MSG_TONES.map(t=>`<span class="chip msgtone-chip ${state.tone===t.id?'sel-chip':''}" data-t="${t.id}" style="cursor:pointer;${state.tone===t.id?'background:var(--ink);color:#fff;border-color:var(--ink);':''}">${t.label}</span>`).join('')}
+    </div>
+    <div class="suggestion open" style="margin-top:8px;">${escapeHtml(text)}
+      <div class="copyln" style="justify-content:space-between;">
+        ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button type="button">💬 Enviar</button></a>`:'<span></span>'}
+        <button class="msg-copy-btn" data-text="${escapeHtml(text)}">Copiar</button>
+      </div>
+    </div>
+  </div>`;
+}
+function bindMsgPanels(){
+  document.querySelectorAll('.msgtype-chip, .msgtone-chip').forEach(el=>{
+    el.onclick = ()=>{
+      const parent = el.closest('[data-kind]');
+      const kind = parent.dataset.kind, id = parent.dataset.id;
+      const state = getMsgState(kind, id, 'retorno');
+      if(el.classList.contains('msgtype-chip')) state.type = el.dataset.t; else state.tone = el.dataset.t;
+      const item = kind==='buyer' ? data.compradores.find(x=>x.id===id) : data.proprietarios.find(x=>x.id===id);
+      const panel = document.getElementById(`msgpanel-${kind}-${id}`);
+      if(panel && item){ panel.innerHTML = buildMsgPanelHtml(kind, item); bindMsgPanels(); }
+    };
+  });
+  document.querySelectorAll('.msg-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
+}
+
 function buyerCardHtml(c, stageColor){
   const persona = personaOf(c.persona);
   const pri = priorityInfo(c);
@@ -890,6 +1029,7 @@ function buyerCardHtml(c, stageColor){
         <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
       </div>
       <div class="suggestion" id="bsug-${c.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="buyer-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
+      <div id="msgpanel-buyer-${c.id}">${buildMsgPanelHtml('buyer', c)}</div>
     </div>
   </div>`;
 }

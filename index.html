@@ -527,7 +527,8 @@ function suggestOwner(o){
   const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
   const first = (o.nome||'').split(' ')[0] || 'tudo bem';
   const intro = o.stage==='contato' ? 'Sou o Paulo, consultor da Baru Imóveis. ' : '';
-  const ready = `Oi ${first}, tudo bem? ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}`;
+  const disponibilidade = o.stage==='contato' ? ' O imóvel ainda está disponível?' : '';
+  const ready = `Oi ${first}, tudo bem? ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}${disponibilidade}`;
   return { tip: line, ready };
 }
 async function copyText(text, btn){
@@ -909,9 +910,9 @@ function buildOwnerMessage(o, typeId, toneId){
   const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
   const T = {
     primeiro: {
-      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Passando aqui sobre o imóvel${imv}. ${line}`,
-      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line}`,
-      urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line} A procura na região está aquecida agora, vale a pena conversarmos logo.`,
+      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Passando aqui sobre o imóvel${imv}. ${line} Ele ainda está disponível?`,
+      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line} Ainda está disponível?`,
+      urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line} Ainda está disponível? A procura na região está aquecida agora, vale a pena conversarmos logo.`,
     },
     retorno: {
       gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu te ajudar com o imóvel${imv} — sem pressa, só quero saber se sigo por aqui.`,

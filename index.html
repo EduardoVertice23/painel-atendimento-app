@@ -148,6 +148,9 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .persona-grid{display:flex;flex-wrap:wrap;gap:7px;}
 .persona-opt{display:flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;border:1.5px solid var(--line);border-radius:20px;cursor:pointer;font-size:12px;color:var(--text-dim);background:#fff;}
 .persona-opt.sel{border-color:var(--p-color);background:color-mix(in srgb, var(--p-color) 12%, white);color:var(--ink);font-weight:600;}
+.chip-group-static{display:flex;gap:8px;}
+.im-finalidade-chip{cursor:pointer;padding:8px 16px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--text-dim);font-size:13px;}
+.im-finalidade-chip.sel{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:600;}
 .persona-tip{font-size:11.5px;color:var(--text-faint);margin-top:6px;font-style:italic;min-height:16px;}
 .modal-actions{display:flex;gap:10px;margin-top:16px;}
 .modal-actions button{flex:1;padding:12px;border-radius:10px;font-family:inherit;font-weight:600;font-size:14px;border:none;cursor:pointer;}
@@ -312,27 +315,92 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="overlay" id="overlayImovel">
-  <div class="modal">
+  <div class="modal" style="max-width:560px;">
     <h2 id="imovelModalTitle">Novo imóvel</h2>
-    <div class="field"><label>Proprietário</label><select id="im-proprietario"></select></div>
-    <div class="field"><label>Endereço / referência</label><input type="text" id="im-endereco" placeholder="Ex: Rua Consolação, 123 - Apto 45"></div>
+
+    <div style="font-weight:700;color:var(--ink);margin-bottom:8px;">Identificação</div>
     <div class="field-row">
-      <div class="field"><label>Bairro</label><div class="persona-grid" id="imBairroPicker"></div></div>
+      <div class="field"><label>Código</label><input type="text" id="im-codigo" placeholder="Ex: AP12345"></div>
+      <div class="field"><label>Nome do edifício/condomínio</label><input type="text" id="im-edificio" placeholder="Opcional"></div>
     </div>
+    <div class="field-row">
+      <div class="field" style="flex:2;"><label>Rua</label><input type="text" id="im-rua" placeholder="Rua/Av."></div>
+      <div class="field"><label>Número</label><input type="text" id="im-numero" placeholder="Nº"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Complemento</label><input type="text" id="im-complemento" placeholder="Apto, bloco..."></div>
+      <div class="field"><label>Ponto de referência</label><input type="text" id="im-referencia" placeholder="Opcional"></div>
+    </div>
+    <div class="field"><label>Bairro</label><div class="persona-grid" id="imBairroPicker"></div></div>
+
+    <div style="font-weight:700;color:var(--ink);margin:16px 0 8px;">Contato</div>
+    <div class="field"><label>Proprietário (do cadastro)</label><select id="im-proprietario"></select></div>
+    <div class="field-row">
+      <div class="field"><label>Responsável, se diferente <span>(corretor parceiro etc)</span></label><input type="text" id="im-resp-nome" placeholder="Opcional"></div>
+      <div class="field"><label>Telefone do responsável</label><input type="text" id="im-resp-tel" placeholder="Opcional"></div>
+    </div>
+
+    <div style="font-weight:700;color:var(--ink);margin:16px 0 8px;">Características</div>
     <div class="field"><label>Tipo de imóvel</label><div class="persona-grid" id="imTipoPicker"></div></div>
     <div class="field-row">
-      <div class="field"><label>Operação</label><select id="im-operacao"><option value="compra">Venda</option><option value="aluguel">Locação</option></select></div>
-      <div class="field"><label id="im-lbl-valor">Valor</label><input type="number" id="im-valor" placeholder="R$"></div>
+      <div class="field"><label>Área útil (m²)</label><input type="number" id="im-m2" placeholder="m²"></div>
+      <div class="field"><label>Área bruta/construída <span>(se diferente)</span></label><input type="number" id="im-areabruta" placeholder="m²"></div>
+    </div>
+    <div class="field"><label>Dormitórios</label><div class="persona-grid" id="imQuartosPicker"></div></div>
+    <div class="field-row">
+      <div class="field"><label>Suítes</label><input type="number" id="im-suites" min="0"></div>
+      <div class="field"><label>Banheiros</label><input type="number" id="im-banheiros" min="0"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Metros quadrados</label><input type="number" id="im-m2" placeholder="m²"></div>
-      <div class="field"><label>Dormitórios</label><div class="persona-grid" id="imQuartosPicker"></div></div>
+      <div class="field"><label>Vagas</label><input type="number" id="im-vagas-qtd" min="0"></div>
+      <div class="field"><label>Tipo de vaga</label>
+        <select id="im-vaga-tipo"><option value="">Não informado</option><option value="coberta">Coberta</option><option value="descoberta">Descoberta</option><option value="demarcada">Demarcada</option><option value="nao_demarcada">Não demarcada</option></select>
+      </div>
     </div>
-    <div class="field"><label>Vaga de garagem</label>
-      <select id="im-vaga"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select>
+    <div class="field-row">
+      <div class="field"><label>Andar</label><input type="number" id="im-andar"></div>
+      <div class="field"><label>Total de andares do prédio</label><input type="number" id="im-totalandares"></div>
     </div>
+    <div class="field"><label>Elevador</label>
+      <select id="im-elevador"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select>
+    </div>
+
+    <div style="font-weight:700;color:var(--ink);margin:16px 0 8px;">Financeiro</div>
+    <div class="field"><label>Finalidade <span>(pode marcar as duas)</span></label>
+      <div class="chip-group-static">
+        <span class="chip im-finalidade-chip" data-v="compra">Venda</span>
+        <span class="chip im-finalidade-chip" data-v="aluguel">Locação</span>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Valor de venda</label><input type="number" id="im-valor-venda" placeholder="R$"></div>
+      <div class="field"><label>Valor de locação</label><input type="number" id="im-valor-locacao" placeholder="R$"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Condomínio</label><input type="number" id="im-condominio" placeholder="R$"></div>
+      <div class="field"><label>IPTU</label><input type="number" id="im-iptu" placeholder="R$"></div>
+    </div>
+    <div class="field"><label>IPTU é</label>
+      <select id="im-iptu-periodo"><option value="mensal">Mensal</option><option value="anual">Anual</option></select>
+    </div>
+
+    <div style="font-weight:700;color:var(--ink);margin:16px 0 8px;">Condições</div>
+    <div class="field-row">
+      <div class="field"><label>Aceita financiamento</label>
+        <select id="im-financiamento"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select>
+      </div>
+      <div class="field"><label>Exclusividade</label>
+        <select id="im-exclusividade"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Local das chaves</label>
+      <select id="im-chaves"><option value="">Não informado</option><option value="proprietario">Proprietário</option><option value="portaria">Portaria</option><option value="imobiliaria">Imobiliária</option><option value="zelador">Zelador</option></select>
+    </div>
+
+    <div style="font-weight:700;color:var(--ink);margin:16px 0 8px;">Outros</div>
     <div class="field"><label>Link do anúncio</label><input type="text" id="im-link" placeholder="Cole o link (Kenlo, etc)"></div>
     <div class="field"><label>Observações</label><textarea id="im-notas"></textarea></div>
+
     <div class="modal-actions">
       <button class="cancel" id="imovelCancelBtn">Cancelar</button>
       <button class="save" id="imovelSaveBtn">Salvar</button>
@@ -1299,20 +1367,36 @@ document.getElementById('overlayOverdue').onclick = e=>{ if(e.target.id==='overl
 let imovelStatusFilter = 'disponivel';
 let editingImovelId = null;
 let imBairroPickerHandle=null, imTipoPickerHandle=null, imQuartosPickerHandle=null;
+let imFinalidadeState = new Set();
 
 function daysBetween(a, b){
   const d1 = new Date(a+'T00:00:00'), d2 = new Date(b+'T00:00:00');
   return Math.round((d2-d1)/86400000);
 }
+function imovelCadencia(im){
+  const fin = im.finalidade||[];
+  return fin.includes('aluguel') ? RECHECK_DAYS.aluguel : RECHECK_DAYS.compra;
+}
 function needsRecheck(im){
   if(im.status!=='disponivel') return false;
-  const cadencia = RECHECK_DAYS[im.operacao] || 30;
-  return daysSince(im.ultimaConfirmacao||im.dataConfirmadoDisponivel) >= cadencia;
+  return daysSince(im.ultimaConfirmacao||im.dataConfirmadoDisponivel) >= imovelCadencia(im);
+}
+function imovelContato(im){
+  const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
+  if(im.respNome || im.respTel) return { nome: im.respNome || (prop?prop.nome:''), tel: im.respTel || (prop?prop.contato:'') };
+  return { nome: prop?prop.nome:'', tel: prop?prop.contato:'' };
+}
+function finalidadeLabel(im){
+  const fin = im.finalidade||[];
+  if(fin.includes('compra') && fin.includes('aluguel')) return 'venda e locação';
+  if(fin.includes('aluguel')) return 'locação';
+  return 'venda';
 }
 function suggestRecheckMessage(im){
-  const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
-  const first = prop ? (prop.nome||'').split(' ')[0] : 'tudo bem';
-  return `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Só confirmando: o imóvel${im.endereco?' ('+im.endereco+')':''} continua disponível pra ${im.operacao==='aluguel'?'locação':'venda'}?`;
+  const c = imovelContato(im);
+  const first = (c.nome||'').split(' ')[0] || 'tudo bem';
+  const endTxt = im.rua ? `${im.rua}${im.numero?', '+im.numero:''}` : (im.codigo||'');
+  return `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Só confirmando: o imóvel${endTxt?' ('+endTxt+')':''} continua disponível pra ${finalidadeLabel(im)}?`;
 }
 
 function renderImovelStatusBar(){
@@ -1337,7 +1421,7 @@ function renderImoveis(){
   list.innerHTML = items.map(im=>imovelCardHtml(im)).join('');
   document.querySelectorAll('[data-iact="edit"]').forEach(b=>{ b.onclick=()=>openImovelModal(data.imoveis.find(x=>x.id===b.dataset.id)); });
   document.querySelectorAll('[data-iact="del"]').forEach(b=>{
-    b.onclick = async ()=>{ const im=data.imoveis.find(x=>x.id===b.dataset.id); if(confirm(`Remover o cadastro de "${im.endereco||'imóvel'}"?`)){ await deleteDoc(doc(db,'imoveis',im.id)); } };
+    b.onclick = async ()=>{ const im=data.imoveis.find(x=>x.id===b.dataset.id); if(confirm(`Remover o cadastro de "${im.codigo||im.rua||'imóvel'}"?`)){ await deleteDoc(doc(db,'imoveis',im.id)); } };
   });
   document.querySelectorAll('[data-iact="indisponivel"]').forEach(b=>{
     b.onclick = async ()=>{
@@ -1362,21 +1446,34 @@ function renderImoveis(){
 
 function imovelCardHtml(im){
   const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
+  const contato = imovelContato(im);
   const recheck = needsRecheck(im);
-  const dias = im.status==='disponivel'
-    ? daysSince(im.dataConfirmadoDisponivel)
-    : im.diasNoMercado;
-  const waConfirmar = prop ? waLink(prop.contato, suggestRecheckMessage(im)) : null;
+  const dias = im.status==='disponivel' ? daysSince(im.dataConfirmadoDisponivel) : im.diasNoMercado;
+  const waConfirmar = contato.tel ? waLink(contato.tel, suggestRecheckMessage(im)) : null;
+  const fin = im.finalidade||[];
+  const endereco = im.rua ? `${im.rua}${im.numero?', '+im.numero:''}${im.complemento?' - '+im.complemento:''}` : (im.codigo || 'Imóvel sem endereço');
+  const specChips = [];
+  if(im.m2) specChips.push(im.m2+'m² útil');
+  if(im.areabruta) specChips.push(im.areabruta+'m² bruta');
+  if(im.quartos) specChips.push(im.quartos+' dorm.');
+  if(im.suites) specChips.push(im.suites+' suíte(s)');
+  if(im.banheiros) specChips.push(im.banheiros+' banh.');
+  if(im.vagasQtd) specChips.push(im.vagasQtd+' vaga(s)'+(im.vagaTipo?' ('+im.vagaTipo+')':''));
+  if(im.andar) specChips.push(im.andar+'º andar'+(im.totalandares?'/'+im.totalandares:''));
+  const pacoteLocacao = fin.includes('aluguel') ? (Number(im.valorLocacao||0)+Number(im.condominio||0)+(im.iptuPeriodo==='mensal'?Number(im.iptu||0):Number(im.iptu||0)/12)) : null;
   return `<div class="owner-card" style="--status-color:${recheck?'#E1653D':(im.status==='disponivel'?'#2F8F6E':'#A7B2AB')}">
     <div class="owner-top">
       <div>
-        <div class="owner-name">${escapeHtml(im.endereco||'Imóvel sem endereço')}</div>
+        <div class="owner-name">${im.codigo?`<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);">${escapeHtml(im.codigo)}</span> `:''}${escapeHtml(endereco)}</div>
+        ${im.edificio?`<div class="owner-imovel">🏢 ${escapeHtml(im.edificio)}</div>`:''}
         <div class="owner-imovel">${escapeHtml(chipsFrom(im.bairro).join(', '))}${im.tipo?' · '+escapeHtml(chipsFrom(im.tipo).join(', ')):''}</div>
-        ${prop?`<div class="owner-imovel">👤 ${escapeHtml(prop.nome)}</div>`:''}
+        ${contato.nome?`<div class="owner-imovel">👤 ${escapeHtml(contato.nome)}${im.respNome?' (responsável)':''}</div>`:''}
       </div>
-      <span class="status-pill" style="background:${im.operacao==='aluguel'?'#2F8F6E':'#3E7C93'};">${im.operacao==='aluguel'?'Locação':'Venda'}</span>
+      <span class="status-pill" style="background:${fin.includes('aluguel')&&fin.includes('compra')?'#8A6D3B':(fin.includes('aluguel')?'#2F8F6E':'#3E7C93')};">${finalidadeLabel(im)}</span>
     </div>
-    ${im.valor?`<div class="price-range">${money(im.valor)}${im.m2?' · '+im.m2+'m²':''}${im.quartos?' · '+im.quartos+' dorm.':''}</div>`:''}
+    ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
+    ${fin.includes('compra')&&im.valorVenda?`<div class="price-range">Venda: ${money(im.valorVenda)}</div>`:''}
+    ${fin.includes('aluguel')&&im.valorLocacao?`<div class="price-range">Locação: ${money(im.valorLocacao)}${pacoteLocacao?` · Pacote: ${money(Math.round(pacoteLocacao))}`:''}</div>`:''}
     ${im.link?`<div class="owner-meta"><a href="${im.link}" target="_blank" rel="noopener" style="color:var(--primary);">Ver anúncio ↗</a></div>`:''}
     <div class="owner-meta"><b>${im.status==='disponivel'?'Disponível há':'Ficou disponível por'}:</b> ${dias!=null?dias+' dia(s)':'—'} ${recheck?'<span style="color:var(--urgent);font-weight:700;">· reconfirmar!</span>':''}</div>
     ${im.motivoIndisponivel?`<div class="owner-meta"><b>Motivo:</b> ${escapeHtml(im.motivoIndisponivel)}</div>`:''}
@@ -1394,46 +1491,94 @@ function fillProprietarioSelect(current){
   document.getElementById('im-proprietario').innerHTML = `<option value="">—</option>` +
     data.proprietarios.map(p=>`<option value="${p.id}" ${p.id===current?'selected':''}>${escapeHtml(p.nome)}</option>`).join('');
 }
-function updateImovelValorLabel(){
-  const isAluguel = document.getElementById('im-operacao').value === 'aluguel';
-  document.getElementById('im-lbl-valor').textContent = isAluguel ? 'Valor do pacote (aluguel+cond+IPTU)' : 'Valor de venda';
+function renderImFinalidadeChips(){
+  document.querySelectorAll('.im-finalidade-chip').forEach(el=>{
+    el.classList.toggle('sel', imFinalidadeState.has(el.dataset.v));
+  });
 }
-document.getElementById('im-operacao').addEventListener('change', updateImovelValorLabel);
+document.querySelectorAll('.im-finalidade-chip').forEach(el=>{
+  el.onclick = ()=>{
+    const v = el.dataset.v;
+    if(imFinalidadeState.has(v)) imFinalidadeState.delete(v); else imFinalidadeState.add(v);
+    renderImFinalidadeChips();
+  };
+});
 
 function openImovelModal(im, prefillFromOwner){
   editingImovelId = im ? im.id : null;
   document.getElementById('imovelModalTitle').textContent = im ? 'Editar imóvel' : 'Novo imóvel';
   fillProprietarioSelect(im ? im.proprietarioId : (prefillFromOwner ? prefillFromOwner.id : ''));
-  document.getElementById('im-endereco').value = im ? im.endereco||'' : (prefillFromOwner ? prefillFromOwner.imovel||'' : '');
-  document.getElementById('im-operacao').value = im ? im.operacao||'compra' : 'compra';
-  document.getElementById('im-valor').value = im ? im.valor||'' : '';
+  document.getElementById('im-codigo').value = im ? im.codigo||'' : '';
+  document.getElementById('im-edificio').value = im ? im.edificio||'' : '';
+  document.getElementById('im-rua').value = im ? im.rua||'' : (prefillFromOwner ? prefillFromOwner.imovel||'' : '');
+  document.getElementById('im-numero').value = im ? im.numero||'' : '';
+  document.getElementById('im-complemento').value = im ? im.complemento||'' : '';
+  document.getElementById('im-referencia').value = im ? im.referencia||'' : '';
+  document.getElementById('im-resp-nome').value = im ? im.respNome||'' : '';
+  document.getElementById('im-resp-tel').value = im ? im.respTel||'' : '';
   document.getElementById('im-m2').value = im ? im.m2||'' : '';
-  document.getElementById('im-vaga').value = im ? im.vaga||'' : '';
-  document.getElementById('im-link').value = im ? im.link||'' : (prefillFromOwner ? '' : '');
+  document.getElementById('im-areabruta').value = im ? im.areabruta||'' : '';
+  document.getElementById('im-suites').value = im ? im.suites||'' : '';
+  document.getElementById('im-banheiros').value = im ? im.banheiros||'' : '';
+  document.getElementById('im-vagas-qtd').value = im ? im.vagasQtd||'' : '';
+  document.getElementById('im-vaga-tipo').value = im ? im.vagaTipo||'' : '';
+  document.getElementById('im-andar').value = im ? im.andar||'' : '';
+  document.getElementById('im-totalandares').value = im ? im.totalandares||'' : '';
+  document.getElementById('im-elevador').value = im ? im.elevador||'' : '';
+  document.getElementById('im-valor-venda').value = im ? im.valorVenda||'' : '';
+  document.getElementById('im-valor-locacao').value = im ? im.valorLocacao||'' : '';
+  document.getElementById('im-condominio').value = im ? im.condominio||'' : '';
+  document.getElementById('im-iptu').value = im ? im.iptu||'' : '';
+  document.getElementById('im-iptu-periodo').value = im ? im.iptuPeriodo||'mensal' : 'mensal';
+  document.getElementById('im-financiamento').value = im ? im.financiamento||'' : '';
+  document.getElementById('im-exclusividade').value = im ? im.exclusividade||'' : '';
+  document.getElementById('im-chaves').value = im ? im.chaves||'' : '';
+  document.getElementById('im-link').value = im ? im.link||'' : '';
   document.getElementById('im-notas').value = im ? im.notas||'' : '';
+  imFinalidadeState = new Set(im ? (im.finalidade||[]) : ['compra']);
+  renderImFinalidadeChips();
   imBairroPickerHandle = initChipPicker('imBairroPicker', BAIRRO_OPTIONS, im ? im.bairro||'' : '', false);
   imTipoPickerHandle = initChipPicker('imTipoPicker', TIPO_IMOVEL_OPTIONS, im ? im.tipo||'' : '', false);
   imQuartosPickerHandle = initChipPicker('imQuartosPicker', QUARTOS_OPTIONS, im ? String(im.quartos||'') : '', false);
-  updateImovelValorLabel();
   document.getElementById('overlayImovel').classList.add('open');
 }
 document.getElementById('openAddImovel').onclick = ()=>openImovelModal(null);
 document.getElementById('imovelCancelBtn').onclick = ()=>document.getElementById('overlayImovel').classList.remove('open');
 document.getElementById('overlayImovel').onclick = e=>{ if(e.target.id==='overlayImovel') e.target.classList.remove('open'); };
 document.getElementById('imovelSaveBtn').onclick = async ()=>{
-  const endereco = document.getElementById('im-endereco').value.trim();
-  if(!endereco){ alert('Digite o endereço/referência do imóvel'); return; }
+  const rua = document.getElementById('im-rua').value.trim();
+  const codigo = document.getElementById('im-codigo').value.trim();
+  if(!rua && !codigo){ alert('Preencha ao menos o código ou a rua do imóvel'); return; }
   const today = new Date().toISOString().slice(0,10);
   const rec = {
     proprietarioId: document.getElementById('im-proprietario').value || null,
-    endereco,
+    codigo, edificio: document.getElementById('im-edificio').value.trim(),
+    rua, numero: document.getElementById('im-numero').value.trim(),
+    complemento: document.getElementById('im-complemento').value.trim(),
+    referencia: document.getElementById('im-referencia').value.trim(),
     bairro: imBairroPickerHandle.getValue(),
+    respNome: document.getElementById('im-resp-nome').value.trim(),
+    respTel: document.getElementById('im-resp-tel').value.trim(),
     tipo: imTipoPickerHandle.getValue(),
-    operacao: document.getElementById('im-operacao').value,
-    valor: document.getElementById('im-valor').value,
     m2: document.getElementById('im-m2').value,
+    areabruta: document.getElementById('im-areabruta').value,
     quartos: imQuartosPickerHandle.getValue(),
-    vaga: document.getElementById('im-vaga').value,
+    suites: document.getElementById('im-suites').value,
+    banheiros: document.getElementById('im-banheiros').value,
+    vagasQtd: document.getElementById('im-vagas-qtd').value,
+    vagaTipo: document.getElementById('im-vaga-tipo').value,
+    andar: document.getElementById('im-andar').value,
+    totalandares: document.getElementById('im-totalandares').value,
+    elevador: document.getElementById('im-elevador').value,
+    finalidade: Array.from(imFinalidadeState),
+    valorVenda: document.getElementById('im-valor-venda').value,
+    valorLocacao: document.getElementById('im-valor-locacao').value,
+    condominio: document.getElementById('im-condominio').value,
+    iptu: document.getElementById('im-iptu').value,
+    iptuPeriodo: document.getElementById('im-iptu-periodo').value,
+    financiamento: document.getElementById('im-financiamento').value,
+    exclusividade: document.getElementById('im-exclusividade').value,
+    chaves: document.getElementById('im-chaves').value,
     link: document.getElementById('im-link').value.trim(),
     notas: document.getElementById('im-notas').value.trim(),
   };

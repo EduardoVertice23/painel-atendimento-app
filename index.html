@@ -325,6 +325,16 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   </div>
 </div>
 
+<div class="overlay" id="overlayOverdue">
+  <div class="modal" style="max-width:520px;">
+    <h2>Contatos atrasados</h2>
+    <div id="overdueList"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="overdueCloseBtn" style="flex:1;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -553,8 +563,8 @@ document.querySelectorAll('.tab').forEach(t=>{
 /* ---------- DASHBOARD ---------- */
 function renderDashboard(){
   const buyers = data.compradores, owners = data.proprietarios;
-  const overdueBuyers = buyers.filter(c=>daysSince(c.ultimoContato)>=OVERDUE_DAYS_BUYER && c.stage!=='fechado' && c.stage!=='perdido').length;
-  const overdueOwners = owners.filter(o=>daysSince(o.ultimoContato)>=(OWNER_THRESH[o.status]||5) && o.stage!=='publicado' && o.stage!=='perdido').length;
+  const overdueBuyersList = buyers.filter(c=>daysSince(c.ultimoContato)>=OVERDUE_DAYS_BUYER && c.stage!=='fechado' && c.stage!=='perdido');
+  const overdueOwnersList = owners.filter(o=>daysSince(o.ultimoContato)>=(OWNER_THRESH[o.status]||5) && o.stage!=='publicado' && o.stage!=='perdido');
   const buyersActive = buyers.filter(c=>c.stage!=='perdido');
   const ownersActive = owners.filter(o=>o.stage!=='perdido');
   const convBuyers = buyersActive.length ? Math.round(buyers.filter(c=>c.stage==='fechado').length/buyersActive.length*100) : 0;
@@ -562,10 +572,11 @@ function renderDashboard(){
 
   document.getElementById('kpiRow').innerHTML = `
     <div class="kpi" style="--kpi-color:#3E7C93"><div class="num">${buyers.length+owners.length}</div><div class="lbl">Contatos ativos no CRM</div></div>
-    <div class="kpi" style="--kpi-color:#E1653D"><div class="num">${overdueBuyers+overdueOwners}</div><div class="lbl">Atrasados (precisam de retorno)</div></div>
+    <div class="kpi" id="kpiOverdue" style="--kpi-color:#E1653D;cursor:pointer;"><div class="num">${overdueBuyersList.length+overdueOwnersList.length}</div><div class="lbl">Atrasados (precisam de retorno) · toque para ver</div></div>
     <div class="kpi" style="--kpi-color:#1E6B4F"><div class="num">${convBuyers}%</div><div class="lbl">Conversão leads → fechado</div></div>
     <div class="kpi" style="--kpi-color:#8A6D3B"><div class="num">${convOwners}%</div><div class="lbl">Conversão captação → publicado</div></div>
   `;
+  document.getElementById('kpiOverdue').onclick = ()=>openOverdueModal(overdueBuyersList, overdueOwnersList);
   const buyerCounts = BUYER_STAGES.filter(s=>s.id!=='perdido').map(s=>({...s, n: buyers.filter(c=>c.stage===s.id).length}));
   const maxB = Math.max(1, ...buyerCounts.map(s=>s.n));
   document.getElementById('funnelBuyers').innerHTML = buyerCounts.map(s=>`
@@ -779,6 +790,7 @@ function renderBoardGrid(){
 }
 
 function stageOfBuyer(stageId){ return BUYER_STAGES.find(s=>s.id===stageId) || BUYER_STAGES[0]; }
+function stageOfOwner(stageId){ return OWNER_STAGES.find(s=>s.id===stageId) || OWNER_STAGES[0]; }
 
 function renderBoardTable(){
   const board = document.getElementById('board');
@@ -1034,6 +1046,50 @@ document.getElementById('buyerSaveBtn').onclick = async ()=>{
   await setDoc(doc(db,'compradores',id), rec, {merge:true});
   document.getElementById('overlayBuyer').classList.remove('open');
 };
+
+function openOverdueModal(buyersList, ownersList){
+  const rows = [];
+  buyersList.forEach(c=>{
+    const days = daysSince(c.ultimoContato);
+    const wa = waLink(c.contato, suggestBuyer(c).ready);
+    rows.push(`<div class="owner-card" style="--status-color:#E1653D;cursor:default;">
+      <div class="owner-top"><div><div class="owner-name">${escapeHtml(c.nome)}</div><div class="owner-imovel">Lead · ${stageOfBuyer(c.stage).label}</div></div><span class="days-label overdue">${days}d</span></div>
+      <div class="owner-actions">
+        ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 WhatsApp</button></a>`:''}
+        <button data-jump="buyer" data-id="${c.id}">Ver card</button>
+      </div>
+    </div>`);
+  });
+  ownersList.forEach(o=>{
+    const days = daysSince(o.ultimoContato);
+    const wa = waLink(o.contato, suggestOwner(o).ready);
+    rows.push(`<div class="owner-card" style="--status-color:#E1653D;cursor:default;">
+      <div class="owner-top"><div><div class="owner-name">${escapeHtml(o.nome)}</div><div class="owner-imovel">Proprietário · ${stageOfOwner(o.stage).label}</div></div><span class="days-label overdue">${days}d</span></div>
+      <div class="owner-actions">
+        ${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 WhatsApp</button></a>`:''}
+        <button data-jump="owner" data-id="${o.id}">Ver card</button>
+      </div>
+    </div>`);
+  });
+  document.getElementById('overdueList').innerHTML = rows.length ? rows.join('') : `<div class="empty"><div class="big">Tudo em dia 🎉</div></div>`;
+  document.querySelectorAll('[data-jump="buyer"]').forEach(b=>{
+    b.onclick = ()=>{
+      document.getElementById('overlayOverdue').classList.remove('open');
+      document.querySelector('.tab[data-view="buyers"]').click();
+      openBuyerModal(data.compradores.find(c=>c.id===b.dataset.id));
+    };
+  });
+  document.querySelectorAll('[data-jump="owner"]').forEach(b=>{
+    b.onclick = ()=>{
+      document.getElementById('overlayOverdue').classList.remove('open');
+      document.querySelector('.tab[data-view="owners"]').click();
+      openOwnerModal(data.proprietarios.find(o=>o.id===b.dataset.id));
+    };
+  });
+  document.getElementById('overlayOverdue').classList.add('open');
+}
+document.getElementById('overdueCloseBtn').onclick = ()=>document.getElementById('overlayOverdue').classList.remove('open');
+document.getElementById('overlayOverdue').onclick = e=>{ if(e.target.id==='overlayOverdue') e.target.classList.remove('open'); };
 
 renderViewSwitcher();
 renderOperationBar();

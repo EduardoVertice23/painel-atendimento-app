@@ -174,6 +174,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
       <div class="tab active" data-view="dash">Dashboard</div>
       <div class="tab" data-view="owners">Proprietários</div>
       <div class="tab" data-view="buyers">Leads</div>
+      <div class="tab" data-view="imoveis">Imóveis</div>
     </div>
   </div>
 </div>
@@ -213,6 +214,13 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   <div class="filterlabel">Perfil (opcional)</div>
   <div class="chipbar" id="personabar"></div>
   <div class="board" id="board"></div>
+</div>
+
+<div class="view" id="view-imoveis">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="openAddImovel">+ Novo imóvel</button></div>
+  <div class="filterlabel">Status</div>
+  <div class="chipbar" id="imovelStatusBar"></div>
+  <div id="imoveisList"></div>
 </div>
 
 <div class="overlay" id="overlayOwner">
@@ -303,6 +311,35 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   </div>
 </div>
 
+<div class="overlay" id="overlayImovel">
+  <div class="modal">
+    <h2 id="imovelModalTitle">Novo imóvel</h2>
+    <div class="field"><label>Proprietário</label><select id="im-proprietario"></select></div>
+    <div class="field"><label>Endereço / referência</label><input type="text" id="im-endereco" placeholder="Ex: Rua Consolação, 123 - Apto 45"></div>
+    <div class="field-row">
+      <div class="field"><label>Bairro</label><div class="persona-grid" id="imBairroPicker"></div></div>
+    </div>
+    <div class="field"><label>Tipo de imóvel</label><div class="persona-grid" id="imTipoPicker"></div></div>
+    <div class="field-row">
+      <div class="field"><label>Operação</label><select id="im-operacao"><option value="compra">Venda</option><option value="aluguel">Locação</option></select></div>
+      <div class="field"><label id="im-lbl-valor">Valor</label><input type="number" id="im-valor" placeholder="R$"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Metros quadrados</label><input type="number" id="im-m2" placeholder="m²"></div>
+      <div class="field"><label>Dormitórios</label><div class="persona-grid" id="imQuartosPicker"></div></div>
+    </div>
+    <div class="field"><label>Vaga de garagem</label>
+      <select id="im-vaga"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select>
+    </div>
+    <div class="field"><label>Link do anúncio</label><input type="text" id="im-link" placeholder="Cole o link (Kenlo, etc)"></div>
+    <div class="field"><label>Observações</label><textarea id="im-notas"></textarea></div>
+    <div class="modal-actions">
+      <button class="cancel" id="imovelCancelBtn">Cancelar</button>
+      <button class="save" id="imovelSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="overlayImport">
   <div class="modal" style="max-width:600px;">
     <h2 id="importTitle">Importar em massa</h2>
@@ -375,9 +412,11 @@ if(messaging){
 }
 const ownersCol = collection(db, 'proprietarios');
 const buyersCol = collection(db, 'compradores');
+const imoveisCol = collection(db, 'imoveis');
 
 const OVERDUE_DAYS_BUYER = 2;
 const OWNER_THRESH = { quente:2, morno:2, frio:2 };
+const RECHECK_DAYS = { aluguel:15, compra:30 };
 const OWNER_STATUS_COLOR = { quente:'#E1653D', morno:'#C9A24C', frio:'#7A8C84' };
 
 const BUYER_STAGES = [
@@ -445,7 +484,7 @@ const BUYER_STAGE_MSG_ALUGUEL = {
   perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
 };
 
-let data = { proprietarios:[], compradores:[] };
+let data = { proprietarios:[], compradores:[], imoveis:[] };
 let personaFilter=null, priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
@@ -551,6 +590,11 @@ onSnapshot(buyersCol, snap=>{
   renderBoard(); renderDashboard(); markSynced();
 }, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
 
+onSnapshot(imoveisCol, snap=>{
+  data.imoveis = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderImoveis(); renderDashboard(); markSynced();
+}, err=>{ console.error(err); });
+
 /* ---------- TABS ---------- */
 document.querySelectorAll('.tab').forEach(t=>{
   t.onclick = ()=>{
@@ -641,6 +685,7 @@ function ownerCardHtml(o){
       <button data-oact="contato" data-id="${o.id}">Contato hoje</button>
       <button class="owner-sug-btn" data-id="${o.id}">Sugestão</button>
       ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">💬 WhatsApp</button></a>`:''}
+      <button data-oact="cadastrarimovel" data-id="${o.id}">🏠 Cadastrar imóvel</button>
       <button data-oact="edit" data-id="${o.id}">Editar</button>
       <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
     </div>
@@ -653,6 +698,7 @@ async function ownerAction(act, id){
   if(!o) return;
   if(act==='contato'){ await setDoc(doc(db,'proprietarios',id), {ultimoContato: new Date().toISOString().slice(0,10)}, {merge:true}); }
   else if(act==='edit'){ openOwnerModal(o); }
+  else if(act==='cadastrarimovel'){ document.querySelector('.tab[data-view="imoveis"]').click(); openImovelModal(null, o); }
   else if(act==='del'){ if(confirm(`Remover "${o.nome}"?`)){ await deleteDoc(doc(db,'proprietarios',id)); } }
 }
 function fillOwnerStageSelect(current){
@@ -1249,10 +1295,166 @@ function openOverdueModal(buyersList, ownersList){
 document.getElementById('overdueCloseBtn').onclick = ()=>document.getElementById('overlayOverdue').classList.remove('open');
 document.getElementById('overlayOverdue').onclick = e=>{ if(e.target.id==='overlayOverdue') e.target.classList.remove('open'); };
 
+/* ---------- IMÓVEIS ---------- */
+let imovelStatusFilter = 'disponivel';
+let editingImovelId = null;
+let imBairroPickerHandle=null, imTipoPickerHandle=null, imQuartosPickerHandle=null;
+
+function daysBetween(a, b){
+  const d1 = new Date(a+'T00:00:00'), d2 = new Date(b+'T00:00:00');
+  return Math.round((d2-d1)/86400000);
+}
+function needsRecheck(im){
+  if(im.status!=='disponivel') return false;
+  const cadencia = RECHECK_DAYS[im.operacao] || 30;
+  return daysSince(im.ultimaConfirmacao||im.dataConfirmadoDisponivel) >= cadencia;
+}
+function suggestRecheckMessage(im){
+  const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
+  const first = prop ? (prop.nome||'').split(' ')[0] : 'tudo bem';
+  return `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Só confirmando: o imóvel${im.endereco?' ('+im.endereco+')':''} continua disponível pra ${im.operacao==='aluguel'?'locação':'venda'}?`;
+}
+
+function renderImovelStatusBar(){
+  const opts = [ {id:'disponivel', label:'Disponíveis', color:'#2F8F6E'}, {id:'indisponivel', label:'Indisponíveis', color:'#A7B2AB'} ];
+  document.getElementById('imovelStatusBar').innerHTML = opts.map(o=>{
+    const active = imovelStatusFilter===o.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${o.color}" data-s="${o.id}"><span class="dot"></span>${o.label}</div>`;
+  }).join('');
+  document.querySelectorAll('#imovelStatusBar .pri-chip').forEach(el=>{
+    el.onclick = ()=>{ imovelStatusFilter = el.dataset.s; renderImovelStatusBar(); renderImoveis(); };
+  });
+}
+
+function renderImoveis(){
+  const list = document.getElementById('imoveisList');
+  const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
+    .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
+  if(items.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
+    return;
+  }
+  list.innerHTML = items.map(im=>imovelCardHtml(im)).join('');
+  document.querySelectorAll('[data-iact="edit"]').forEach(b=>{ b.onclick=()=>openImovelModal(data.imoveis.find(x=>x.id===b.dataset.id)); });
+  document.querySelectorAll('[data-iact="del"]').forEach(b=>{
+    b.onclick = async ()=>{ const im=data.imoveis.find(x=>x.id===b.dataset.id); if(confirm(`Remover o cadastro de "${im.endereco||'imóvel'}"?`)){ await deleteDoc(doc(db,'imoveis',im.id)); } };
+  });
+  document.querySelectorAll('[data-iact="indisponivel"]').forEach(b=>{
+    b.onclick = async ()=>{
+      const im = data.imoveis.find(x=>x.id===b.dataset.id);
+      const motivo = prompt('Motivo (opcional): vendido, alugado, desistiu...') || '';
+      const dias = im.dataConfirmadoDisponivel ? daysBetween(im.dataConfirmadoDisponivel, new Date().toISOString().slice(0,10)) : null;
+      await setDoc(doc(db,'imoveis',im.id), { status:'indisponivel', dataIndisponivel:new Date().toISOString().slice(0,10), motivoIndisponivel:motivo, diasNoMercado: dias }, {merge:true});
+    };
+  });
+  document.querySelectorAll('[data-iact="reativar"]').forEach(b=>{
+    b.onclick = async ()=>{
+      const today = new Date().toISOString().slice(0,10);
+      await setDoc(doc(db,'imoveis',b.dataset.id), { status:'disponivel', dataConfirmadoDisponivel:today, ultimaConfirmacao:today, dataIndisponivel:null, motivoIndisponivel:null }, {merge:true});
+    };
+  });
+  document.querySelectorAll('.im-confirmar-link').forEach(a=>{
+    a.addEventListener('click', ()=>{
+      setDoc(doc(db,'imoveis',a.dataset.id), {ultimaConfirmacao:new Date().toISOString().slice(0,10)}, {merge:true}).catch(()=>{});
+    });
+  });
+}
+
+function imovelCardHtml(im){
+  const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
+  const recheck = needsRecheck(im);
+  const dias = im.status==='disponivel'
+    ? daysSince(im.dataConfirmadoDisponivel)
+    : im.diasNoMercado;
+  const waConfirmar = prop ? waLink(prop.contato, suggestRecheckMessage(im)) : null;
+  return `<div class="owner-card" style="--status-color:${recheck?'#E1653D':(im.status==='disponivel'?'#2F8F6E':'#A7B2AB')}">
+    <div class="owner-top">
+      <div>
+        <div class="owner-name">${escapeHtml(im.endereco||'Imóvel sem endereço')}</div>
+        <div class="owner-imovel">${escapeHtml(chipsFrom(im.bairro).join(', '))}${im.tipo?' · '+escapeHtml(chipsFrom(im.tipo).join(', ')):''}</div>
+        ${prop?`<div class="owner-imovel">👤 ${escapeHtml(prop.nome)}</div>`:''}
+      </div>
+      <span class="status-pill" style="background:${im.operacao==='aluguel'?'#2F8F6E':'#3E7C93'};">${im.operacao==='aluguel'?'Locação':'Venda'}</span>
+    </div>
+    ${im.valor?`<div class="price-range">${money(im.valor)}${im.m2?' · '+im.m2+'m²':''}${im.quartos?' · '+im.quartos+' dorm.':''}</div>`:''}
+    ${im.link?`<div class="owner-meta"><a href="${im.link}" target="_blank" rel="noopener" style="color:var(--primary);">Ver anúncio ↗</a></div>`:''}
+    <div class="owner-meta"><b>${im.status==='disponivel'?'Disponível há':'Ficou disponível por'}:</b> ${dias!=null?dias+' dia(s)':'—'} ${recheck?'<span style="color:var(--urgent);font-weight:700;">· reconfirmar!</span>':''}</div>
+    ${im.motivoIndisponivel?`<div class="owner-meta"><b>Motivo:</b> ${escapeHtml(im.motivoIndisponivel)}</div>`:''}
+    ${im.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(im.notas)}</div>`:''}
+    <div class="owner-actions">
+      ${im.status==='disponivel' && waConfirmar?`<a href="${waConfirmar}" target="_blank" rel="noopener" class="im-confirmar-link" data-id="${im.id}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Confirmar</button></a>`:''}
+      ${im.status==='disponivel'?`<button data-iact="indisponivel" data-id="${im.id}">Marcar indisponível</button>`:`<button data-iact="reativar" data-id="${im.id}">Reativar</button>`}
+      <button data-iact="edit" data-id="${im.id}">Editar</button>
+      <button class="danger" data-iact="del" data-id="${im.id}">✕</button>
+    </div>
+  </div>`;
+}
+
+function fillProprietarioSelect(current){
+  document.getElementById('im-proprietario').innerHTML = `<option value="">—</option>` +
+    data.proprietarios.map(p=>`<option value="${p.id}" ${p.id===current?'selected':''}>${escapeHtml(p.nome)}</option>`).join('');
+}
+function updateImovelValorLabel(){
+  const isAluguel = document.getElementById('im-operacao').value === 'aluguel';
+  document.getElementById('im-lbl-valor').textContent = isAluguel ? 'Valor do pacote (aluguel+cond+IPTU)' : 'Valor de venda';
+}
+document.getElementById('im-operacao').addEventListener('change', updateImovelValorLabel);
+
+function openImovelModal(im, prefillFromOwner){
+  editingImovelId = im ? im.id : null;
+  document.getElementById('imovelModalTitle').textContent = im ? 'Editar imóvel' : 'Novo imóvel';
+  fillProprietarioSelect(im ? im.proprietarioId : (prefillFromOwner ? prefillFromOwner.id : ''));
+  document.getElementById('im-endereco').value = im ? im.endereco||'' : (prefillFromOwner ? prefillFromOwner.imovel||'' : '');
+  document.getElementById('im-operacao').value = im ? im.operacao||'compra' : 'compra';
+  document.getElementById('im-valor').value = im ? im.valor||'' : '';
+  document.getElementById('im-m2').value = im ? im.m2||'' : '';
+  document.getElementById('im-vaga').value = im ? im.vaga||'' : '';
+  document.getElementById('im-link').value = im ? im.link||'' : (prefillFromOwner ? '' : '');
+  document.getElementById('im-notas').value = im ? im.notas||'' : '';
+  imBairroPickerHandle = initChipPicker('imBairroPicker', BAIRRO_OPTIONS, im ? im.bairro||'' : '', false);
+  imTipoPickerHandle = initChipPicker('imTipoPicker', TIPO_IMOVEL_OPTIONS, im ? im.tipo||'' : '', false);
+  imQuartosPickerHandle = initChipPicker('imQuartosPicker', QUARTOS_OPTIONS, im ? String(im.quartos||'') : '', false);
+  updateImovelValorLabel();
+  document.getElementById('overlayImovel').classList.add('open');
+}
+document.getElementById('openAddImovel').onclick = ()=>openImovelModal(null);
+document.getElementById('imovelCancelBtn').onclick = ()=>document.getElementById('overlayImovel').classList.remove('open');
+document.getElementById('overlayImovel').onclick = e=>{ if(e.target.id==='overlayImovel') e.target.classList.remove('open'); };
+document.getElementById('imovelSaveBtn').onclick = async ()=>{
+  const endereco = document.getElementById('im-endereco').value.trim();
+  if(!endereco){ alert('Digite o endereço/referência do imóvel'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  const rec = {
+    proprietarioId: document.getElementById('im-proprietario').value || null,
+    endereco,
+    bairro: imBairroPickerHandle.getValue(),
+    tipo: imTipoPickerHandle.getValue(),
+    operacao: document.getElementById('im-operacao').value,
+    valor: document.getElementById('im-valor').value,
+    m2: document.getElementById('im-m2').value,
+    quartos: imQuartosPickerHandle.getValue(),
+    vaga: document.getElementById('im-vaga').value,
+    link: document.getElementById('im-link').value.trim(),
+    notas: document.getElementById('im-notas').value.trim(),
+  };
+  if(editingImovelId){
+    await setDoc(doc(db,'imoveis',editingImovelId), rec, {merge:true});
+  } else {
+    rec.status = 'disponivel';
+    rec.dataConfirmadoDisponivel = today;
+    rec.ultimaConfirmacao = today;
+    const id = doc(imoveisCol).id;
+    await setDoc(doc(db,'imoveis',id), rec, {merge:true});
+  }
+  document.getElementById('overlayImovel').classList.remove('open');
+};
+
 renderViewSwitcher();
 renderOperationBar();
 renderPriorityBar();
 renderPersonaBar();
+renderImovelStatusBar();
+renderImoveis();
 
 /* ---------- NOTIFICAÇÕES DE ATRASO ---------- */
 const notifBtn = document.getElementById('notifBtn');

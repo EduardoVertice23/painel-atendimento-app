@@ -754,6 +754,7 @@ function ownerCardHtml(o){
       <button class="owner-sug-btn" data-id="${o.id}">Sugestão</button>
       ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">💬 WhatsApp</button></a>`:''}
       <button data-oact="cadastrarimovel" data-id="${o.id}">🏠 Cadastrar imóvel</button>
+      <button data-oact="linkconfirmacao" data-id="${o.id}">🔗 Link de confirmação</button>
       <button data-oact="edit" data-id="${o.id}">Editar</button>
       <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
     </div>
@@ -767,6 +768,11 @@ async function ownerAction(act, id){
   if(act==='contato'){ await setDoc(doc(db,'proprietarios',id), {ultimoContato: new Date().toISOString().slice(0,10)}, {merge:true}); }
   else if(act==='edit'){ openOwnerModal(o); }
   else if(act==='cadastrarimovel'){ document.querySelector('.tab[data-view="imoveis"]').click(); openImovelModal(null, o); }
+  else if(act==='linkconfirmacao'){
+    if(!o.contatoDigits){ alert('Esse proprietário ainda não tem telefone cadastrado. Edita o card e adiciona o telefone primeiro.'); return; }
+    const link = window.location.origin + '/formulario-proprietario.html?tel=' + o.contatoDigits;
+    copyText(link, document.querySelector(`[data-oact="linkconfirmacao"][data-id="${id}"]`));
+  }
   else if(act==='del'){ if(confirm(`Remover "${o.nome}"?`)){ await deleteDoc(doc(db,'proprietarios',id)); } }
 }
 function fillOwnerStageSelect(current){
@@ -795,6 +801,7 @@ document.getElementById('ownerSaveBtn').onclick = async ()=>{
   const rec = {
     nome, imovel: document.getElementById('o-imovel').value.trim(),
     contato: document.getElementById('o-contato').value.trim(),
+    contatoDigits: document.getElementById('o-contato').value.replace(/\D/g,''),
     stage: document.getElementById('o-stage').value,
     status: document.getElementById('o-status').value,
     ultimoContato: document.getElementById('o-data').value || new Date().toISOString().slice(0,10),
@@ -1759,9 +1766,11 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
     if(!nome){ skipped++; continue; }
 
     if(isOwner){
+      const contatoVal = (fields[1]||'').trim();
       const rec = {
         nome,
-        contato: (fields[1]||'').trim(),
+        contato: contatoVal,
+        contatoDigits: contatoVal.replace(/\D/g,''),
         imovel: (fields[2]||'').trim(),
         status: ['quente','morno','frio'].includes((fields[3]||'').trim().toLowerCase()) ? fields[3].trim().toLowerCase() : 'morno',
         stage: 'contato',

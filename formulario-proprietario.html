@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#11241F">
+<title>Baru Imóveis — Confirmação de disponibilidade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --ink:#11241F; --bg:#F2F6F4; --card:#FFFFFF; --line:#DCE6E1;
+  --primary:#2F8F6E; --urgent:#E1653D; --text:#1B2A24; --text-dim:#5B6B63;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:560px;margin:0 auto;padding:28px 20px 60px;}
+header{text-align:center;margin-bottom:24px;}
+.mark{width:48px;height:48px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Newsreader',serif;font-weight:700;font-size:20px;margin:0 auto 12px;}
+h1{font-family:'Newsreader',serif;font-weight:600;font-size:22px;color:var(--ink);margin:0 0 6px;}
+p.sub{color:var(--text-dim);font-size:14px;margin:0;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
+.field input, .field select{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;font-family:inherit;font-size:14.5px;color:var(--text);background:var(--bg);}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+.chip-group{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{padding:8px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:13px;color:var(--text-dim);cursor:pointer;user-select:none;}
+.chip.sel{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 12%, white);color:var(--ink);font-weight:600;}
+.bigchoice{display:flex;gap:10px;margin-bottom:6px;}
+.bigchoice button{flex:1;padding:16px;border-radius:12px;border:2px solid var(--line);background:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text-dim);}
+.bigchoice button.sel-yes{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 12%, white);color:var(--ink);}
+.bigchoice button.sel-no{border-color:var(--urgent);background:color-mix(in srgb, var(--urgent) 10%, white);color:var(--ink);}
+.submitbtn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;}
+.submitbtn:disabled{opacity:.6;}
+.success{text-align:center;padding:50px 20px;}
+.success .mark{background:var(--primary);}
+.hidden{display:none;}
+.errormsg{color:var(--urgent);font-size:13px;margin-top:-8px;margin-bottom:12px;display:none;}
+.notfound{text-align:center;padding:50px 20px;color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">B</div>
+    <h1>Confirmação de disponibilidade</h1>
+    <p class="sub">Leva menos de 1 minuto — obrigado por manter isso atualizado!</p>
+  </header>
+
+  <div class="card" id="loadingCard"><p style="text-align:center;color:var(--text-dim);">Carregando...</p></div>
+
+  <div class="card hidden" id="notFoundCard">
+    <div class="notfound">Não encontramos seu cadastro por este link. Fale com o Paulo pra gente resolver.</div>
+  </div>
+
+  <div class="card hidden" id="formCard">
+    <div class="field">
+      <label>Seu imóvel ainda está disponível?</label>
+      <div class="bigchoice">
+        <button type="button" id="btnSim">Sim, disponível</button>
+        <button type="button" id="btnNao">Não, indisponível</button>
+      </div>
+    </div>
+
+    <div id="detalhesImovel" class="hidden">
+      <div class="field"><label>Endereço / referência</label><input type="text" id="rua" placeholder="Rua, número"></div>
+      <div class="field"><label>Tipo de imóvel</label><div class="chip-group" id="tipoGroup"></div></div>
+      <div class="field"><label>Você quer</label>
+        <div class="chip-group" id="finalidadeGroup">
+          <div class="chip" data-v="compra">Vender</div>
+          <div class="chip" data-v="aluguel">Alugar</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Valor de venda</label><input type="number" id="valorVenda" placeholder="R$"></div>
+        <div class="field"><label>Valor de locação</label><input type="number" id="valorLocacao" placeholder="R$"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Área útil (m²)</label><input type="number" id="m2" placeholder="m²"></div>
+        <div class="field"><label>Dormitórios</label><div class="chip-group" id="quartosGroup"></div></div>
+      </div>
+      <div class="field"><label>Vagas de garagem</label><input type="number" id="vagasQtd" min="0"></div>
+    </div>
+
+    <div id="motivoIndisponivel" class="hidden">
+      <div class="field"><label>O que aconteceu?</label>
+        <select id="motivoSelect">
+          <option value="vendido">Já vendi</option>
+          <option value="alugado">Já aluguei</option>
+          <option value="desistiu">Desisti de vender/alugar</option>
+          <option value="outro">Outro motivo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="errormsg" id="errorMsg">Escolhe uma das opções acima pra continuar.</div>
+    <button class="submitbtn hidden" id="submitBtn">Enviar</button>
+  </div>
+
+  <div class="card success hidden" id="successCard">
+    <div class="mark">✓</div>
+    <h1>Recebido!</h1>
+    <p class="sub">Obrigado por confirmar! Já atualizei por aqui.</p>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
+  authDomain: "atendimentoclientebv-658e7.firebaseapp.com",
+  projectId: "atendimentoclientebv-658e7",
+  storageBucket: "atendimentoclientebv-658e7.firebasestorage.app",
+  messagingSenderId: "641137924211",
+  appId: "1:641137924211:web:30adb0e6924abed1b7b206"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const ownersCol = collection(db, 'proprietarios');
+const imoveisCol = collection(db, 'imoveis');
+
+const TIPOS = ['Apartamento','Casa','Sobrado','Studio','Kitnet','Cobertura','Flat','Loft','Sala Comercial','Conjunto Comercial','Galpão','Terreno','Loja'];
+const QUARTOS = ['Studio','1','2','3','4+'];
+
+function chipsFrom(str){ return (str||'').split(',').map(s=>s.trim()).filter(Boolean); }
+function buildGroup(id, options, selectedSet){
+  const el = document.getElementById(id);
+  el.innerHTML = (id==='finalidadeGroup' ? el.innerHTML : options.map(o=>`<div class="chip" data-v="${o}">${o}</div>`).join(''));
+  el.querySelectorAll('.chip').forEach(chip=>{
+    chip.onclick = ()=>{
+      const v = chip.dataset.v;
+      if(selectedSet.has(v)) selectedSet.delete(v); else selectedSet.add(v);
+      el.querySelectorAll('.chip').forEach(c=> c.classList.toggle('sel', selectedSet.has(c.dataset.v)));
+    };
+  });
+}
+
+const params = new URLSearchParams(window.location.search);
+const tel = (params.get('tel')||'').replace(/\D/g,'');
+
+let ownerDoc = null;
+let existingImovel = null;
+let disponivel = null;
+const tipoSet = new Set();
+const finalidadeSet = new Set();
+const quartosSet = new Set();
+
+async function init(){
+  if(!tel){ showNotFound(); return; }
+  const q = query(ownersCol, where('contatoDigits','==',tel), limit(1));
+  const snap = await getDocs(q);
+  if(snap.empty){ showNotFound(); return; }
+  ownerDoc = { id: snap.docs[0].id, ...snap.docs[0].data() };
+
+  const qi = query(imoveisCol, where('proprietarioId','==',ownerDoc.id), limit(1));
+  const snapI = await getDocs(qi);
+  if(!snapI.empty) existingImovel = { id: snapI.docs[0].id, ...snapI.docs[0].data() };
+
+  document.getElementById('rua').value = existingImovel?.rua || ownerDoc.imovel || '';
+  buildGroup('tipoGroup', TIPOS, tipoSet);
+  buildGroup('quartosGroup', QUARTOS, quartosSet);
+  document.querySelectorAll('#finalidadeGroup .chip').forEach(chip=>{
+    chip.onclick = ()=>{
+      const v = chip.dataset.v;
+      if(finalidadeSet.has(v)) finalidadeSet.delete(v); else finalidadeSet.add(v);
+      chip.classList.toggle('sel', finalidadeSet.has(v));
+    };
+  });
+
+  document.getElementById('loadingCard').classList.add('hidden');
+  document.getElementById('formCard').classList.remove('hidden');
+}
+function showNotFound(){
+  document.getElementById('loadingCard').classList.add('hidden');
+  document.getElementById('notFoundCard').classList.remove('hidden');
+}
+
+document.getElementById('btnSim').onclick = ()=>{
+  disponivel = true;
+  document.getElementById('btnSim').classList.add('sel-yes');
+  document.getElementById('btnNao').classList.remove('sel-no');
+  document.getElementById('detalhesImovel').classList.remove('hidden');
+  document.getElementById('motivoIndisponivel').classList.add('hidden');
+  document.getElementById('submitBtn').classList.remove('hidden');
+  document.getElementById('errorMsg').style.display='none';
+};
+document.getElementById('btnNao').onclick = ()=>{
+  disponivel = false;
+  document.getElementById('btnNao').classList.add('sel-no');
+  document.getElementById('btnSim').classList.remove('sel-yes');
+  document.getElementById('detalhesImovel').classList.add('hidden');
+  document.getElementById('motivoIndisponivel').classList.remove('hidden');
+  document.getElementById('submitBtn').classList.remove('hidden');
+  document.getElementById('errorMsg').style.display='none';
+};
+
+document.getElementById('submitBtn').onclick = async ()=>{
+  if(disponivel===null){ document.getElementById('errorMsg').style.display='block'; return; }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const today = new Date().toISOString().slice(0,10);
+
+  try{
+    if(disponivel){
+      const rec = {
+        proprietarioId: ownerDoc.id,
+        rua: document.getElementById('rua').value.trim(),
+        tipo: Array.from(tipoSet).join(', '),
+        finalidade: Array.from(finalidadeSet),
+        valorVenda: document.getElementById('valorVenda').value || '',
+        valorLocacao: document.getElementById('valorLocacao').value || '',
+        m2: document.getElementById('m2').value || '',
+        quartos: Array.from(quartosSet).join(', '),
+        vagasQtd: document.getElementById('vagasQtd').value || '',
+        status: 'disponivel',
+        ultimaConfirmacao: today,
+      };
+      if(existingImovel){
+        await setDoc(doc(db,'imoveis',existingImovel.id), rec, {merge:true});
+      } else {
+        rec.dataConfirmadoDisponivel = today;
+        const id = doc(imoveisCol).id;
+        await setDoc(doc(db,'imoveis',id), rec, {merge:true});
+      }
+    } else {
+      if(existingImovel){
+        const dias = existingImovel.dataConfirmadoDisponivel ? Math.round((new Date(today)-new Date(existingImovel.dataConfirmadoDisponivel))/86400000) : null;
+        await setDoc(doc(db,'imoveis',existingImovel.id), {
+          status:'indisponivel', dataIndisponivel: today,
+          motivoIndisponivel: document.getElementById('motivoSelect').value,
+          diasNoMercado: dias,
+        }, {merge:true});
+      }
+    }
+    document.getElementById('formCard').classList.add('hidden');
+    document.getElementById('successCard').classList.remove('hidden');
+  }catch(e){
+    alert('Ops, algo deu errado. Tenta de novo em alguns segundos.');
+    btn.disabled = false; btn.textContent = 'Enviar';
+  }
+};
+
+init();
+</script>
+</body>
+</html>

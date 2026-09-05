@@ -220,7 +220,10 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="view" id="view-imoveis">
-  <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="openAddImovel">+ Novo imóvel</button></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="addbtn" id="openImportImovel" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
+    <button class="addbtn" id="openAddImovel">+ Novo imóvel</button>
+  </div>
   <div class="filterlabel">Status</div>
   <div class="chipbar" id="imovelStatusBar"></div>
   <div id="imoveisList"></div>
@@ -1753,8 +1756,13 @@ const OWNER_IMPORT_COLS = ['nome','contato','imovel','status','ultimoContato','p
 const OWNER_IMPORT_LABELS = ['Nome','Telefone/WhatsApp','Imóvel','Status (quente/morno/frio)','Último contato (AAAA-MM-DD ou DD/MM/AAAA)','Próxima ação','Observações'];
 const BUYER_IMPORT_COLS = ['nome','contato','operacao','bairros','tipo','precomax','ultimoContato','proximaAcao','notas'];
 const BUYER_IMPORT_LABELS = ['Nome','Telefone/WhatsApp','Operação (compra/aluguel)','Bairros','Tipo de imóvel','Valor máximo','Último contato (AAAA-MM-DD ou DD/MM/AAAA)','Próxima ação','Observações'];
+const IMOVEL_IMPORT_COLS = ['codigo','rua','numero','bairro','tipo','finalidade','valorVenda','valorLocacao','condominio','iptu','m2','quartos','vagasQtd','link'];
+const IMOVEL_IMPORT_LABELS = ['Código (Ref)','Rua','Número','Bairro','Tipo','Finalidade (venda/locacao/ambos)','Valor de venda','Valor de locação','Condomínio','IPTU','Área útil (m²)','Dormitórios','Vagas','Link do anúncio'];
 
-let importType = null; // 'owner' | 'buyer'
+function importCols(type){ return type==='owner'?OWNER_IMPORT_COLS : type==='imovel'?IMOVEL_IMPORT_COLS : BUYER_IMPORT_COLS; }
+function importLabels(type){ return type==='owner'?OWNER_IMPORT_LABELS : type==='imovel'?IMOVEL_IMPORT_LABELS : BUYER_IMPORT_LABELS; }
+
+let importType = null; // 'owner' | 'buyer' | 'imovel'
 
 function normalizeDate(v){
   if(!v) return new Date().toISOString().slice(0,10);
@@ -1775,16 +1783,16 @@ function splitLine(line, expectedCols){
   if(semiSplit.length >= expectedCols - 1) return semiSplit.map(s=>s.trim());
   return line.split(',').map(s=>s.trim());
 }
-function looksLikeHeader(fields, labels){
+function looksLikeHeader(fields, type){
   const first = (fields[0]||'').toLowerCase();
-  return first.includes('nome');
+  return type==='imovel' ? (first.includes('código')||first.includes('codigo')) : first.includes('nome');
 }
 
 function openImportModal(type){
   importType = type;
-  const isOwner = type==='owner';
-  document.getElementById('importTitle').textContent = isOwner ? 'Importar proprietários em massa' : 'Importar leads em massa';
-  const labels = isOwner ? OWNER_IMPORT_LABELS : BUYER_IMPORT_LABELS;
+  const titles = { owner:'Importar proprietários em massa', buyer:'Importar leads em massa', imovel:'Importar imóveis em massa' };
+  document.getElementById('importTitle').textContent = titles[type];
+  const labels = importLabels(type);
   document.getElementById('importColumnsHint').innerHTML = labels.map((l,i)=>`${i+1}. ${l}`).join('<br>');
   document.getElementById('importText').value = '';
   document.getElementById('importPreview').textContent = '';
@@ -1796,49 +1804,49 @@ document.getElementById('copyFormLinkBtn').onclick = ()=>{
 };
 document.getElementById('openImportOwner').onclick = ()=>openImportModal('owner');
 document.getElementById('openImportBuyer').onclick = ()=>openImportModal('buyer');
+document.getElementById('openImportImovel').onclick = ()=>openImportModal('imovel');
 document.getElementById('importCancelBtn').onclick = ()=>document.getElementById('overlayImport').classList.remove('open');
 document.getElementById('overlayImport').onclick = e=>{ if(e.target.id==='overlayImport') e.target.classList.remove('open'); };
 
 document.getElementById('downloadTemplateBtn').onclick = ()=>{
-  const isOwner = importType==='owner';
-  const cols = isOwner ? OWNER_IMPORT_COLS : BUYER_IMPORT_COLS;
-  const labels = isOwner ? OWNER_IMPORT_LABELS : BUYER_IMPORT_LABELS;
+  const labels = importLabels(importType);
   const headerRow = labels.map(l=>l.split(' (')[0]).join(';');
-  const exampleRow = isOwner
-    ? 'Maria Silva;(11) 98888-7777;Apto 90m² Higienópolis;morno;2026-08-20;Retornar com avaliação;Prefere contato à tarde'
-    : 'João Souza;(11) 97777-6666;compra;Pinheiros, Vila Madalena;Apartamento;900000;2026-08-20;Agendar visita;Trabalha em home office';
-  const csv = '\uFEFF' + headerRow + '\n' + exampleRow + '\n';
+  const examples = {
+    owner: 'Maria Silva;(11) 98888-7777;Apto 90m² Higienópolis;morno;2026-08-20;Retornar com avaliação;Prefere contato à tarde',
+    buyer: 'João Souza;(11) 97777-6666;compra;Pinheiros, Vila Madalena;Apartamento;900000;2026-08-20;Agendar visita;Trabalha em home office',
+    imovel: 'AP12345;Rua Consolação;123;Higienópolis;Apartamento;venda;630000;;950;150;80;2;1;https://kenlo.exemplo/AP12345',
+  };
+  const csv = '\uFEFF' + headerRow + '\n' + examples[importType] + '\n';
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = isOwner ? 'modelo-proprietarios.csv' : 'modelo-leads.csv';
+  const filenames = { owner:'modelo-proprietarios.csv', buyer:'modelo-leads.csv', imovel:'modelo-imoveis.csv' };
+  a.download = filenames[importType];
   a.click();
   URL.revokeObjectURL(url);
 };
 
 document.getElementById('importText').addEventListener('input', updateImportPreview);
 function updateImportPreview(){
-  const isOwner = importType==='owner';
-  const cols = isOwner ? OWNER_IMPORT_COLS : BUYER_IMPORT_COLS;
+  const cols = importCols(importType);
   const raw = document.getElementById('importText').value;
   const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
   if(lines.length===0){ document.getElementById('importPreview').textContent = ''; return; }
   let dataLines = lines;
   const firstFields = splitLine(lines[0], cols.length);
-  if(looksLikeHeader(firstFields)) dataLines = lines.slice(1);
+  if(looksLikeHeader(firstFields, importType)) dataLines = lines.slice(1);
   document.getElementById('importPreview').textContent = `${dataLines.length} registro(s) detectado(s).`;
 }
 
 document.getElementById('importConfirmBtn').onclick = async ()=>{
-  const isOwner = importType==='owner';
-  const cols = isOwner ? OWNER_IMPORT_COLS : BUYER_IMPORT_COLS;
+  const cols = importCols(importType);
   const raw = document.getElementById('importText').value;
   const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
   if(lines.length===0){ alert('Cole ao menos uma linha pra importar.'); return; }
   let dataLines = lines;
   const firstFields = splitLine(lines[0], cols.length);
-  if(looksLikeHeader(firstFields)) dataLines = lines.slice(1);
+  if(looksLikeHeader(firstFields, importType)) dataLines = lines.slice(1);
   if(dataLines.length===0){ alert('Nenhum registro encontrado, só o cabeçalho.'); return; }
 
   const btn = document.getElementById('importConfirmBtn');
@@ -1846,51 +1854,61 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
   btn.textContent = 'Importando...'; btn.disabled = true;
 
   let count = 0, skipped = 0;
+  const today = new Date().toISOString().slice(0,10);
   for(const line of dataLines){
     const fields = splitLine(line, cols.length);
-    const nome = (fields[0]||'').trim();
-    if(!nome){ skipped++; continue; }
 
-    if(isOwner){
+    if(importType==='owner'){
+      const nome = (fields[0]||'').trim();
+      if(!nome){ skipped++; continue; }
       const contatoVal = (fields[1]||'').trim();
       const rec = {
-        nome,
-        contato: contatoVal,
-        contatoDigits: contatoVal.replace(/\D/g,''),
+        nome, contato: contatoVal, contatoDigits: contatoVal.replace(/\D/g,''),
         imovel: (fields[2]||'').trim(),
         status: ['quente','morno','frio'].includes((fields[3]||'').trim().toLowerCase()) ? fields[3].trim().toLowerCase() : 'morno',
-        stage: 'contato',
-        ultimoContato: normalizeDate(fields[4]),
-        proximaAcao: (fields[5]||'').trim(),
-        notas: (fields[6]||'').trim(),
+        stage: 'contato', ultimoContato: normalizeDate(fields[4]),
+        proximaAcao: (fields[5]||'').trim(), notas: (fields[6]||'').trim(),
       };
-      const id = doc(ownersCol).id;
-      await setDoc(doc(db,'proprietarios',id), rec, {merge:true});
-    } else {
+      await setDoc(doc(db,'proprietarios',doc(ownersCol).id), rec, {merge:true});
+    } else if(importType==='buyer'){
+      const nome = (fields[0]||'').trim();
+      if(!nome){ skipped++; continue; }
       const opRaw = (fields[2]||'').trim().toLowerCase();
       const contatoVal = (fields[1]||'').trim();
       const rec = {
-        nome,
-        contato: contatoVal,
-        contatoDigits: contatoVal.replace(/\D/g,''),
+        nome, contato: contatoVal, contatoDigits: contatoVal.replace(/\D/g,''),
         operacao: opRaw==='aluguel' ? 'aluguel' : 'compra',
-        bairros: (fields[3]||'').trim(),
-        tipo: (fields[4]||'').trim(),
-        precomax: (fields[5]||'').trim(),
-        stage: 'novo',
-        ultimoContato: normalizeDate(fields[6]),
-        proximaAcao: (fields[7]||'').trim(),
-        notas: (fields[8]||'').trim(),
+        bairros: (fields[3]||'').trim(), tipo: (fields[4]||'').trim(), precomax: (fields[5]||'').trim(),
+        stage: 'novo', ultimoContato: normalizeDate(fields[6]),
+        proximaAcao: (fields[7]||'').trim(), notas: (fields[8]||'').trim(),
       };
-      const id = doc(buyersCol).id;
-      await setDoc(doc(db,'compradores',id), rec, {merge:true});
+      await setDoc(doc(db,'compradores',doc(buyersCol).id), rec, {merge:true});
+    } else if(importType==='imovel'){
+      const codigo = (fields[0]||'').trim(), rua = (fields[1]||'').trim();
+      if(!codigo && !rua){ skipped++; continue; }
+      const finRaw = (fields[5]||'').trim().toLowerCase();
+      const finalidade = [];
+      if(finRaw.includes('venda')||finRaw.includes('ambos')||finRaw.includes('compra')) finalidade.push('compra');
+      if(finRaw.includes('loca')||finRaw.includes('ambos')) finalidade.push('aluguel');
+      if(finalidade.length===0) finalidade.push('compra');
+      const rec = {
+        codigo, rua, numero: (fields[2]||'').trim(),
+        bairro: (fields[3]||'').trim(), tipo: (fields[4]||'').trim(),
+        finalidade,
+        valorVenda: (fields[6]||'').trim(), valorLocacao: (fields[7]||'').trim(),
+        condominio: (fields[8]||'').trim(), iptu: (fields[9]||'').trim(),
+        m2: (fields[10]||'').trim(), quartos: (fields[11]||'').trim(), vagasQtd: (fields[12]||'').trim(),
+        link: (fields[13]||'').trim(),
+        status: 'disponivel', dataConfirmadoDisponivel: today, ultimaConfirmacao: today,
+      };
+      await setDoc(doc(db,'imoveis',doc(imoveisCol).id), rec, {merge:true});
     }
     count++;
   }
 
   btn.textContent = oldLabel; btn.disabled = false;
   document.getElementById('overlayImport').classList.remove('open');
-  alert(`Importação concluída: ${count} registro(s) adicionado(s)${skipped?`, ${skipped} ignorado(s) por falta de nome`:''}.`);
+  alert(`Importação concluída: ${count} registro(s) adicionado(s)${skipped?`, ${skipped} ignorado(s) por falta de dado essencial`:''}.`);
 };
 
 if('serviceWorker' in navigator){

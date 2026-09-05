@@ -601,6 +601,48 @@ function suggestUnavailableMessage(c){
   }
   return `Oi ${first}, tudo bem? Infelizmente o imóvel abaixo não está mais disponível:\n${linkImovel}\n\nMas tenho essas opções que combinam com as características do imóvel que você se interessou:\n\n${opcoesTexto}\n\nSe quiser, também pode me contar mais detalhes do que procura aqui (leva 1 minutinho): ${formLink}`;
 }
+function matchScore(lead, im){
+  if(im.status!=='disponivel') return -1;
+  const fin = im.finalidade||[];
+  const wantsOp = lead.operacao==='aluguel' ? 'aluguel' : 'compra';
+  if(!fin.includes(wantsOp)) return -1;
+  let score = 0;
+  const leadBairros = chipsFrom(lead.bairros), imBairros = chipsFrom(im.bairro);
+  if(leadBairros.length===0 || leadBairros.some(b=>imBairros.includes(b))) score += 3;
+  const leadTipos = chipsFrom(lead.tipo), imTipos = chipsFrom(im.tipo);
+  if(leadTipos.length===0 || leadTipos.some(t=>imTipos.includes(t))) score += 2;
+  const valor = wantsOp==='aluguel' ? Number(im.valorLocacao||0) : Number(im.valorVenda||0);
+  const max = Number(lead.precomax||0);
+  if(max>0 && valor>0){
+    if(valor<=max) score += 3;
+    else if(valor<=max*1.1) score += 1;
+    else return -1;
+  }
+  const qMap = {Studio:0,'1':1,'2':2,'3':3,'4+':4};
+  if(lead.quartos && im.quartos){
+    const leadQ = qMap[lead.quartos] ?? 0, imQ = qMap[im.quartos] ?? 0;
+    if(imQ>=leadQ) score += 1;
+  }
+  if(lead.vaga==='sim' && Number(im.vagasQtd||0)>0) score += 1;
+  return score;
+}
+function findMatches(lead, limitN=4){
+  return data.imoveis.map(im=>({im, score:matchScore(lead,im)}))
+    .filter(x=>x.score>=0)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,limitN);
+}
+function imovelResumoTexto(im){
+  const bits = [];
+  if(im.rua) bits.push(im.rua+(im.numero?', '+im.numero:''));
+  if(im.m2) bits.push(im.m2+'m²');
+  if(im.quartos) bits.push(im.quartos+' dorm.');
+  const fin = im.finalidade||[];
+  const valor = fin.includes('aluguel') ? im.valorLocacao : im.valorVenda;
+  if(valor) bits.push(money(valor));
+  return bits.join(' · ') || (im.codigo || 'Imóvel');
+}
+
 function suggestOptionsMessage(c){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const opcoes = c.imoveisOpcoes||[];
@@ -858,6 +900,7 @@ function renderViewSwitcher(){
 
 function bindBuyerCardEvents(){
   bindMsgPanels();
+  bindMatchesButtons();
   document.querySelectorAll('.card-summary').forEach(el=>{
     el.onclick = ()=>{
       const id = el.dataset.toggle;
@@ -1067,6 +1110,47 @@ function getMsgState(kind, id, defaultType){
 }
 
 let expandedCards = new Set();
+let openMatchesFor = new Set();
+function matchesPanelHtml(lead){
+  if(!openMatchesFor.has(lead.id)) return '';
+  const matches = findMatches(lead);
+  if(matches.length===0) return `<div class="suggestion open" style="margin-top:8px;">Nenhum imóvel disponível bate com os critérios ainda.</div>`;
+  return `<div class="suggestion open" style="margin-top:8px;">
+    <b>Imóveis compatíveis:</b>
+    ${matches.map(({im,score})=>`
+      <div style="border-top:1px solid var(--line);padding:7px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="font-size:12px;">${escapeHtml(imovelResumoTexto(im))}${im.bairro?` · ${escapeHtml(chipsFrom(im.bairro).join(', '))}`:''}</div>
+        <button class="add-match-btn" data-lead="${lead.id}" data-im="${im.id}" style="flex:0 0 auto;font-size:11px;padding:5px 9px;">+ Adicionar</button>
+      </div>`).join('')}
+  </div>`;
+}
+function bindMatchesButtons(){
+  document.querySelectorAll('[data-mact="matches"]').forEach(b=>{
+    b.onclick = ()=>{
+      const id = b.dataset.id;
+      if(openMatchesFor.has(id)) openMatchesFor.delete(id); else openMatchesFor.add(id);
+      const panel = document.getElementById('matches-'+id);
+      const lead = data.compradores.find(c=>c.id===id);
+      if(panel && lead){ panel.innerHTML = matchesPanelHtml(lead); bindAddMatchButtons(); }
+    };
+  });
+  bindAddMatchButtons();
+}
+function bindAddMatchButtons(){
+  document.querySelectorAll('.add-match-btn').forEach(b=>{
+    b.onclick = async ()=>{
+      const lead = data.compradores.find(c=>c.id===b.dataset.lead);
+      const im = data.imoveis.find(x=>x.id===b.dataset.im);
+      if(!lead || !im) return;
+      const novaOpcao = { url: im.link || '(sem link cadastrado)', nota: imovelResumoTexto(im) };
+      const atual = lead.imoveisOpcoes || [];
+      if(atual.some(o=>o.nota===novaOpcao.nota)) { b.textContent = 'Já adicionado'; return; }
+      await setDoc(doc(db,'compradores',lead.id), { imoveisOpcoes: [...atual, novaOpcao] }, {merge:true});
+      b.textContent = '✓ Adicionado';
+    };
+  });
+}
+
 function buildMsgPanelHtml(kind, item){
   const isBuyer = kind==='buyer';
   const defaultType = isBuyer ? (item.stage==='novo'?'primeiro':'retorno') : (item.stage==='contato'?'primeiro':'retorno');
@@ -1160,6 +1244,7 @@ function buyerCardHtml(c, stageColor){
         <select class="stage-select" data-id="${c.id}">${BUYER_STAGES.map(s=>`<option value="${s.id}" ${s.id===c.stage?'selected':''}>${s.label}</option>`).join('')}</select>
         <button data-bact="contato" data-id="${c.id}">Contato hoje</button>
         <button class="sugbtn" data-id="${c.id}">Sugestão</button>
+        <button class="sugbtn" data-mact="matches" data-id="${c.id}">🎯 Ver imóveis compatíveis</button>
         ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">💬 WhatsApp</button></a>`:''}
         ${waOpcoes?`<a href="${waOpcoes}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">📨 Enviar opções (${opcoes.length})</button></a>`:''}
         ${waIndisponivel?`<a href="${waIndisponivel}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">🚫 Imóvel indisponível</button></a>`:''}
@@ -1168,6 +1253,7 @@ function buyerCardHtml(c, stageColor){
       </div>
       <div class="suggestion" id="bsug-${c.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="buyer-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
       <div id="msgpanel-buyer-${c.id}">${buildMsgPanelHtml('buyer', c)}</div>
+      <div id="matches-${c.id}">${matchesPanelHtml(c)}</div>
     </div>
   </div>`;
 }

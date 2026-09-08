@@ -445,7 +445,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -1756,8 +1756,8 @@ const OWNER_IMPORT_COLS = ['nome','contato','imovel','status','ultimoContato','p
 const OWNER_IMPORT_LABELS = ['Nome','Telefone/WhatsApp','Imóvel','Status (quente/morno/frio)','Último contato (AAAA-MM-DD ou DD/MM/AAAA)','Próxima ação','Observações'];
 const BUYER_IMPORT_COLS = ['nome','contato','operacao','bairros','tipo','precomax','ultimoContato','proximaAcao','notas'];
 const BUYER_IMPORT_LABELS = ['Nome','Telefone/WhatsApp','Operação (compra/aluguel)','Bairros','Tipo de imóvel','Valor máximo','Último contato (AAAA-MM-DD ou DD/MM/AAAA)','Próxima ação','Observações'];
-const IMOVEL_IMPORT_COLS = ['codigo','rua','numero','bairro','tipo','finalidade','valorVenda','valorLocacao','condominio','iptu','m2','quartos','vagasQtd','link'];
-const IMOVEL_IMPORT_LABELS = ['Código (Ref)','Rua','Número','Bairro','Tipo','Finalidade (venda/locacao/ambos)','Valor de venda','Valor de locação','Condomínio','IPTU','Área útil (m²)','Dormitórios','Vagas','Link do anúncio'];
+const IMOVEL_IMPORT_COLS = ['codigo','rua','numero','bairro','tipo','finalidade','valorVenda','valorLocacao','condominio','iptu','m2','quartos','vagasQtd','link','proprietarioNome','proprietarioTel'];
+const IMOVEL_IMPORT_LABELS = ['Código (Ref)','Rua','Número','Bairro','Tipo','Finalidade (venda/locacao/ambos)','Valor de venda','Valor de locação','Condomínio','IPTU','Área útil (m²)','Dormitórios','Vagas','Link do anúncio','Nome do proprietário','Telefone do proprietário'];
 
 function importCols(type){ return type==='owner'?OWNER_IMPORT_COLS : type==='imovel'?IMOVEL_IMPORT_COLS : BUYER_IMPORT_COLS; }
 function importLabels(type){ return type==='owner'?OWNER_IMPORT_LABELS : type==='imovel'?IMOVEL_IMPORT_LABELS : BUYER_IMPORT_LABELS; }
@@ -1814,7 +1814,7 @@ document.getElementById('downloadTemplateBtn').onclick = ()=>{
   const examples = {
     owner: 'Maria Silva;(11) 98888-7777;Apto 90m² Higienópolis;morno;2026-08-20;Retornar com avaliação;Prefere contato à tarde',
     buyer: 'João Souza;(11) 97777-6666;compra;Pinheiros, Vila Madalena;Apartamento;900000;2026-08-20;Agendar visita;Trabalha em home office',
-    imovel: 'AP12345;Rua Consolação;123;Higienópolis;Apartamento;venda;630000;;950;150;80;2;1;https://kenlo.exemplo/AP12345',
+    imovel: 'AP12345;Rua Consolação;123;Higienópolis;Apartamento;venda;630000;;950;150;80;2;1;https://kenlo.exemplo/AP12345;Maria Silva;(11) 98888-7777',
   };
   const csv = '\uFEFF' + headerRow + '\n' + examples[importType] + '\n';
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
@@ -1891,7 +1891,31 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
       if(finRaw.includes('venda')||finRaw.includes('ambos')||finRaw.includes('compra')) finalidade.push('compra');
       if(finRaw.includes('loca')||finRaw.includes('ambos')) finalidade.push('aluguel');
       if(finalidade.length===0) finalidade.push('compra');
+
+      let proprietarioId = null;
+      const propNome = (fields[14]||'').trim();
+      const propTel = (fields[15]||'').trim();
+      const propDigits = propTel.replace(/\D/g,'');
+      if(propDigits){
+        try{
+          const q = query(ownersCol, where('contatoDigits','==',propDigits), limit(1));
+          const snap = await getDocs(q);
+          if(!snap.empty){ proprietarioId = snap.docs[0].id; }
+        }catch(e){}
+        if(!proprietarioId){
+          const ownerId = doc(ownersCol).id;
+          await setDoc(doc(db,'proprietarios',ownerId), {
+            nome: propNome || 'Proprietário '+codigo,
+            contato: propTel, contatoDigits: propDigits,
+            imovel: `${rua}${(fields[2]||'').trim()?', '+(fields[2]||'').trim():''}`,
+            status: 'morno', stage: 'contato', ultimoContato: today, notas: 'Criado automaticamente na importação de imóveis.',
+          }, {merge:true});
+          proprietarioId = ownerId;
+        }
+      }
+
       const rec = {
+        proprietarioId,
         codigo, rua, numero: (fields[2]||'').trim(),
         bairro: (fields[3]||'').trim(), tipo: (fields[4]||'').trim(),
         finalidade,

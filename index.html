@@ -812,6 +812,21 @@ function bindOwnerCardEvents(){
       renderOwners();
     };
   });
+  document.querySelectorAll('#ownersList .jump-to-imovel').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      const imId = el.dataset.imid;
+      document.querySelector('.tab[data-view="imoveis"]').click();
+      imovelViewMode = 'grid';
+      renderImovelViewSwitcher();
+      expandedImoveis.add(imId);
+      renderImoveis();
+      setTimeout(()=>{
+        const card = document.querySelector(`#imoveisList .card[data-id="${imId}"]`);
+        if(card) card.scrollIntoView({behavior:'smooth', block:'center'});
+      }, 100);
+    };
+  });
   document.querySelectorAll('[data-oact]').forEach(b=>{ b.onclick = ()=>ownerAction(b.dataset.oact, b.dataset.id); });
   document.querySelectorAll('.owner-stage-select').forEach(sel=>{
     sel.onchange = async ()=>{ await setDoc(doc(db,'proprietarios',sel.dataset.id), {stage:sel.value}, {merge:true}); };
@@ -911,6 +926,7 @@ function ownerCardHtml(o){
   const sug = suggestOwner(o);
   const wa = waLink(o.contato, sug.ready);
   const expanded = expandedOwners.has(o.id);
+  const imoveisVinculados = data.imoveis.filter(im=>im.proprietarioId===o.id);
   return `<div class="card ${expanded?'expanded':''}" data-id="${o.id}" style="--stage-color:${color}">
     <div class="card-summary" data-toggle="${o.id}">
       <div class="pri-badge" style="--pri-color:${color};margin-bottom:6px;"><span class="dot"></span>${o.status}</div>
@@ -920,6 +936,7 @@ function ownerCardHtml(o){
       </div>
       ${o.imovel?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">${escapeHtml(o.imovel)}</div>`:''}
       ${o.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(o.contato)}</div>`:''}
+      ${imoveisVinculados.length?`<div class="chips">${imoveisVinculados.map(im=>`<span class="chip jump-to-imovel" data-imid="${im.id}" style="cursor:pointer;border-color:${tipoColor(im.tipo)};color:${tipoColor(im.tipo)};font-weight:600;">🏠 ${escapeHtml(im.codigo||im.rua||'imóvel')}</span>`).join('')}</div>`:''}
       ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
     <div class="card-details">

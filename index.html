@@ -1038,7 +1038,7 @@ function renderViewSwitcher(){
 function bindBuyerCardEvents(){
   bindMsgPanels();
   bindMatchesButtons();
-  document.querySelectorAll('.card-summary').forEach(el=>{
+  document.querySelectorAll('#board .card-summary').forEach(el=>{
     el.onclick = ()=>{
       const id = el.dataset.toggle;
       if(expandedCards.has(id)) expandedCards.delete(id); else expandedCards.add(id);
@@ -1079,12 +1079,12 @@ function renderBoardKanban(){
       <div class="dropzone" data-stage="${stage.id}">${items.length===0?`<div class="empty-col">vazio</div>`:items.map(c=>buyerCardHtml(c, stage.color)).join('')}</div>
     </div>`;
   }).join('');
-  document.querySelectorAll('.dropzone').forEach(zone=>{
+  document.querySelectorAll('#board .dropzone').forEach(zone=>{
     zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('over'); });
     zone.addEventListener('dragleave', ()=>zone.classList.remove('over'));
     zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('over'); moveBuyer(e.dataTransfer.getData('text/plain'), zone.dataset.stage); });
   });
-  document.querySelectorAll('.card').forEach(el=>{ el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id)); });
+  document.querySelectorAll('#board .card').forEach(el=>{ el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id)); });
   bindBuyerCardEvents();
 }
 
@@ -1784,7 +1784,7 @@ function renderImoveisKanban(){
     </div>`;
   }).join('');
 
-  document.querySelectorAll('.dropzone').forEach(zone=>{
+  document.querySelectorAll('#imoveisList .dropzone').forEach(zone=>{
     zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('over'); });
     zone.addEventListener('dragleave', ()=>zone.classList.remove('over'));
     zone.addEventListener('drop', async e=>{
@@ -1793,7 +1793,7 @@ function renderImoveisKanban(){
       await setDoc(doc(db,'imoveis',id), {tipo: zone.dataset.tipo}, {merge:true});
     });
   });
-  document.querySelectorAll('.card[draggable="true"]').forEach(el=>{
+  document.querySelectorAll('#imoveisList .card[draggable="true"]').forEach(el=>{
     el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id));
   });
   bindImovelCardEvents();

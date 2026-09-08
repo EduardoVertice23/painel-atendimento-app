@@ -178,6 +178,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
       <div class="tab" data-view="owners">Proprietários</div>
       <div class="tab" data-view="buyers">Leads</div>
       <div class="tab" data-view="imoveis">Imóveis</div>
+      <div class="tab" data-view="visitas">Visitas</div>
     </div>
   </div>
 </div>
@@ -229,6 +230,31 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   <div class="filterlabel">Status</div>
   <div class="chipbar" id="imovelStatusBar"></div>
   <div id="imoveisList"></div>
+</div>
+
+<div class="view" id="view-visitas">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="openAddVisita">+ Nova visita</button></div>
+  <div class="filterlabel">Mostrar</div>
+  <div class="chipbar" id="visitaStatusBar"></div>
+  <div id="visitasList"></div>
+</div>
+
+<div class="overlay" id="overlayVisita">
+  <div class="modal">
+    <h2 id="visitaModalTitle">Nova visita</h2>
+    <div class="field"><label>Lead</label><select id="vi-lead"></select></div>
+    <div class="field"><label>Imóvel <span>(opcional — escolha um cadastrado ou descreva livre abaixo)</span></label><select id="vi-imovel"></select></div>
+    <div class="field"><label>Descrição livre do imóvel <span>(se não estiver na lista acima)</span></label><input type="text" id="vi-imovel-livre" placeholder="Ex: Apto Rua X, 123"></div>
+    <div class="field-row">
+      <div class="field"><label>Data</label><input type="date" id="vi-data"></div>
+      <div class="field"><label>Horário</label><input type="time" id="vi-hora"></div>
+    </div>
+    <div class="field"><label>Observações</label><textarea id="vi-notas"></textarea></div>
+    <div class="modal-actions">
+      <button class="cancel" id="visitaCancelBtn">Cancelar</button>
+      <button class="save" id="visitaSaveBtn">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <div class="overlay" id="overlayOwner">
@@ -486,6 +512,7 @@ if(messaging){
 const ownersCol = collection(db, 'proprietarios');
 const buyersCol = collection(db, 'compradores');
 const imoveisCol = collection(db, 'imoveis');
+const visitasCol = collection(db, 'visitas');
 
 const OVERDUE_DAYS_BUYER = 2;
 const OWNER_THRESH = { quente:2, morno:2, frio:2 };
@@ -557,7 +584,7 @@ const BUYER_STAGE_MSG_ALUGUEL = {
   perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
 };
 
-let data = { proprietarios:[], compradores:[], imoveis:[] };
+let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[] };
 let personaFilter=null, priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
@@ -708,6 +735,11 @@ onSnapshot(buyersCol, snap=>{
 onSnapshot(imoveisCol, snap=>{
   data.imoveis = snap.docs.map(d=>({id:d.id, ...d.data()}));
   renderImoveis(); renderDashboard(); markSynced();
+}, err=>{ console.error(err); });
+
+onSnapshot(visitasCol, snap=>{
+  data.visitas = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderVisitas(); markSynced();
 }, err=>{ console.error(err); });
 
 /* ---------- TABS ---------- */
@@ -920,6 +952,9 @@ function bindBuyerCardEvents(){
   document.querySelectorAll('[data-bact="edit"]').forEach(b=>{ b.onclick=()=>openBuyerModal(data.compradores.find(c=>c.id===b.dataset.id)); });
   document.querySelectorAll('[data-bact="del"]').forEach(b=>{
     b.onclick = async ()=>{ const c=data.compradores.find(x=>x.id===b.dataset.id); if(confirm(`Remover "${c.nome}"?`)){ await deleteDoc(doc(db,'compradores',c.id)); } };
+  });
+  document.querySelectorAll('[data-bact="agendarvisita"]').forEach(b=>{
+    b.onclick = ()=>{ document.querySelector('.tab[data-view="visitas"]').click(); openVisitaModal(null, b.dataset.id); };
   });
   document.querySelectorAll('.sugbtn').forEach(b=>{ b.onclick = ()=> document.getElementById('bsug-'+b.dataset.id).classList.toggle('open'); });
   document.querySelectorAll('.buyer-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
@@ -1253,6 +1288,7 @@ function buyerCardHtml(c, stageColor){
         ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">💬 WhatsApp</button></a>`:''}
         ${waOpcoes?`<a href="${waOpcoes}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">📨 Enviar opções (${opcoes.length})</button></a>`:''}
         ${waIndisponivel?`<a href="${waIndisponivel}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">🚫 Imóvel indisponível</button></a>`:''}
+        <button class="editbtn" data-bact="agendarvisita" data-id="${c.id}">📅 Agendar visita</button>
         <button class="editbtn" data-bact="edit" data-id="${c.id}">Editar</button>
         <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
       </div>
@@ -1750,6 +1786,123 @@ document.getElementById('imovelSaveBtn').onclick = async ()=>{
   document.getElementById('overlayImovel').classList.remove('open');
 };
 
+/* ---------- VISITAS ---------- */
+let visitaStatusFilter = 'agendada';
+let editingVisitaId = null;
+
+function renderVisitaStatusBar(){
+  const opts = [ {id:'agendada', label:'Agendadas', color:'#3E7C93'}, {id:'realizada', label:'Realizadas', color:'#2F8F6E'}, {id:'cancelada', label:'Canceladas', color:'#A7B2AB'} ];
+  document.getElementById('visitaStatusBar').innerHTML = opts.map(o=>{
+    const active = visitaStatusFilter===o.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${o.color}" data-s="${o.id}"><span class="dot"></span>${o.label}</div>`;
+  }).join('');
+  document.querySelectorAll('#visitaStatusBar .pri-chip').forEach(el=>{
+    el.onclick = ()=>{ visitaStatusFilter = el.dataset.s; renderVisitaStatusBar(); renderVisitas(); };
+  });
+}
+
+function visitaLabel(v){
+  if(v.imovelId){
+    const im = data.imoveis.find(x=>x.id===v.imovelId);
+    if(im) return (im.codigo?im.codigo+' · ':'') + (im.rua || im.codigo || 'Imóvel');
+  }
+  return v.imovelLivre || 'Imóvel não especificado';
+}
+
+function renderVisitas(){
+  const list = document.getElementById('visitasList');
+  const items = data.visitas.filter(v=>v.status===visitaStatusFilter)
+    .sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
+  if(items.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>Nenhuma visita ${visitaStatusFilter==='agendada'?'agendada':visitaStatusFilter==='realizada'?'realizada':'cancelada'} ainda.</div></div>`;
+    return;
+  }
+  const groups = {};
+  items.forEach(v=>{ (groups[v.data] = groups[v.data]||[]).push(v); });
+  const dates = Object.keys(groups).sort();
+  list.innerHTML = dates.map(dt=>{
+    const dLabel = new Date(dt+'T00:00:00').toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'2-digit'});
+    return `<div class="stage-group">
+      <div class="stage-group-head" style="--sg-color:#3E7C93"><span class="dot"></span><h3>${dLabel}</h3><span class="cnt">${groups[dt].length}</span></div>
+      ${groups[dt].map(v=>visitaCardHtml(v)).join('')}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-vact="realizada"]').forEach(b=>{ b.onclick=()=>setDoc(doc(db,'visitas',b.dataset.id), {status:'realizada'}, {merge:true}); });
+  document.querySelectorAll('[data-vact="cancelada"]').forEach(b=>{ b.onclick=()=>setDoc(doc(db,'visitas',b.dataset.id), {status:'cancelada'}, {merge:true}); });
+  document.querySelectorAll('[data-vact="reagendar"]').forEach(b=>{ b.onclick=()=>setDoc(doc(db,'visitas',b.dataset.id), {status:'agendada'}, {merge:true}); });
+  document.querySelectorAll('[data-vact="edit"]').forEach(b=>{ b.onclick=()=>openVisitaModal(data.visitas.find(x=>x.id===b.dataset.id)); });
+  document.querySelectorAll('[data-vact="del"]').forEach(b=>{
+    b.onclick = async ()=>{ if(confirm('Remover essa visita?')){ await deleteDoc(doc(db,'visitas',b.dataset.id)); } };
+  });
+  bindWaSendLinks();
+}
+
+function visitaCardHtml(v){
+  const lead = data.compradores.find(c=>c.id===v.leadId);
+  const wa = lead && lead.contato ? waLink(lead.contato, `Oi ${(lead.nome||'').split(' ')[0]}, tudo bem? Só confirmando nossa visita${v.hora?' às '+v.hora:''} pro imóvel: ${visitaLabel(v)}.`) : null;
+  return `<div class="owner-card" style="--status-color:${v.status==='agendada'?'#3E7C93':v.status==='realizada'?'#2F8F6E':'#A7B2AB'}">
+    <div class="owner-top">
+      <div>
+        <div class="owner-name">${v.hora?v.hora+' · ':''}${escapeHtml(lead?lead.nome:'Lead removido')}</div>
+        <div class="owner-imovel">📍 ${escapeHtml(visitaLabel(v))}</div>
+      </div>
+      <span class="status-pill" style="background:${v.status==='agendada'?'#3E7C93':v.status==='realizada'?'#2F8F6E':'#A7B2AB'};">${v.status}</span>
+    </div>
+    ${v.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(v.notas)}</div>`:''}
+    <div class="owner-actions">
+      ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${v.leadId}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Confirmar</button></a>`:''}
+      ${v.status!=='realizada'?`<button data-vact="realizada" data-id="${v.id}">✓ Realizada</button>`:''}
+      ${v.status!=='cancelada'?`<button data-vact="cancelada" data-id="${v.id}">Cancelar</button>`:`<button data-vact="reagendar" data-id="${v.id}">Reagendar</button>`}
+      <button data-vact="edit" data-id="${v.id}">Editar</button>
+      <button class="danger" data-vact="del" data-id="${v.id}">✕</button>
+    </div>
+  </div>`;
+}
+
+function fillVisitaSelects(current){
+  document.getElementById('vi-lead').innerHTML = `<option value="">—</option>` +
+    data.compradores.map(c=>`<option value="${c.id}" ${current&&current.leadId===c.id?'selected':''}>${escapeHtml(c.nome)}</option>`).join('');
+  document.getElementById('vi-imovel').innerHTML = `<option value="">— nenhum / usar descrição livre —</option>` +
+    data.imoveis.map(im=>`<option value="${im.id}" ${current&&current.imovelId===im.id?'selected':''}>${escapeHtml((im.codigo?im.codigo+' · ':'')+(im.rua||''))}</option>`).join('');
+}
+
+function openVisitaModal(v, prefillLeadId){
+  editingVisitaId = v ? v.id : null;
+  document.getElementById('visitaModalTitle').textContent = v ? 'Editar visita' : 'Nova visita';
+  fillVisitaSelects(v);
+  if(!v && prefillLeadId) document.getElementById('vi-lead').value = prefillLeadId;
+  document.getElementById('vi-imovel-livre').value = v ? v.imovelLivre||'' : '';
+  document.getElementById('vi-data').value = v ? v.data||'' : new Date().toISOString().slice(0,10);
+  document.getElementById('vi-hora').value = v ? v.hora||'' : '';
+  document.getElementById('vi-notas').value = v ? v.notas||'' : '';
+  document.getElementById('overlayVisita').classList.add('open');
+}
+document.getElementById('openAddVisita').onclick = ()=>openVisitaModal(null);
+document.getElementById('visitaCancelBtn').onclick = ()=>document.getElementById('overlayVisita').classList.remove('open');
+document.getElementById('overlayVisita').onclick = e=>{ if(e.target.id==='overlayVisita') e.target.classList.remove('open'); };
+document.getElementById('visitaSaveBtn').onclick = async ()=>{
+  const leadId = document.getElementById('vi-lead').value;
+  const dataV = document.getElementById('vi-data').value;
+  if(!leadId){ alert('Escolha o lead pra essa visita'); return; }
+  if(!dataV){ alert('Escolha a data da visita'); return; }
+  const rec = {
+    leadId,
+    imovelId: document.getElementById('vi-imovel').value || null,
+    imovelLivre: document.getElementById('vi-imovel-livre').value.trim(),
+    data: dataV,
+    hora: document.getElementById('vi-hora').value,
+    notas: document.getElementById('vi-notas').value.trim(),
+  };
+  if(editingVisitaId){
+    await setDoc(doc(db,'visitas',editingVisitaId), rec, {merge:true});
+  } else {
+    rec.status = 'agendada';
+    const id = doc(visitasCol).id;
+    await setDoc(doc(db,'visitas',id), rec, {merge:true});
+  }
+  document.getElementById('overlayVisita').classList.remove('open');
+};
+
 renderViewSwitcher();
 renderOperationBar();
 renderPriorityBar();
@@ -1757,6 +1910,8 @@ renderPersonaBar();
 renderImovelViewSwitcher();
 renderImovelStatusBar();
 renderImoveis();
+renderVisitaStatusBar();
+renderVisitas();
 
 /* ---------- NOTIFICAÇÕES DE ATRASO ---------- */
 const notifBtn = document.getElementById('notifBtn');

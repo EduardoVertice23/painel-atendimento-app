@@ -1303,6 +1303,13 @@ function fillBuyerStageSelect(current){
   document.getElementById('f-stage').innerHTML = BUYER_STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.label}</option>`).join('');
 }
 const TIPO_IMOVEL_OPTIONS = ['Apartamento','Casa','Sobrado','Studio','Kitnet','Cobertura','Flat','Loft','Sala Comercial','Conjunto Comercial','Galpão','Terreno','Loja'];
+const TIPO_IMOVEL_COLORS = {
+  'Apartamento':'#3E7C93', 'Casa':'#4C7A5D', 'Sobrado':'#8A6D3B', 'Studio':'#A8477A',
+  'Kitnet':'#B8562B', 'Cobertura':'#5B4E8C', 'Flat':'#6B5B95', 'Loft':'#2F8F6E',
+  'Sala Comercial':'#C9A24C', 'Conjunto Comercial':'#E1653D', 'Galpão':'#7A8C84',
+  'Terreno':'#5C6B73', 'Loja':'#B8863E',
+};
+function tipoColor(tipo){ return TIPO_IMOVEL_COLORS[tipo] || '#7A8C84'; }
 const BAIRRO_OPTIONS = ['Centro Histórico','Higienópolis','Santa Cecília','Vila Buarque','Consolação','República','Pinheiros','Alto de Pinheiros','Perdizes','Pompeia','Vila Madalena','Sumaré','Barra Funda','Jardins'];
 const DIFERENCIAIS_OPTIONS = ['Pet friendly','Mobiliado','Vaga de garagem','Vaga dupla','Elevador','Portaria 24h','Piscina','Academia','Salão de festas','Varanda/Sacada','Perto do metrô','Perto da CPTM','Área de serviço','Churrasqueira'];
 const QUARTOS_OPTIONS = ['Studio','1','2','3','4+'];
@@ -1544,10 +1551,10 @@ function renderImovelStatusBar(){
   });
 }
 
-let imovelViewMode = 'lista';
+let imovelViewMode = 'kanban';
 
 function renderImovelViewSwitcher(){
-  const opts = [ {id:'lista', label:'☰ Lista'}, {id:'kanban', label:'☰ Kanban por tipo'} ];
+  const opts = [ {id:'kanban', label:'☰ Kanban por tipo'}, {id:'grid', label:'▦ Grade'}, {id:'table', label:'☰ Lista'} ];
   document.getElementById('imovelViewSwitcher').innerHTML = opts.map(o=>{
     const active = imovelViewMode===o.id;
     return `<div class="pri-chip ${active?'active':''}" style="--dot-color:var(--primary)" data-v="${o.id}">${o.label}</div>`;
@@ -1559,10 +1566,18 @@ function renderImovelViewSwitcher(){
 
 function renderImoveis(){
   if(imovelViewMode==='kanban') return renderImoveisKanban();
-  return renderImoveisList();
+  if(imovelViewMode==='table') return renderImoveisTable();
+  return renderImoveisGrid();
 }
 
 function bindImovelCardEvents(){
+  document.querySelectorAll('#imoveisList .card-summary').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.toggle;
+      if(expandedImoveis.has(id)) expandedImoveis.delete(id); else expandedImoveis.add(id);
+      renderImoveis();
+    };
+  });
   document.querySelectorAll('[data-iact="edit"]').forEach(b=>{ b.onclick=()=>openImovelModal(data.imoveis.find(x=>x.id===b.dataset.id)); });
   document.querySelectorAll('[data-iact="del"]').forEach(b=>{
     b.onclick = async ()=>{ const im=data.imoveis.find(x=>x.id===b.dataset.id); if(confirm(`Remover o cadastro de "${im.codigo||im.rua||'imóvel'}"?`)){ await deleteDoc(doc(db,'imoveis',im.id)); } };
@@ -1588,9 +1603,12 @@ function bindImovelCardEvents(){
   });
 }
 
-function renderImoveisList(){
+function renderImoveisGrid(){
   const list = document.getElementById('imoveisList');
   list.className = '';
+  list.style.display = 'grid';
+  list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+  list.style.gap = '12px';
   const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
     .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
   if(items.length===0){
@@ -1601,9 +1619,53 @@ function renderImoveisList(){
   bindImovelCardEvents();
 }
 
+function renderImoveisTable(){
+  const list = document.getElementById('imoveisList');
+  list.className = ''; list.style.display = 'block';
+  const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
+    .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
+  if(items.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
+    return;
+  }
+  const rows = items.map(im=>{
+    const contato = imovelContato(im);
+    const fin = im.finalidade||[];
+    const valor = fin.includes('aluguel') ? im.valorLocacao : im.valorVenda;
+    const endereco = im.rua ? `${im.rua}${im.numero?', '+im.numero:''}` : (im.codigo||'—');
+    const recheck = needsRecheck(im);
+    return `<tr style="border-bottom:1px solid var(--line);">
+      <td style="padding:9px 8px;"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);">${escapeHtml(im.codigo||'')}</span></td>
+      <td style="padding:9px 8px;">${escapeHtml(endereco)}</td>
+      <td style="padding:9px 8px;"><span class="pri-badge" style="--pri-color:${tipoColor(im.tipo)};"><span class="dot"></span>${escapeHtml(im.tipo||'—')}</span></td>
+      <td style="padding:9px 8px;">${escapeHtml(chipsFrom(im.bairro).join(', ')||'—')}</td>
+      <td style="padding:9px 8px;">${finalidadeLabel(im)}</td>
+      <td style="padding:9px 8px;font-family:'JetBrains Mono',monospace;">${valor?money(valor):'—'}</td>
+      <td style="padding:9px 8px;">${escapeHtml(contato.nome||'—')}</td>
+      <td style="padding:9px 8px;">${recheck?'<span class="days-label overdue">reconfirmar</span>':'ok'}</td>
+      <td style="padding:9px 8px;white-space:nowrap;">
+        <button class="editbtn" data-iact="edit" data-id="${im.id}">Editar</button>
+        <button class="delbtn" data-iact="del" data-id="${im.id}">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+  list.innerHTML = `<div style="overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="text-align:left;border-bottom:2px solid var(--line);">
+        <th style="padding:9px 8px;">Código</th><th style="padding:9px 8px;">Endereço</th><th style="padding:9px 8px;">Tipo</th>
+        <th style="padding:9px 8px;">Bairro</th><th style="padding:9px 8px;">Finalidade</th><th style="padding:9px 8px;">Valor</th>
+        <th style="padding:9px 8px;">Proprietário</th><th style="padding:9px 8px;">Status</th><th style="padding:9px 8px;">Ações</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+  bindImovelCardEvents();
+}
+
 function renderImoveisKanban(){
   const list = document.getElementById('imoveisList');
   list.className = 'board';
+  list.style.cssText = '';
   const filtered = data.imoveis.filter(im=>im.status===imovelStatusFilter);
   const tiposPresentes = TIPO_IMOVEL_OPTIONS.filter(t => filtered.some(im=>im.tipo===t) );
   const semTipo = filtered.filter(im=>!im.tipo || !TIPO_IMOVEL_OPTIONS.includes(im.tipo));
@@ -1631,12 +1693,13 @@ function renderImoveisKanban(){
       await setDoc(doc(db,'imoveis',id), {tipo: zone.dataset.tipo}, {merge:true});
     });
   });
-  document.querySelectorAll('.owner-card[draggable="true"]').forEach(el=>{
+  document.querySelectorAll('.card[draggable="true"]').forEach(el=>{
     el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id));
   });
   bindImovelCardEvents();
 }
 
+let expandedImoveis = new Set();
 function imovelCardHtml(im){
   const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
   const contato = imovelContato(im);
@@ -1654,27 +1717,36 @@ function imovelCardHtml(im){
   if(im.vagasQtd) specChips.push(im.vagasQtd+' vaga(s)'+(im.vagaTipo?' ('+im.vagaTipo+')':''));
   if(im.andar) specChips.push(im.andar+'º andar'+(im.totalandares?'/'+im.totalandares:''));
   const pacoteLocacao = fin.includes('aluguel') ? (Number(im.valorLocacao||0)+Number(im.condominio||0)+(im.iptuPeriodo==='mensal'?Number(im.iptu||0):Number(im.iptu||0)/12)) : null;
-  return `<div class="owner-card" draggable="true" data-id="${im.id}" style="--status-color:${recheck?'#E1653D':(im.status==='disponivel'?'#2F8F6E':'#A7B2AB')}">    <div class="owner-top">
-      <div>
-        <div class="owner-name">${im.codigo?`<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);">${escapeHtml(im.codigo)}</span> `:''}${escapeHtml(endereco)}</div>
-        ${im.edificio?`<div class="owner-imovel">🏢 ${escapeHtml(im.edificio)}</div>`:''}
-        <div class="owner-imovel">${escapeHtml(chipsFrom(im.bairro).join(', '))}${im.tipo?' · '+escapeHtml(chipsFrom(im.tipo).join(', ')):''}</div>
-        ${contato.nome?`<div class="owner-imovel">👤 ${escapeHtml(contato.nome)}${im.respNome?' (responsável)':''}</div>`:''}
+  const tColor = tipoColor(im.tipo);
+  const expanded = expandedImoveis.has(im.id);
+
+  return `<div class="card ${expanded?'expanded':''}" draggable="true" data-id="${im.id}" style="--stage-color:${tColor}">
+    <div class="card-summary" data-toggle="${im.id}">
+      <div class="pri-badge" style="--pri-color:${tColor};margin-bottom:6px;"><span class="dot"></span>${im.tipo||'Sem tipo'}</div>
+      <div class="card-top">
+        <span class="card-name">${im.codigo?`<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);">${escapeHtml(im.codigo)}</span> `:''}${escapeHtml(endereco)}</span>
+        <span class="op-tag">${finalidadeLabel(im)}</span>
       </div>
-      <span class="status-pill" style="background:${fin.includes('aluguel')&&fin.includes('compra')?'#8A6D3B':(fin.includes('aluguel')?'#2F8F6E':'#3E7C93')};">${finalidadeLabel(im)}</span>
+      ${contato.nome?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">👤 ${escapeHtml(contato.nome)}</div>`:''}
+      ${recheck?`<div class="op-tag" style="text-transform:none;font-weight:700;color:var(--urgent);">⚠ reconfirmar disponibilidade</div>`:''}
+      ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
-    ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
-    ${fin.includes('compra')&&im.valorVenda?`<div class="price-range">Venda: ${money(im.valorVenda)}</div>`:''}
-    ${fin.includes('aluguel')&&im.valorLocacao?`<div class="price-range">Locação: ${money(im.valorLocacao)}${pacoteLocacao?` · Pacote: ${money(Math.round(pacoteLocacao))}`:''}</div>`:''}
-    ${im.link?`<div class="owner-meta"><a href="${im.link}" target="_blank" rel="noopener" style="color:var(--primary);">Ver anúncio ↗</a></div>`:''}
-    <div class="owner-meta"><b>${im.status==='disponivel'?'Disponível há':'Ficou disponível por'}:</b> ${dias!=null?dias+' dia(s)':'—'} ${recheck?'<span style="color:var(--urgent);font-weight:700;">· reconfirmar!</span>':''}</div>
-    ${im.motivoIndisponivel?`<div class="owner-meta"><b>Motivo:</b> ${escapeHtml(im.motivoIndisponivel)}</div>`:''}
-    ${im.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(im.notas)}</div>`:''}
-    <div class="owner-actions">
-      ${im.status==='disponivel' && waConfirmar?`<a href="${waConfirmar}" target="_blank" rel="noopener" class="im-confirmar-link" data-id="${im.id}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Confirmar</button></a>`:''}
-      ${im.status==='disponivel'?`<button data-iact="indisponivel" data-id="${im.id}">Marcar indisponível</button>`:`<button data-iact="reativar" data-id="${im.id}">Reativar</button>`}
-      <button data-iact="edit" data-id="${im.id}">Editar</button>
-      <button class="danger" data-iact="del" data-id="${im.id}">✕</button>
+    <div class="card-details">
+      ${im.edificio?`<div class="owner-imovel">🏢 ${escapeHtml(im.edificio)}</div>`:''}
+      ${chipsFrom(im.bairro).length?`<div class="chips">${chipsFrom(im.bairro).map(b=>`<span class="chip">${escapeHtml(b)}</span>`).join('')}</div>`:''}
+      ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
+      ${fin.includes('compra')&&im.valorVenda?`<div class="price-range">Venda: ${money(im.valorVenda)}</div>`:''}
+      ${fin.includes('aluguel')&&im.valorLocacao?`<div class="price-range">Locação: ${money(im.valorLocacao)}${pacoteLocacao?` · Pacote: ${money(Math.round(pacoteLocacao))}`:''}</div>`:''}
+      ${im.link?`<div class="owner-meta"><a href="${im.link}" target="_blank" rel="noopener" style="color:var(--primary);">Ver anúncio ↗</a></div>`:''}
+      <div class="owner-meta"><b>${im.status==='disponivel'?'Disponível há':'Ficou disponível por'}:</b> ${dias!=null?dias+' dia(s)':'—'}</div>
+      ${im.motivoIndisponivel?`<div class="owner-meta"><b>Motivo:</b> ${escapeHtml(im.motivoIndisponivel)}</div>`:''}
+      ${im.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(im.notas)}</div>`:''}
+      <div class="owner-actions">
+        ${im.status==='disponivel' && waConfirmar?`<a href="${waConfirmar}" target="_blank" rel="noopener" class="im-confirmar-link" data-id="${im.id}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Confirmar</button></a>`:''}
+        ${im.status==='disponivel'?`<button data-iact="indisponivel" data-id="${im.id}">Marcar indisponível</button>`:`<button data-iact="reativar" data-id="${im.id}">Reativar</button>`}
+        <button data-iact="edit" data-id="${im.id}">Editar</button>
+        <button class="danger" data-iact="del" data-id="${im.id}">✕</button>
+      </div>
     </div>
   </div>`;
 }

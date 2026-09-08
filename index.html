@@ -93,6 +93,12 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:9px;cursor:grab;border-top:3px solid var(--stage-color);}
 .card:active{cursor:grabbing;}
 .card.dim{opacity:.3;}
+@keyframes highlightFlash{
+  0%{box-shadow:0 0 0 0 rgba(225,101,61,0);}
+  15%{box-shadow:0 0 0 4px rgba(225,101,61,.6);}
+  100%{box-shadow:0 0 0 0 rgba(225,101,61,0);}
+}
+.card.highlight-flash{animation:highlightFlash 1.4s ease-out 2;}
 .card-summary{cursor:pointer;}
 .card-details{display:none;}
 .card.expanded .card-details{display:block;}
@@ -823,7 +829,11 @@ function bindOwnerCardEvents(){
       renderImoveis();
       setTimeout(()=>{
         const card = document.querySelector(`#imoveisList .card[data-id="${imId}"]`);
-        if(card) card.scrollIntoView({behavior:'smooth', block:'center'});
+        if(card){
+          card.scrollIntoView({behavior:'smooth', block:'center'});
+          card.classList.add('highlight-flash');
+          setTimeout(()=> card.classList.remove('highlight-flash'), 3000);
+        }
       }, 100);
     };
   });

@@ -224,6 +224,8 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <button class="addbtn" id="openImportImovel" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddImovel">+ Novo imóvel</button>
   </div>
+  <div class="filterlabel">Visualização</div>
+  <div class="chipbar" id="imovelViewSwitcher"></div>
   <div class="filterlabel">Status</div>
   <div class="chipbar" id="imovelStatusBar"></div>
   <div id="imoveisList"></div>
@@ -1506,15 +1508,25 @@ function renderImovelStatusBar(){
   });
 }
 
+let imovelViewMode = 'lista';
+
+function renderImovelViewSwitcher(){
+  const opts = [ {id:'lista', label:'☰ Lista'}, {id:'kanban', label:'☰ Kanban por tipo'} ];
+  document.getElementById('imovelViewSwitcher').innerHTML = opts.map(o=>{
+    const active = imovelViewMode===o.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:var(--primary)" data-v="${o.id}">${o.label}</div>`;
+  }).join('');
+  document.querySelectorAll('#imovelViewSwitcher .pri-chip').forEach(el=>{
+    el.onclick = ()=>{ imovelViewMode = el.dataset.v; renderImovelViewSwitcher(); renderImoveis(); };
+  });
+}
+
 function renderImoveis(){
-  const list = document.getElementById('imoveisList');
-  const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
-    .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
-  if(items.length===0){
-    list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
-    return;
-  }
-  list.innerHTML = items.map(im=>imovelCardHtml(im)).join('');
+  if(imovelViewMode==='kanban') return renderImoveisKanban();
+  return renderImoveisList();
+}
+
+function bindImovelCardEvents(){
   document.querySelectorAll('[data-iact="edit"]').forEach(b=>{ b.onclick=()=>openImovelModal(data.imoveis.find(x=>x.id===b.dataset.id)); });
   document.querySelectorAll('[data-iact="del"]').forEach(b=>{
     b.onclick = async ()=>{ const im=data.imoveis.find(x=>x.id===b.dataset.id); if(confirm(`Remover o cadastro de "${im.codigo||im.rua||'imóvel'}"?`)){ await deleteDoc(doc(db,'imoveis',im.id)); } };
@@ -1540,6 +1552,55 @@ function renderImoveis(){
   });
 }
 
+function renderImoveisList(){
+  const list = document.getElementById('imoveisList');
+  list.className = '';
+  const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
+    .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
+  if(items.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
+    return;
+  }
+  list.innerHTML = items.map(im=>imovelCardHtml(im)).join('');
+  bindImovelCardEvents();
+}
+
+function renderImoveisKanban(){
+  const list = document.getElementById('imoveisList');
+  list.className = 'board';
+  const filtered = data.imoveis.filter(im=>im.status===imovelStatusFilter);
+  const tiposPresentes = TIPO_IMOVEL_OPTIONS.filter(t => filtered.some(im=>im.tipo===t) );
+  const semTipo = filtered.filter(im=>!im.tipo || !TIPO_IMOVEL_OPTIONS.includes(im.tipo));
+  const colunas = [...tiposPresentes, ...(semTipo.length ? ['Sem tipo'] : [])];
+
+  if(colunas.length===0){
+    list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
+    return;
+  }
+
+  list.innerHTML = colunas.map(tipo=>{
+    const items = tipo==='Sem tipo' ? semTipo : filtered.filter(im=>im.tipo===tipo);
+    return `<div class="col">
+      <div class="col-head"><span class="col-title" style="--stage-color:#3E7C93">${tipo}</span><span class="col-count">${items.length}</span></div>
+      <div class="dropzone" data-tipo="${tipo==='Sem tipo'?'':tipo}">${items.map(im=>imovelCardHtml(im)).join('')}</div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.dropzone').forEach(zone=>{
+    zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', ()=>zone.classList.remove('over'));
+    zone.addEventListener('drop', async e=>{
+      e.preventDefault(); zone.classList.remove('over');
+      const id = e.dataTransfer.getData('text/plain');
+      await setDoc(doc(db,'imoveis',id), {tipo: zone.dataset.tipo}, {merge:true});
+    });
+  });
+  document.querySelectorAll('.owner-card[draggable="true"]').forEach(el=>{
+    el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id));
+  });
+  bindImovelCardEvents();
+}
+
 function imovelCardHtml(im){
   const prop = data.proprietarios.find(p=>p.id===im.proprietarioId);
   const contato = imovelContato(im);
@@ -1557,8 +1618,7 @@ function imovelCardHtml(im){
   if(im.vagasQtd) specChips.push(im.vagasQtd+' vaga(s)'+(im.vagaTipo?' ('+im.vagaTipo+')':''));
   if(im.andar) specChips.push(im.andar+'º andar'+(im.totalandares?'/'+im.totalandares:''));
   const pacoteLocacao = fin.includes('aluguel') ? (Number(im.valorLocacao||0)+Number(im.condominio||0)+(im.iptuPeriodo==='mensal'?Number(im.iptu||0):Number(im.iptu||0)/12)) : null;
-  return `<div class="owner-card" style="--status-color:${recheck?'#E1653D':(im.status==='disponivel'?'#2F8F6E':'#A7B2AB')}">
-    <div class="owner-top">
+  return `<div class="owner-card" draggable="true" data-id="${im.id}" style="--status-color:${recheck?'#E1653D':(im.status==='disponivel'?'#2F8F6E':'#A7B2AB')}">    <div class="owner-top">
       <div>
         <div class="owner-name">${im.codigo?`<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);">${escapeHtml(im.codigo)}</span> `:''}${escapeHtml(endereco)}</div>
         ${im.edificio?`<div class="owner-imovel">🏢 ${escapeHtml(im.edificio)}</div>`:''}
@@ -1694,6 +1754,7 @@ renderViewSwitcher();
 renderOperationBar();
 renderPriorityBar();
 renderPersonaBar();
+renderImovelViewSwitcher();
 renderImovelStatusBar();
 renderImoveis();
 

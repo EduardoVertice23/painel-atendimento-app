@@ -200,6 +200,8 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <button class="addbtn" id="openImportOwner" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddOwner">+ Novo proprietário</button>
   </div>
+  <div class="filterlabel">Visualização</div>
+  <div class="chipbar" id="ownerViewSwitcher"></div>
   <div id="ownersList"></div>
 </div>
 
@@ -790,21 +792,26 @@ function renderDashboard(){
 }
 
 /* ---------- OWNERS VIEW ---------- */
-function renderOwners(){
-  const list = document.getElementById('ownersList');
-  if(data.proprietarios.length===0){
-    list.innerHTML = `<div class="empty"><div class="big">Nenhum proprietário ainda</div><div>Adicione o primeiro contato de captação.</div></div>`;
-    return;
-  }
-  list.innerHTML = OWNER_STAGES.map(stage=>{
-    const items = data.proprietarios.filter(o=>o.stage===stage.id)
-      .sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
-    if(items.length===0) return '';
-    return `<div class="stage-group">
-      <div class="stage-group-head" style="--sg-color:${stage.color}"><span class="dot"></span><h3>${stage.label}</h3><span class="cnt">${items.length}</span></div>
-      ${items.map(o=>ownerCardHtml(o)).join('')}
-    </div>`;
+let ownerViewMode = 'kanban';
+function renderOwnerViewSwitcher(){
+  const opts = [ {id:'kanban', label:'☰ Kanban'}, {id:'grid', label:'▦ Grade'}, {id:'table', label:'☰ Lista'} ];
+  document.getElementById('ownerViewSwitcher').innerHTML = opts.map(o=>{
+    const active = ownerViewMode===o.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:var(--primary)" data-v="${o.id}">${o.label}</div>`;
   }).join('');
+  document.querySelectorAll('#ownerViewSwitcher .pri-chip').forEach(el=>{
+    el.onclick = ()=>{ ownerViewMode = el.dataset.v; renderOwnerViewSwitcher(); renderOwners(); };
+  });
+}
+
+function bindOwnerCardEvents(){
+  document.querySelectorAll('#ownersList .card-summary').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.toggle;
+      if(expandedOwners.has(id)) expandedOwners.delete(id); else expandedOwners.add(id);
+      renderOwners();
+    };
+  });
   document.querySelectorAll('[data-oact]').forEach(b=>{ b.onclick = ()=>ownerAction(b.dataset.oact, b.dataset.id); });
   document.querySelectorAll('.owner-stage-select').forEach(sel=>{
     sel.onchange = async ()=>{ await setDoc(doc(db,'proprietarios',sel.dataset.id), {stage:sel.value}, {merge:true}); };
@@ -813,32 +820,125 @@ function renderOwners(){
   document.querySelectorAll('.owner-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
   bindMsgPanels();
 }
+
+function renderOwners(){
+  if(data.proprietarios.length===0){
+    document.getElementById('ownersList').innerHTML = `<div class="empty"><div class="big">Nenhum proprietário ainda</div><div>Adicione o primeiro contato de captação.</div></div>`;
+    return;
+  }
+  if(ownerViewMode==='table') return renderOwnersTable();
+  if(ownerViewMode==='grid') return renderOwnersGrid();
+  return renderOwnersKanban();
+}
+
+function renderOwnersKanban(){
+  const list = document.getElementById('ownersList');
+  list.className = 'board'; list.style.cssText = '';
+  const colunas = OWNER_STAGES.filter(stage => data.proprietarios.some(o=>o.stage===stage.id));
+  list.innerHTML = colunas.map(stage=>{
+    const items = data.proprietarios.filter(o=>o.stage===stage.id)
+      .sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
+    return `<div class="col">
+      <div class="col-head"><span class="col-title" style="--stage-color:${stage.color}">${stage.label}</span><span class="col-count">${items.length}</span></div>
+      <div class="dropzone" data-stage="${stage.id}">${items.map(o=>ownerCardHtml(o)).join('')}</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#ownersList .dropzone').forEach(zone=>{
+    zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', ()=>zone.classList.remove('over'));
+    zone.addEventListener('drop', async e=>{
+      e.preventDefault(); zone.classList.remove('over');
+      const id = e.dataTransfer.getData('text/plain');
+      await setDoc(doc(db,'proprietarios',id), {stage: zone.dataset.stage}, {merge:true});
+    });
+  });
+  document.querySelectorAll('#ownersList .card').forEach(el=>{
+    el.setAttribute('draggable','true');
+    el.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', el.dataset.id));
+  });
+  bindOwnerCardEvents();
+}
+
+function renderOwnersGrid(){
+  const list = document.getElementById('ownersList');
+  list.className = '';
+  list.style.display = 'grid';
+  list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+  list.style.gap = '12px';
+  const items = [...data.proprietarios].sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
+  list.innerHTML = items.map(o=>ownerCardHtml(o)).join('');
+  bindOwnerCardEvents();
+}
+
+function renderOwnersTable(){
+  const list = document.getElementById('ownersList');
+  list.className = ''; list.style.cssText = '';
+  const items = [...data.proprietarios].sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
+  const rows = items.map(o=>{
+    const days = daysSince(o.ultimoContato);
+    const overdue = days >= (OWNER_THRESH[o.status]||5);
+    const stage = stageOfOwner(o.stage);
+    return `<tr style="border-bottom:1px solid var(--line);">
+      <td style="padding:9px 8px;">${escapeHtml(o.nome)}</td>
+      <td style="padding:9px 8px;"><span class="pri-badge" style="--pri-color:${OWNER_STATUS_COLOR[o.status]};"><span class="dot"></span>${o.status}</span></td>
+      <td style="padding:9px 8px;">${stage.label}</td>
+      <td style="padding:9px 8px;">${escapeHtml(o.imovel||'—')}</td>
+      <td style="padding:9px 8px;">${escapeHtml(o.contato||'—')}</td>
+      <td style="padding:9px 8px;" class="${overdue?'days-label overdue':'days-label'}">${days===0?'hoje':days+'d'}</td>
+      <td style="padding:9px 8px;white-space:nowrap;">
+        <button class="editbtn" data-oact="edit" data-id="${o.id}">Editar</button>
+        <button class="delbtn" data-oact="del" data-id="${o.id}">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+  list.innerHTML = `<div style="overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="text-align:left;border-bottom:2px solid var(--line);">
+        <th style="padding:9px 8px;">Nome</th><th style="padding:9px 8px;">Status</th><th style="padding:9px 8px;">Etapa</th>
+        <th style="padding:9px 8px;">Imóvel</th><th style="padding:9px 8px;">Contato</th><th style="padding:9px 8px;">Últ. contato</th><th style="padding:9px 8px;">Ações</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+  document.querySelectorAll('[data-oact]').forEach(b=>{ b.onclick = ()=>ownerAction(b.dataset.oact, b.dataset.id); });
+}
+let expandedOwners = new Set();
 function ownerCardHtml(o){
   const days = daysSince(o.ultimoContato);
   const thresh = OWNER_THRESH[o.status]||5;
   const overdue = days>=thresh;
-  const pct = Math.min(100, Math.round((days/thresh)*100));
   const color = OWNER_STATUS_COLOR[o.status];
   const sug = suggestOwner(o);
   const wa = waLink(o.contato, sug.ready);
-  return `<div class="owner-card" style="--status-color:${color}">
-    <div class="owner-top"><div><div class="owner-name">${escapeHtml(o.nome)}</div>${o.imovel?`<div class="owner-imovel">${escapeHtml(o.imovel)}</div>`:''}${o.contato?`<div class="owner-imovel">📞 ${escapeHtml(o.contato)}</div>`:''}</div><span class="status-pill">${o.status}</span></div>
-    <div class="gauge-row"><div class="gauge"><div class="gauge-fill" style="width:${pct}%;background:${color}"></div></div><span class="days-label ${overdue?'overdue':''}">${days===0?'hoje':days+'d'}</span></div>
-    ${o.proximaAcao?`<div class="owner-meta"><b>Próxima ação:</b> ${escapeHtml(o.proximaAcao)}</div>`:''}
-    ${o.metodo?`<div class="owner-meta"><b>Método:</b> ${o.metodo} · ${METHOD_NAMES[o.metodo]}</div>`:''}
-    ${o.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(o.notas)}</div>`:''}
-    <div class="owner-actions">
-      <select class="owner-stage-select" data-id="${o.id}">${OWNER_STAGES.map(s=>`<option value="${s.id}" ${s.id===o.stage?'selected':''}>${s.label}</option>`).join('')}</select>
-      <button data-oact="contato" data-id="${o.id}">Contato hoje</button>
-      <button class="owner-sug-btn" data-id="${o.id}">Sugestão</button>
-      ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">💬 WhatsApp</button></a>`:''}
-      <button data-oact="cadastrarimovel" data-id="${o.id}">🏠 Cadastrar imóvel</button>
-      <button data-oact="linkconfirmacao" data-id="${o.id}">🔗 Link de confirmação</button>
-      <button data-oact="edit" data-id="${o.id}">Editar</button>
-      <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
+  const expanded = expandedOwners.has(o.id);
+  return `<div class="card ${expanded?'expanded':''}" data-id="${o.id}" style="--stage-color:${color}">
+    <div class="card-summary" data-toggle="${o.id}">
+      <div class="pri-badge" style="--pri-color:${color};margin-bottom:6px;"><span class="dot"></span>${o.status}</div>
+      <div class="card-top">
+        <span class="card-name">${escapeHtml(o.nome)}</span>
+        <span class="op-tag ${overdue?'':''}" style="${overdue?'color:var(--urgent);font-weight:700;':''}">${days===0?'hoje':days+'d'}</span>
+      </div>
+      ${o.imovel?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">${escapeHtml(o.imovel)}</div>`:''}
+      ${o.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(o.contato)}</div>`:''}
+      ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
-    <div class="suggestion" id="osug-${o.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="owner-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
-    <div id="msgpanel-owner-${o.id}">${buildMsgPanelHtml('owner', o)}</div>
+    <div class="card-details">
+      ${o.proximaAcao?`<div class="owner-meta"><b>Próxima ação:</b> ${escapeHtml(o.proximaAcao)}</div>`:''}
+      ${o.metodo?`<div class="owner-meta"><b>Método:</b> ${o.metodo} · ${METHOD_NAMES[o.metodo]}</div>`:''}
+      ${o.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(o.notas)}</div>`:''}
+      <div class="owner-actions">
+        <select class="owner-stage-select" data-id="${o.id}">${OWNER_STAGES.map(s=>`<option value="${s.id}" ${s.id===o.stage?'selected':''}>${s.label}</option>`).join('')}</select>
+        <button data-oact="contato" data-id="${o.id}">Contato hoje</button>
+        <button class="owner-sug-btn" data-id="${o.id}">Sugestão</button>
+        ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">💬 WhatsApp</button></a>`:''}
+        <button data-oact="cadastrarimovel" data-id="${o.id}">🏠 Cadastrar imóvel</button>
+        <button data-oact="linkconfirmacao" data-id="${o.id}">🔗 Link de confirmação</button>
+        <button data-oact="edit" data-id="${o.id}">Editar</button>
+        <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
+      </div>
+      <div class="suggestion" id="osug-${o.id}">${escapeHtml(sug.tip)}<div class="copyln"><button class="owner-copy-btn" data-text="${escapeHtml(sug.ready)}">Copiar mensagem pronta</button></div></div>
+      <div id="msgpanel-owner-${o.id}">${buildMsgPanelHtml('owner', o)}</div>
+    </div>
   </div>`;
 }
 async function ownerAction(act, id){
@@ -1975,6 +2075,7 @@ document.getElementById('visitaSaveBtn').onclick = async ()=>{
   document.getElementById('overlayVisita').classList.remove('open');
 };
 
+renderOwnerViewSwitcher();
 renderViewSwitcher();
 renderOperationBar();
 renderPriorityBar();

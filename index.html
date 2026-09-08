@@ -607,6 +607,11 @@ function daysSince(dateStr){
 }
 function money(n){ if(n===undefined||n===null||n==='') return null; return 'R$ '+Number(n).toLocaleString('pt-BR'); }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function siteBaseUrl(){
+  // Funciona tanto na raiz do domínio (ex: Netlify) quanto num subcaminho (ex: GitHub Pages /repo/).
+  const path = window.location.pathname.replace(/index\.html$/, '');
+  return window.location.origin + path;
+}
 function chipsFrom(str){ return (str||'').split(',').map(s=>s.trim()).filter(Boolean); }
 function personaOf(id){ return PERSONAS.find(p=>p.id===id); }
 
@@ -632,7 +637,7 @@ function suggestUnavailableMessage(c){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const linkImovel = c.linkAnuncio || '[link do imóvel]';
   const opcoes = c.imoveisOpcoes||[];
-  const formLink = window.location.origin + '/formulario-lead.html';
+  const formLink = siteBaseUrl() + 'formulario-lead.html';
   let opcoesTexto;
   if(opcoes.length){
     opcoesTexto = opcoes.map((o,i)=>{
@@ -708,7 +713,7 @@ function suggestBuyer(c){
   let ready;
   if(c.stage==='novo'){
     const linkTxt = c.linkAnuncio ? c.linkAnuncio : '[cole aqui o link do imóvel]';
-    const formLink = window.location.origin + '/formulario-lead.html';
+    const formLink = siteBaseUrl() + 'formulario-lead.html';
     ready = `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Pra eu já te adiantar outras opções parecidas, me conta rapidinho o que você procura aqui (leva 1 minutinho): ${formLink}`;
   } else {
     ready = `Oi ${first}, tudo bem? Passando aqui pra seguir com ${buscaTexto}${bairro?' em '+bairro:''}. ${stageMsg}`;
@@ -979,7 +984,7 @@ async function ownerAction(act, id){
   else if(act==='cadastrarimovel'){ document.querySelector('.tab[data-view="imoveis"]').click(); openImovelModal(null, o); }
   else if(act==='linkconfirmacao'){
     if(!o.contatoDigits){ alert('Esse proprietário ainda não tem telefone cadastrado. Edita o card e adiciona o telefone primeiro.'); return; }
-    const link = window.location.origin + '/formulario-proprietario.html?tel=' + o.contatoDigits;
+    const link = siteBaseUrl() + 'formulario-proprietario.html?tel=' + o.contatoDigits;
     copyText(link, document.querySelector(`[data-oact="linkconfirmacao"][data-id="${id}"]`));
   }
   else if(act==='del'){ if(confirm(`Remover "${o.nome}"?`)){ await deleteDoc(doc(db,'proprietarios',id)); } }
@@ -1195,7 +1200,7 @@ function buildBuyerMessage(c, typeId, toneId){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
   const bairro = chipsFrom(c.bairros)[0];
   const linkTxt = c.linkAnuncio ? c.linkAnuncio : '[cole aqui o link do imóvel]';
-  const formLink = window.location.origin + '/formulario-lead.html';
+  const formLink = siteBaseUrl() + 'formulario-lead.html';
   const T = {
     primeiro: {
       gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Pra eu já te adiantar outras opções parecidas, me conta rapidinho o que você procura aqui (leva 1 minutinho): ${formLink}`,
@@ -2218,7 +2223,7 @@ function openImportModal(type){
   document.getElementById('overlayImport').classList.add('open');
 }
 document.getElementById('copyFormLinkBtn').onclick = ()=>{
-  const link = window.location.origin + '/formulario-lead.html';
+  const link = siteBaseUrl() + 'formulario-lead.html';
   copyText(link, document.getElementById('copyFormLinkBtn'));
 };
 document.getElementById('openImportOwner').onclick = ()=>openImportModal('owner');

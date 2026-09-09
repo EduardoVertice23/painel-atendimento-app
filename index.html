@@ -579,7 +579,7 @@ const OWNER_STAGES = [
   {id:'negociando', label:'Negociando captação', color:'#3E7C93'},
   {id:'documentacao', label:'Documentação', color:'#C9A24C'},
   {id:'publicado', label:'Publicado/Ativo', color:'#1E6B4F'},
-  {id:'perdido', label:'Perdido', color:'#A7B2AB'},
+  {id:'perdido', label:'Descartado', color:'#A7B2AB'},
 ];
 
 const PERSONAS = [
@@ -1066,7 +1066,11 @@ function ownerCardHtml(o){
 async function ownerAction(act, id){
   const o = data.proprietarios.find(x=>x.id===id);
   if(!o) return;
-  if(act==='contato'){ await setDoc(doc(db,'proprietarios',id), {ultimoContato: new Date().toISOString().slice(0,10), mensagemEnviada: true}, {merge:true}); }
+  if(act==='contato'){
+    const update = { ultimoContato: new Date().toISOString().slice(0,10), mensagemEnviada: true };
+    if(o.stage==='contato') update.stage = 'negociando';
+    await setDoc(doc(db,'proprietarios',id), update, {merge:true});
+  }
   else if(act==='edit'){ openOwnerModal(o); }
   else if(act==='cadastrarimovel'){ document.querySelector('.tab[data-view="imoveis"]').click(); openImovelModal(null, o); }
   else if(act==='linkconfirmacao'){
@@ -1444,7 +1448,11 @@ function bindWaSendLinks(){
     a.addEventListener('click', ()=>{
       const col = a.dataset.kind==='buyer' ? 'compradores' : 'proprietarios';
       const update = { ultimoContato: new Date().toISOString().slice(0,10) };
-      if(col==='proprietarios') update.mensagemEnviada = true;
+      if(col==='proprietarios'){
+        update.mensagemEnviada = true;
+        const owner = data.proprietarios.find(o=>o.id===a.dataset.id);
+        if(owner && owner.stage==='contato') update.stage = 'negociando';
+      }
       setDoc(doc(db, col, a.dataset.id), update, {merge:true}).catch(()=>{});
     });
   });
@@ -1831,6 +1839,9 @@ function bindImovelCardEvents(){
       const motivo = prompt('Motivo (opcional): vendido, alugado, desistiu...') || '';
       const dias = im.dataConfirmadoDisponivel ? daysBetween(im.dataConfirmadoDisponivel, new Date().toISOString().slice(0,10)) : null;
       await setDoc(doc(db,'imoveis',im.id), { status:'indisponivel', dataIndisponivel:new Date().toISOString().slice(0,10), motivoIndisponivel:motivo, diasNoMercado: dias }, {merge:true});
+      if(im.proprietarioId){
+        await setDoc(doc(db,'proprietarios',im.proprietarioId), {stage:'perdido'}, {merge:true});
+      }
     };
   });
   document.querySelectorAll('[data-iact="reativar"]').forEach(b=>{
@@ -2108,6 +2119,9 @@ document.getElementById('imovelSaveBtn').onclick = async ()=>{
     rec.ultimaConfirmacao = today;
     const id = doc(imoveisCol).id;
     await setDoc(doc(db,'imoveis',id), rec, {merge:true});
+    if(rec.proprietarioId){
+      await setDoc(doc(db,'proprietarios',rec.proprietarioId), {stage:'publicado'}, {merge:true});
+    }
   }
   document.getElementById('overlayImovel').classList.remove('open');
 };

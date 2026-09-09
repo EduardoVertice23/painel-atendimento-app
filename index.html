@@ -230,6 +230,8 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   </div>
   <div class="filterlabel">Visualização</div>
   <div class="chipbar" id="ownerViewSwitcher"></div>
+  <div class="filterlabel">Contato</div>
+  <div class="chipbar" id="ownerContatoBar"></div>
   <div id="ownersList"></div>
 </div>
 
@@ -873,6 +875,22 @@ function renderDashboard(){
 
 /* ---------- OWNERS VIEW ---------- */
 let ownerViewMode = 'kanban';
+let ownerContatoFilter = 'todos';
+function renderOwnerContatoBar(){
+  const opts = [ {id:'todos', label:'Todos'}, {id:'sem', label:'Sem mensagem'}, {id:'ja', label:'Já contatado'} ];
+  document.getElementById('ownerContatoBar').innerHTML = opts.map(o=>{
+    const active = ownerContatoFilter===o.id;
+    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:var(--primary)" data-c="${o.id}">${o.label}</div>`;
+  }).join('');
+  document.querySelectorAll('#ownerContatoBar .pri-chip').forEach(el=>{
+    el.onclick = ()=>{ ownerContatoFilter = el.dataset.c; renderOwnerContatoBar(); renderOwners(); };
+  });
+}
+function filteredOwners(){
+  if(ownerContatoFilter==='sem') return data.proprietarios.filter(o=>!o.mensagemEnviada);
+  if(ownerContatoFilter==='ja') return data.proprietarios.filter(o=>o.mensagemEnviada);
+  return data.proprietarios;
+}
 function renderOwnerViewSwitcher(){
   const opts = [ {id:'kanban', label:'☰ Kanban'}, {id:'grid', label:'▦ Grade'}, {id:'table', label:'☰ Lista'} ];
   document.getElementById('ownerViewSwitcher').innerHTML = opts.map(o=>{
@@ -933,9 +951,9 @@ function renderOwners(){
 function renderOwnersKanban(){
   const list = document.getElementById('ownersList');
   list.className = 'board'; list.style.cssText = '';
-  const colunas = OWNER_STAGES.filter(stage => data.proprietarios.some(o=>o.stage===stage.id));
+  const colunas = OWNER_STAGES.filter(stage => filteredOwners().some(o=>o.stage===stage.id));
   list.innerHTML = colunas.map(stage=>{
-    const items = data.proprietarios.filter(o=>o.stage===stage.id)
+    const items = filteredOwners().filter(o=>o.stage===stage.id)
       .sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
     return `<div class="col">
       <div class="col-head"><span class="col-title" style="--stage-color:${stage.color}">${stage.label}</span><span class="col-count">${items.length}</span></div>
@@ -964,7 +982,7 @@ function renderOwnersGrid(){
   list.style.display = 'grid';
   list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
   list.style.gap = '12px';
-  const items = [...data.proprietarios].sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
+  const items = [...filteredOwners()].sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
   list.innerHTML = items.map(o=>ownerCardHtml(o)).join('');
   bindOwnerCardEvents();
 }
@@ -972,7 +990,7 @@ function renderOwnersGrid(){
 function renderOwnersTable(){
   const list = document.getElementById('ownersList');
   list.className = ''; list.style.cssText = '';
-  const items = [...data.proprietarios].sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
+  const items = [...filteredOwners()].sort((a,b)=> (daysSince(b.ultimoContato)/(OWNER_THRESH[b.status]||5)) - (daysSince(a.ultimoContato)/(OWNER_THRESH[a.status]||5)));
   const rows = items.map(o=>{
     const days = daysSince(o.ultimoContato);
     const overdue = days >= (OWNER_THRESH[o.status]||5);
@@ -1048,7 +1066,7 @@ function ownerCardHtml(o){
 async function ownerAction(act, id){
   const o = data.proprietarios.find(x=>x.id===id);
   if(!o) return;
-  if(act==='contato'){ await setDoc(doc(db,'proprietarios',id), {ultimoContato: new Date().toISOString().slice(0,10)}, {merge:true}); }
+  if(act==='contato'){ await setDoc(doc(db,'proprietarios',id), {ultimoContato: new Date().toISOString().slice(0,10), mensagemEnviada: true}, {merge:true}); }
   else if(act==='edit'){ openOwnerModal(o); }
   else if(act==='cadastrarimovel'){ document.querySelector('.tab[data-view="imoveis"]').click(); openImovelModal(null, o); }
   else if(act==='linkconfirmacao'){
@@ -1425,7 +1443,9 @@ function bindWaSendLinks(){
     a.dataset.bound = '1';
     a.addEventListener('click', ()=>{
       const col = a.dataset.kind==='buyer' ? 'compradores' : 'proprietarios';
-      setDoc(doc(db, col, a.dataset.id), {ultimoContato: new Date().toISOString().slice(0,10)}, {merge:true}).catch(()=>{});
+      const update = { ultimoContato: new Date().toISOString().slice(0,10) };
+      if(col==='proprietarios') update.mensagemEnviada = true;
+      setDoc(doc(db, col, a.dataset.id), update, {merge:true}).catch(()=>{});
     });
   });
 }
@@ -2210,6 +2230,7 @@ document.getElementById('visitaSaveBtn').onclick = async ()=>{
 };
 
 renderOwnerViewSwitcher();
+renderOwnerContatoBar();
 renderViewSwitcher();
 renderOperationBar();
 renderPriorityBar();

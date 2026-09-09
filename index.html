@@ -1752,20 +1752,17 @@ function suggestConfirmacaoDadosMessage(im){
   const bits = [];
   if(fin.includes('compra') && im.valorVenda) bits.push(`Venda: ${money(im.valorVenda)}`);
   if(fin.includes('aluguel') && im.valorLocacao) bits.push(`Locação: ${money(im.valorLocacao)}`);
-  if(im.condominio) bits.push(`Condomínio: ${money(im.condominio)}`);
+  if(im.condominio) bits.push(`Cond.: ${money(im.condominio)}`);
   if(im.iptu) bits.push(`IPTU: ${money(im.iptu)}`);
-  if(im.m2) bits.push(`${im.m2}m² úteis`);
-  if(im.quartos) bits.push(`${im.quartos} dormitório(s)`);
-  if(im.banheiros) bits.push(`${im.banheiros} banheiro(s)`);
+  if(im.m2) bits.push(`${im.m2}m²`);
+  if(im.quartos) bits.push(`${im.quartos} dorm.`);
   if(im.vagasQtd) bits.push(`${im.vagasQtd} vaga(s)`);
   const resumo = bits.length ? bits.join(' · ') : 'os dados que você me passou';
 
-  const pedirFotos = im.fotos!=='sim' ? ' Você já tem fotos do imóvel? Pode me mandar aqui mesmo pra eu já ir preparando a divulgação.' : '';
-  const perguntaVisita = im.disponibilidadeVisita==='sim'
-    ? ' Você me falou que já tem disponibilidade pra visita/acesso essa semana — vou te avisando conforme surgir interessado.'
-    : ' Sobre visita/acesso: como fica melhor pra combinar com você?';
+  const pedirFotos = im.fotos!=='sim' ? ' Tem fotos?' : '';
+  const perguntaVisita = im.disponibilidadeVisita==='sim' ? '' : ' E dá pra visita?';
 
-  return `Oi ${first}, tudo bem? Recebi a confirmação do seu imóvel! Só pra fechar os dados: ${resumo}. Está tudo certo?${pedirFotos}${perguntaVisita}`;
+  return `Oi ${first}! Recebi a confirmação: ${resumo}. Tá certo?${pedirFotos}${perguntaVisita}`;
 }
 
 function renderImovelStatusBar(){

@@ -1011,6 +1011,8 @@ function ownerCardHtml(o){
   const wa = waLink(o.contato, sug.ready);
   const expanded = expandedOwners.has(o.id);
   const imoveisVinculados = data.imoveis.filter(im=>im.proprietarioId===o.id);
+  const imDisponivel = imoveisVinculados.find(im=>im.status==='disponivel');
+  const waConfirmarDadosOwner = (imDisponivel && o.contato) ? waLink(o.contato, suggestConfirmacaoDadosMessage(imDisponivel)) : null;
   return `<div class="card ${expanded?'expanded':''}" data-id="${o.id}" style="--stage-color:${color}">
     <div class="card-summary" data-toggle="${o.id}">
       <div class="pri-badge" style="--pri-color:${color};margin-bottom:6px;"><span class="dot"></span>${o.status}</div>
@@ -1032,6 +1034,7 @@ function ownerCardHtml(o){
         <button data-oact="contato" data-id="${o.id}">Contato hoje</button>
         <button class="owner-sug-btn" data-id="${o.id}">Sugestão</button>
         ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">💬 WhatsApp</button></a>`:''}
+        ${waConfirmarDadosOwner?`<a href="${waConfirmarDadosOwner}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">✅ Confirmar dados</button></a>`:''}
         <button data-oact="cadastrarimovel" data-id="${o.id}">🏠 Cadastrar imóvel</button>
         <button data-oact="linkconfirmacao" data-id="${o.id}">🔗 Link de confirmação</button>
         <button data-oact="edit" data-id="${o.id}">Editar</button>

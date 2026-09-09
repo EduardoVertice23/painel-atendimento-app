@@ -1759,7 +1759,7 @@ function suggestConfirmacaoDadosMessage(im){
   if(im.vagasQtd) bits.push(`${im.vagasQtd} vaga(s)`);
   const resumo = bits.length ? bits.join(' · ') : 'os dados que você me passou';
 
-  const pedirFotos = im.fotos!=='sim' ? ' Tem fotos?' : '';
+  const pedirFotos = im.fotos!=='sim' ? ' Tem fotos? Se não, tem algum anúncio com fotos, ou posso agendar uma visita pra tirar?' : '';
   const perguntaVisita = im.disponibilidadeVisita==='sim' ? '' : ' E dá pra visita?';
 
   return `Oi ${first}! Recebi a confirmação: ${resumo}. Tá certo?${pedirFotos}${perguntaVisita}`;

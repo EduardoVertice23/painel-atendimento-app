@@ -459,6 +459,14 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     </div>
 
     <div style="font-weight:700;color:var(--ink);margin:16px 0 8px;">Outros</div>
+    <div class="field-row">
+      <div class="field"><label>Tem fotos?</label>
+        <select id="im-fotos"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select>
+      </div>
+      <div class="field"><label>Disponibilidade p/ visita</label>
+        <select id="im-visita"><option value="">Não informado</option><option value="sim">Essa semana</option><option value="nao">Só combinando antes</option></select>
+      </div>
+    </div>
     <div class="field"><label>Link do anúncio</label><input type="text" id="im-link" placeholder="Cole o link (Kenlo, etc)"></div>
     <div class="field"><label>Observações</label><textarea id="im-notas"></textarea></div>
 
@@ -1733,6 +1741,29 @@ function suggestRecheckMessage(im){
   return `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Só confirmando: o imóvel${endTxt?' ('+endTxt+')':''} continua disponível pra ${finalidadeLabel(im)}?`;
 }
 
+function suggestConfirmacaoDadosMessage(im){
+  const c = imovelContato(im);
+  const first = (c.nome||'').split(' ')[0] || 'tudo bem';
+  const fin = im.finalidade||[];
+  const bits = [];
+  if(fin.includes('compra') && im.valorVenda) bits.push(`Venda: ${money(im.valorVenda)}`);
+  if(fin.includes('aluguel') && im.valorLocacao) bits.push(`Locação: ${money(im.valorLocacao)}`);
+  if(im.condominio) bits.push(`Condomínio: ${money(im.condominio)}`);
+  if(im.iptu) bits.push(`IPTU: ${money(im.iptu)}`);
+  if(im.m2) bits.push(`${im.m2}m² úteis`);
+  if(im.quartos) bits.push(`${im.quartos} dormitório(s)`);
+  if(im.banheiros) bits.push(`${im.banheiros} banheiro(s)`);
+  if(im.vagasQtd) bits.push(`${im.vagasQtd} vaga(s)`);
+  const resumo = bits.length ? bits.join(' · ') : 'os dados que você me passou';
+
+  const pedirFotos = im.fotos!=='sim' ? ' Você já tem fotos do imóvel? Pode me mandar aqui mesmo pra eu já ir preparando a divulgação.' : '';
+  const perguntaVisita = im.disponibilidadeVisita==='sim'
+    ? ' Você me falou que já tem disponibilidade pra visita/acesso essa semana — vou te avisando conforme surgir interessado.'
+    : ' Sobre visita/acesso: como fica melhor pra combinar com você?';
+
+  return `Oi ${first}, tudo bem? Recebi a confirmação do seu imóvel! Só pra fechar os dados: ${resumo}. Está tudo certo?${pedirFotos}${perguntaVisita}`;
+}
+
 function renderImovelStatusBar(){
   const opts = [ {id:'disponivel', label:'Disponíveis', color:'#2F8F6E'}, {id:'indisponivel', label:'Indisponíveis', color:'#A7B2AB'} ];
   document.getElementById('imovelStatusBar').innerHTML = opts.map(o=>{
@@ -1912,6 +1943,7 @@ function imovelCardHtml(im){
   const pacoteLocacao = fin.includes('aluguel') ? (Number(im.valorLocacao||0)+Number(im.condominio||0)+(im.iptuPeriodo==='mensal'?Number(im.iptu||0):Number(im.iptu||0)/12)) : null;
   const tColor = tipoColor(im.tipo);
   const expanded = expandedImoveis.has(im.id);
+  const waConfirmarDados = contato.tel ? waLink(contato.tel, suggestConfirmacaoDadosMessage(im)) : null;
 
   return `<div class="card ${expanded?'expanded':''}" draggable="true" data-id="${im.id}" style="--stage-color:${tColor}">
     <div class="card-summary" data-toggle="${im.id}">
@@ -1922,6 +1954,7 @@ function imovelCardHtml(im){
       </div>
       ${contato.nome?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">👤 ${escapeHtml(contato.nome)}</div>`:''}
       ${recheck?`<div class="op-tag" style="text-transform:none;font-weight:700;color:var(--urgent);">⚠ reconfirmar disponibilidade</div>`:''}
+      ${im.fotos==='nao'?`<div class="op-tag" style="text-transform:none;font-weight:600;color:var(--urgent);">📷 sem fotos ainda</div>`:''}
       ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
     <div class="card-details">
@@ -1930,12 +1963,17 @@ function imovelCardHtml(im){
       ${specChips.length?`<div class="chips">${specChips.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`:''}
       ${fin.includes('compra')&&im.valorVenda?`<div class="price-range">Venda: ${money(im.valorVenda)}</div>`:''}
       ${fin.includes('aluguel')&&im.valorLocacao?`<div class="price-range">Locação: ${money(im.valorLocacao)}${pacoteLocacao?` · Pacote: ${money(Math.round(pacoteLocacao))}`:''}</div>`:''}
+      ${im.condominio?`<div class="owner-meta"><b>Condomínio:</b> ${money(im.condominio)}</div>`:''}
+      ${im.iptu?`<div class="owner-meta"><b>IPTU:</b> ${money(im.iptu)}</div>`:''}
+      ${im.fotos?`<div class="owner-meta"><b>Fotos:</b> ${im.fotos==='sim'?'✅ Tem':'❌ Ainda não'}</div>`:''}
+      ${im.disponibilidadeVisita?`<div class="owner-meta"><b>Disponibilidade p/ visita:</b> ${im.disponibilidadeVisita==='sim'?'✅ Essa semana':'Combinar antes'}</div>`:''}
       ${im.link?`<div class="owner-meta"><a href="${im.link}" target="_blank" rel="noopener" style="color:var(--primary);">Ver anúncio ↗</a></div>`:''}
       <div class="owner-meta"><b>${im.status==='disponivel'?'Disponível há':'Ficou disponível por'}:</b> ${dias!=null?dias+' dia(s)':'—'}</div>
       ${im.motivoIndisponivel?`<div class="owner-meta"><b>Motivo:</b> ${escapeHtml(im.motivoIndisponivel)}</div>`:''}
       ${im.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(im.notas)}</div>`:''}
       <div class="owner-actions">
-        ${im.status==='disponivel' && waConfirmar?`<a href="${waConfirmar}" target="_blank" rel="noopener" class="im-confirmar-link" data-id="${im.id}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Confirmar</button></a>`:''}
+        ${im.status==='disponivel' && waConfirmarDados && im.proprietarioId?`<a href="${waConfirmarDados}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${im.proprietarioId}" style="text-decoration:none;flex:1;"><button style="width:100%;">✅ Confirmar dados</button></a>`:''}
+        ${im.status==='disponivel' && waConfirmar?`<a href="${waConfirmar}" target="_blank" rel="noopener" class="im-confirmar-link" data-id="${im.id}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Reconfirmar</button></a>`:''}
         ${im.status==='disponivel'?`<button data-iact="indisponivel" data-id="${im.id}">Marcar indisponível</button>`:`<button data-iact="reativar" data-id="${im.id}">Reativar</button>`}
         <button data-iact="edit" data-id="${im.id}">Editar</button>
         <button class="danger" data-iact="del" data-id="${im.id}">✕</button>
@@ -1990,6 +2028,8 @@ function openImovelModal(im, prefillFromOwner){
   document.getElementById('im-financiamento').value = im ? im.financiamento||'' : '';
   document.getElementById('im-exclusividade').value = im ? im.exclusividade||'' : '';
   document.getElementById('im-chaves').value = im ? im.chaves||'' : '';
+  document.getElementById('im-fotos').value = im ? im.fotos||'' : '';
+  document.getElementById('im-visita').value = im ? im.disponibilidadeVisita||'' : '';
   document.getElementById('im-link').value = im ? im.link||'' : '';
   document.getElementById('im-notas').value = im ? im.notas||'' : '';
   imFinalidadeState = new Set(im ? (im.finalidade||[]) : ['compra']);
@@ -2036,6 +2076,8 @@ document.getElementById('imovelSaveBtn').onclick = async ()=>{
     financiamento: document.getElementById('im-financiamento').value,
     exclusividade: document.getElementById('im-exclusividade').value,
     chaves: document.getElementById('im-chaves').value,
+    fotos: document.getElementById('im-fotos').value,
+    disponibilidadeVisita: document.getElementById('im-visita').value,
     link: document.getElementById('im-link').value.trim(),
     notas: document.getElementById('im-notas').value.trim(),
   };

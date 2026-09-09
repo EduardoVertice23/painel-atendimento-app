@@ -80,7 +80,26 @@ p.sub{color:var(--text-dim);font-size:14px;margin:0;}
         <div class="field"><label>Área útil (m²)</label><input type="number" id="m2" placeholder="m²"></div>
         <div class="field"><label>Dormitórios</label><div class="chip-group" id="quartosGroup"></div></div>
       </div>
-      <div class="field"><label>Vagas de garagem</label><input type="number" id="vagasQtd" min="0"></div>
+      <div class="field-row">
+        <div class="field"><label>Banheiros</label><input type="number" id="banheiros" min="0"></div>
+        <div class="field"><label>Vagas de garagem</label><input type="number" id="vagasQtd" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Condomínio</label><input type="number" id="condominio" placeholder="R$"></div>
+        <div class="field"><label>IPTU</label><input type="number" id="iptu" placeholder="R$"></div>
+      </div>
+      <div class="field"><label>Já tem fotos do imóvel?</label>
+        <div class="chip-group" id="fotosGroup">
+          <div class="chip" data-v="sim">Sim, tenho</div>
+          <div class="chip" data-v="nao">Ainda não</div>
+        </div>
+      </div>
+      <div class="field"><label>Tem disponibilidade pra visita/acesso essa semana?</label>
+        <div class="chip-group" id="visitaGroup">
+          <div class="chip" data-v="sim">Sim</div>
+          <div class="chip" data-v="nao">Só combinando antes</div>
+        </div>
+      </div>
     </div>
 
     <div id="motivoIndisponivel" class="hidden">
@@ -168,6 +187,14 @@ async function init(){
       chip.classList.toggle('sel', finalidadeSet.has(v));
     };
   });
+  ['fotosGroup','visitaGroup'].forEach(groupId=>{
+    document.querySelectorAll(`#${groupId} .chip`).forEach(chip=>{
+      chip.onclick = ()=>{
+        document.querySelectorAll(`#${groupId} .chip`).forEach(c=>c.classList.remove('sel'));
+        chip.classList.add('sel');
+      };
+    });
+  });
 
   document.getElementById('loadingCard').classList.add('hidden');
   document.getElementById('formCard').classList.remove('hidden');
@@ -204,6 +231,8 @@ document.getElementById('submitBtn').onclick = async ()=>{
 
   try{
     if(disponivel){
+      const fotosSet = document.querySelector('#fotosGroup .chip.sel');
+      const visitaSet = document.querySelector('#visitaGroup .chip.sel');
       const rec = {
         proprietarioId: ownerDoc.id,
         rua: document.getElementById('rua').value.trim(),
@@ -213,7 +242,12 @@ document.getElementById('submitBtn').onclick = async ()=>{
         valorLocacao: document.getElementById('valorLocacao').value || '',
         m2: document.getElementById('m2').value || '',
         quartos: Array.from(quartosSet).join(', '),
+        banheiros: document.getElementById('banheiros').value || '',
         vagasQtd: document.getElementById('vagasQtd').value || '',
+        condominio: document.getElementById('condominio').value || '',
+        iptu: document.getElementById('iptu').value || '',
+        fotos: fotosSet ? fotosSet.dataset.v : '',
+        disponibilidadeVisita: visitaSet ? visitaSet.dataset.v : '',
         status: 'disponivel',
         ultimaConfirmacao: today,
       };

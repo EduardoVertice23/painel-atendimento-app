@@ -752,11 +752,11 @@ function suggestBuyer(c){
   return { tip: (stageMsg+personaTip+extra).trim(), ready };
 }
 function suggestOwner(o){
-  const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
+  const line = METHOD_LINE[o.metodo] || '';
   const first = (o.nome||'').split(' ')[0] || 'tudo bem';
   const intro = o.stage==='contato' ? 'Sou o Paulo, consultor da Baru Imóveis. ' : '';
   const disponibilidade = o.stage==='contato' ? ' O imóvel ainda está disponível?' : '';
-  const ready = `Oi ${first}, tudo bem? ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}. ${line}${disponibilidade}`;
+  const ready = `Oi ${first}, tudo bem? ${intro}Passando aqui sobre o imóvel${o.imovel?' ('+o.imovel+')':''}.${line?' '+line:''}${disponibilidade}`;
   return { tip: line, ready };
 }
 async function copyText(text, btn){
@@ -1315,12 +1315,13 @@ const OWNER_MSG_TYPES = [
 function buildOwnerMessage(o, typeId, toneId){
   const first = (o.nome||'').split(' ')[0] || 'tudo bem';
   const imv = o.imovel ? ` (${o.imovel})` : '';
-  const line = METHOD_LINE[o.metodo] || 'Retomar contato com uma abordagem específica pro perfil dele.';
+  const line = METHOD_LINE[o.metodo] || '';
+  const lineTxt = line ? ' '+line : '';
   const T = {
     primeiro: {
-      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Passando aqui sobre o imóvel${imv}. ${line} Ele ainda está disponível?`,
-      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line} Ainda está disponível?`,
-      urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}: ${line} Ainda está disponível? A procura na região está aquecida agora, vale a pena conversarmos logo.`,
+      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Passando aqui sobre o imóvel${imv}.${lineTxt} Ele ainda está disponível?`,
+      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}:${lineTxt} Ainda está disponível?`,
+      urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Sobre o imóvel${imv}:${lineTxt} Ainda está disponível? A procura na região está aquecida agora, vale a pena conversarmos logo.`,
     },
     retorno: {
       gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu te ajudar com o imóvel${imv} — sem pressa, só quero saber se sigo por aqui.`,

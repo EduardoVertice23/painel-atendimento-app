@@ -228,6 +228,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <button class="addbtn" id="openImportOwner" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddOwner">+ Novo proprietário</button>
   </div>
+  <div class="field" style="margin-bottom:14px;"><input type="text" id="ownerSearchInput" placeholder="🔎 Buscar por nome, telefone ou código do imóvel..." style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13.5px;background:var(--card);"></div>
   <div class="filterlabel">Visualização</div>
   <div class="chipbar" id="ownerViewSwitcher"></div>
   <div class="filterlabel">Contato</div>
@@ -241,6 +242,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <button class="addbtn" id="openImportBuyer" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddBuyer">+ Novo cliente</button>
   </div>
+  <div class="field" style="margin-bottom:14px;"><input type="text" id="buyerSearchInput" placeholder="🔎 Buscar por nome ou telefone..." style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13.5px;background:var(--card);"></div>
   <div class="filterlabel">Visualização</div>
   <div class="chipbar" id="viewSwitcher"></div>
   <div class="filterlabel">Tipo de operação</div>
@@ -257,6 +259,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <button class="addbtn" id="openImportImovel" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddImovel">+ Novo imóvel</button>
   </div>
+  <div class="field" style="margin-bottom:14px;"><input type="text" id="imovelSearchInput" placeholder="🔎 Buscar por código, rua ou número..." style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13.5px;background:var(--card);"></div>
   <div class="filterlabel">Visualização</div>
   <div class="chipbar" id="imovelViewSwitcher"></div>
   <div class="filterlabel">Status</div>
@@ -886,10 +889,21 @@ function renderOwnerContatoBar(){
     el.onclick = ()=>{ ownerContatoFilter = el.dataset.c; renderOwnerContatoBar(); renderOwners(); };
   });
 }
+let ownerSearchQuery = '';
 function filteredOwners(){
-  if(ownerContatoFilter==='sem') return data.proprietarios.filter(o=>!o.mensagemEnviada);
-  if(ownerContatoFilter==='ja') return data.proprietarios.filter(o=>o.mensagemEnviada);
-  return data.proprietarios;
+  let list = data.proprietarios;
+  if(ownerContatoFilter==='sem') list = list.filter(o=>!o.mensagemEnviada);
+  if(ownerContatoFilter==='ja') list = list.filter(o=>o.mensagemEnviada);
+  const q = ownerSearchQuery.trim().toLowerCase();
+  if(q){
+    list = list.filter(o=>{
+      if((o.nome||'').toLowerCase().includes(q)) return true;
+      if((o.contato||'').toLowerCase().includes(q)) return true;
+      const imoveis = data.imoveis.filter(im=>im.proprietarioId===o.id);
+      return imoveis.some(im=>(im.codigo||'').toLowerCase().includes(q));
+    });
+  }
+  return list;
 }
 function renderOwnerViewSwitcher(){
   const opts = [ {id:'kanban', label:'☰ Kanban'}, {id:'grid', label:'▦ Grade'}, {id:'table', label:'☰ Lista'} ];
@@ -1186,8 +1200,14 @@ function bindBuyerCardEvents(){
   document.querySelectorAll('.buyer-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
 }
 
+let buyerSearchQuery = '';
 function filteredBuyers(){
-  return data.compradores.filter(c => !operationFilter || c.operacao===operationFilter);
+  const q = buyerSearchQuery.trim().toLowerCase();
+  return data.compradores.filter(c => {
+    if(operationFilter && c.operacao!==operationFilter) return false;
+    if(!q) return true;
+    return (c.nome||'').toLowerCase().includes(q) || (c.contato||'').toLowerCase().includes(q);
+  });
 }
 
 function renderBoard(){
@@ -1857,13 +1877,27 @@ function bindImovelCardEvents(){
   });
 }
 
+let imovelSearchQuery = '';
+function filteredImoveis(){
+  let list = data.imoveis.filter(im=>im.status===imovelStatusFilter);
+  const q = imovelSearchQuery.trim().toLowerCase();
+  if(q){
+    list = list.filter(im=>
+      (im.codigo||'').toLowerCase().includes(q) ||
+      (im.rua||'').toLowerCase().includes(q) ||
+      (im.numero||'').toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+
 function renderImoveisGrid(){
   const list = document.getElementById('imoveisList');
   list.className = '';
   list.style.display = 'grid';
   list.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
   list.style.gap = '12px';
-  const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
+  const items = filteredImoveis()
     .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
   if(items.length===0){
     list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
@@ -1876,7 +1910,7 @@ function renderImoveisGrid(){
 function renderImoveisTable(){
   const list = document.getElementById('imoveisList');
   list.className = ''; list.style.display = 'block';
-  const items = data.imoveis.filter(im=>im.status===imovelStatusFilter)
+  const items = filteredImoveis()
     .sort((a,b)=> (needsRecheck(b)?1:0) - (needsRecheck(a)?1:0));
   if(items.length===0){
     list.innerHTML = `<div class="empty"><div class="big">Nada por aqui</div><div>${imovelStatusFilter==='disponivel'?'Cadastre um imóvel confirmado disponível.':'Nenhum imóvel indisponível ainda.'}</div></div>`;
@@ -1920,7 +1954,7 @@ function renderImoveisKanban(){
   const list = document.getElementById('imoveisList');
   list.className = 'board';
   list.style.cssText = '';
-  const filtered = data.imoveis.filter(im=>im.status===imovelStatusFilter);
+  const filtered = filteredImoveis();
   const tiposPresentes = TIPO_IMOVEL_OPTIONS.filter(t => filtered.some(im=>im.tipo===t) );
   const semTipo = filtered.filter(im=>!im.tipo || !TIPO_IMOVEL_OPTIONS.includes(im.tipo));
   const colunas = [...tiposPresentes, ...(semTipo.length ? ['Sem tipo'] : [])];
@@ -2242,6 +2276,10 @@ document.getElementById('visitaSaveBtn').onclick = async ()=>{
   }
   document.getElementById('overlayVisita').classList.remove('open');
 };
+
+document.getElementById('buyerSearchInput').addEventListener('input', e=>{ buyerSearchQuery = e.target.value; renderBoard(); });
+document.getElementById('ownerSearchInput').addEventListener('input', e=>{ ownerSearchQuery = e.target.value; renderOwners(); });
+document.getElementById('imovelSearchInput').addEventListener('input', e=>{ imovelSearchQuery = e.target.value; renderImoveis(); });
 
 renderOwnerViewSwitcher();
 renderOwnerContatoBar();

@@ -166,10 +166,28 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .modal-actions .cancel{background:var(--bg);color:var(--text-dim);}
 .modal-actions .save{background:var(--primary);color:#fff;}
 .empty{text-align:center;padding:50px 20px;color:var(--text-dim);}
+.errormsg{color:var(--urgent);font-size:12.5px;margin-top:-6px;margin-bottom:10px;display:none;}
 .empty .big{font-family:'Newsreader',serif;font-size:17px;color:var(--ink);margin-bottom:6px;}
 </style>
 </head>
 <body>
+
+<div class="overlay open" id="overlayLogin">
+  <div class="modal" style="max-width:380px;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <div class="mark" style="width:48px;height:48px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Newsreader',serif;font-weight:700;font-size:20px;margin:0 auto 12px;">AC</div>
+      <h2 style="margin:0;">Entrar no painel</h2>
+    </div>
+    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="Sua senha" autocomplete="current-password"></div>
+    <div class="errormsg" id="loginError">E-mail ou senha incorretos.</div>
+    <div class="modal-actions">
+      <button class="save" id="loginBtn" style="width:100%;">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="appShell" style="display:none;">
 
 <div class="topbar">
   <div class="brand">
@@ -182,6 +200,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   <div style="display:flex;align-items:center;gap:14px;">
     <div class="syncdot"><span class="d" id="syncDot"></span><span id="syncLabel">conectando...</span></div>
     <button id="notifBtn" class="addbtn" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔔 Ativar avisos</button>
+    <button id="logoutBtn" class="addbtn" style="background:var(--card);color:var(--text-dim);border:1px solid var(--line);">Sair</button>
     <div class="tabs">
       <div class="tab active" data-view="dash">Dashboard</div>
       <div class="tab" data-view="owners">Proprietários</div>
@@ -482,9 +501,12 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   </div>
 </div>
 
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, where, getDocs, getDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -496,6 +518,7 @@ const firebaseConfig = {
   appId: "1:641137924211:web:30adb0e6924abed1b7b206"
 };
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const VAPID_KEY = "BHOdLVf9ZXx1oXSEuhrLO8il8mAQ3Z1SNG-EFKSZuA3-vNqo62nxduJUDSHVtd4_Hov8xYokymvLxaOweXnzJ2w";
 let messaging = null;
@@ -735,28 +758,63 @@ async function copyText(text, btn){
 
 /* ---------- Firestore sync ---------- */
 let firstOwnerSnap=true, firstBuyerSnap=true;
+let listenersStarted = false;
 function markSynced(){
   document.getElementById('syncDot').classList.remove('off');
   document.getElementById('syncLabel').textContent = 'sincronizado';
 }
-onSnapshot(ownersCol, snap=>{
-  data.proprietarios = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  renderOwners(); renderDashboard(); markSynced();
-}, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
-onSnapshot(buyersCol, snap=>{
-  data.compradores = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  renderBoard(); renderDashboard(); markSynced();
-}, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
+function startListeners(){
+  if(listenersStarted) return;
+  listenersStarted = true;
+  onSnapshot(ownersCol, snap=>{
+    data.proprietarios = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderOwners(); renderDashboard(); markSynced();
+  }, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
+  onSnapshot(buyersCol, snap=>{
+    data.compradores = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderBoard(); renderDashboard(); markSynced();
+  }, err=>{ document.getElementById('syncDot').classList.add('off'); document.getElementById('syncLabel').textContent='erro de conexão'; console.error(err); });
 
-onSnapshot(imoveisCol, snap=>{
-  data.imoveis = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  renderImoveis(); renderDashboard(); markSynced();
-}, err=>{ console.error(err); });
+  onSnapshot(imoveisCol, snap=>{
+    data.imoveis = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderImoveis(); renderDashboard(); markSynced();
+  }, err=>{ console.error(err); });
 
-onSnapshot(visitasCol, snap=>{
-  data.visitas = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  renderVisitas(); markSynced();
-}, err=>{ console.error(err); });
+  onSnapshot(visitasCol, snap=>{
+    data.visitas = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderVisitas(); markSynced();
+  }, err=>{ console.error(err); });
+}
+
+/* ---------- Autenticação ---------- */
+onAuthStateChanged(auth, user=>{
+  const loginOverlay = document.getElementById('overlayLogin');
+  const appShell = document.getElementById('appShell');
+  if(user){
+    loginOverlay.classList.remove('open');
+    appShell.style.display = '';
+    startListeners();
+    if('Notification' in window && Notification.permission==='granted'){ registerDeviceForPush(); }
+  } else {
+    loginOverlay.classList.add('open');
+    appShell.style.display = 'none';
+  }
+});
+document.getElementById('loginBtn').onclick = async ()=>{
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if(!email || !senha){ errEl.textContent = 'Preenche e-mail e senha.'; errEl.style.display='block'; return; }
+  try{
+    await signInWithEmailAndPassword(auth, email, senha);
+  }catch(e){
+    errEl.textContent = 'E-mail ou senha incorretos.';
+    errEl.style.display = 'block';
+  }
+};
+document.getElementById('logoutBtn').onclick = ()=> signOut(auth);
+document.getElementById('login-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginBtn').click(); });
 
 /* ---------- TABS ---------- */
 document.querySelectorAll('.tab').forEach(t=>{
@@ -1023,7 +1081,7 @@ document.getElementById('ownerSaveBtn').onclick = async ()=>{
     proximaAcao: acaoPickerOwnerHandle.getValue(),
     notas: document.getElementById('o-notas').value.trim(),
   };
-  const id = editingOwnerId || doc(ownersCol).id;
+  const id = editingOwnerId || rec.contatoDigits || doc(ownersCol).id;
   await setDoc(doc(db,'proprietarios',id), rec, {merge:true});
   document.getElementById('overlayOwner').classList.remove('open');
 };
@@ -1589,7 +1647,7 @@ document.getElementById('buyerSaveBtn').onclick = async ()=>{
     proximaAcao: acaoPickerBuyerHandle.getValue(),
     notas: document.getElementById('f-notas').value.trim(),
   };
-  const id = editingBuyerId || doc(buyersCol).id;
+  const id = editingBuyerId || rec.contatoDigits || doc(buyersCol).id;
   await setDoc(doc(db,'compradores',id), rec, {merge:true});
   document.getElementById('overlayBuyer').classList.remove('open');
 };
@@ -2171,7 +2229,6 @@ function checkOverdueNotifications(){
   localStorage.setItem(storeKey, JSON.stringify(avisados));
 }
 updateNotifBtn();
-if('Notification' in window && Notification.permission==='granted'){ registerDeviceForPush(); }
 setInterval(checkOverdueNotifications, 30*60*1000);
 setTimeout(checkOverdueNotifications, 4000);
 
@@ -2293,7 +2350,7 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
         stage: 'contato', ultimoContato: normalizeDate(fields[4]),
         proximaAcao: (fields[5]||'').trim(), notas: (fields[6]||'').trim(),
       };
-      await setDoc(doc(db,'proprietarios',doc(ownersCol).id), rec, {merge:true});
+      await setDoc(doc(db,'proprietarios', rec.contatoDigits || doc(ownersCol).id), rec, {merge:true});
     } else if(importType==='buyer'){
       const nome = (fields[0]||'').trim();
       if(!nome){ skipped++; continue; }
@@ -2306,7 +2363,7 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
         stage: 'novo', ultimoContato: normalizeDate(fields[6]),
         proximaAcao: (fields[7]||'').trim(), notas: (fields[8]||'').trim(),
       };
-      await setDoc(doc(db,'compradores',doc(buyersCol).id), rec, {merge:true});
+      await setDoc(doc(db,'compradores', rec.contatoDigits || doc(buyersCol).id), rec, {merge:true});
     } else if(importType==='imovel'){
       const codigo = (fields[0]||'').trim(), rua = (fields[1]||'').trim();
       if(!codigo && !rua){ skipped++; continue; }
@@ -2322,19 +2379,17 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
       const propDigits = propTel.replace(/\D/g,'');
       if(propDigits){
         try{
-          const q = query(ownersCol, where('contatoDigits','==',propDigits), limit(1));
-          const snap = await getDocs(q);
-          if(!snap.empty){ proprietarioId = snap.docs[0].id; }
+          const existingSnap = await getDoc(doc(db,'proprietarios',propDigits));
+          if(existingSnap.exists()) proprietarioId = propDigits;
         }catch(e){}
         if(!proprietarioId){
-          const ownerId = doc(ownersCol).id;
-          await setDoc(doc(db,'proprietarios',ownerId), {
+          await setDoc(doc(db,'proprietarios',propDigits), {
             nome: propNome || 'Proprietário '+codigo,
             contato: propTel, contatoDigits: propDigits,
             imovel: `${rua}${(fields[2]||'').trim()?', '+(fields[2]||'').trim():''}`,
             status: 'morno', stage: 'contato', ultimoContato: today, notas: 'Criado automaticamente na importação de imóveis.',
           }, {merge:true});
-          proprietarioId = ownerId;
+          proprietarioId = propDigits;
         }
       }
 

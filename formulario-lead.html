@@ -103,7 +103,7 @@ p.sub{color:var(--text-dim);font-size:14px;margin:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
@@ -193,21 +193,19 @@ document.getElementById('submitBtn').onclick = async ()=>{
   };
 
   try{
-    let existingId = null;
     let existingStage = null;
+    const id = contatoDigits || doc(buyersCol).id;
     if(contatoDigits){
-      const q = query(buyersCol, where('contatoDigits','==',contatoDigits), limit(1));
-      const snap = await getDocs(q);
-      if(!snap.empty){ existingId = snap.docs[0].id; existingStage = snap.docs[0].data().stage; }
+      const snap = await getDoc(doc(db,'compradores', id));
+      if(snap.exists()){ existingStage = snap.data().stage; }
     }
-    if(existingId){
+    if(existingStage){
       // Já existe um card com esse telefone — atualiza os critérios sem mexer em observações que o consultor já tenha escrito.
       // Se ainda estava em "Novo" (primeiro contato), avança pra "Qualificando" — assim a próxima mensagem não repete o convite do formulário.
       if(existingStage==='novo') baseRec.stage = 'qualificando';
-      await setDoc(doc(db,'compradores',existingId), baseRec, {merge:true});
+      await setDoc(doc(db,'compradores',id), baseRec, {merge:true});
     } else {
       const rec = { ...baseRec, stage:'novo', proximaAcao:'Enviar opções de imóveis', notas:'Preenchido pelo próprio cliente via formulário público.' };
-      const id = doc(buyersCol).id;
       await setDoc(doc(db,'compradores',id), rec, {merge:true});
     }
     document.getElementById('formCard').classList.add('hidden');

@@ -107,7 +107,7 @@ p.sub{color:var(--text-dim);font-size:14px;margin:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
@@ -150,10 +150,9 @@ const quartosSet = new Set();
 
 async function init(){
   if(!tel){ showNotFound(); return; }
-  const q = query(ownersCol, where('contatoDigits','==',tel), limit(1));
-  const snap = await getDocs(q);
-  if(snap.empty){ showNotFound(); return; }
-  ownerDoc = { id: snap.docs[0].id, ...snap.docs[0].data() };
+  const snap = await getDoc(doc(db,'proprietarios', tel));
+  if(!snap.exists()){ showNotFound(); return; }
+  ownerDoc = { id: tel, ...snap.data() };
 
   const qi = query(imoveisCol, where('proprietarioId','==',ownerDoc.id), limit(1));
   const snapI = await getDocs(qi);

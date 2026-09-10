@@ -221,6 +221,18 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <div class="panel"><h3>Prioridade dos leads</h3><div class="mini-bars" id="priBars"></div><div class="legend" id="priLegend"></div></div>
     <div class="panel"><h3>Temperatura dos proprietários</h3><div class="mini-bars" id="statusBars"></div><div class="legend" id="statusLegend"></div></div>
   </div>
+  <div class="panel-row">
+    <div class="panel"><h3>Conversão por etapa · Proprietários</h3><div id="ownerConversion"></div></div>
+    <div class="panel"><h3>Tempo médio na etapa atual · Proprietários</h3><div id="ownerAvgTime"></div></div>
+  </div>
+  <div class="panel-row">
+    <div class="panel"><h3>Imóveis por tipo</h3><div id="imoveisPorTipo"></div></div>
+    <div class="panel"><h3>Imóveis por bairro</h3><div id="imoveisPorBairro"></div></div>
+  </div>
+  <div class="panel-row">
+    <div class="panel"><h3>Valor médio por tipo</h3><div id="valorMedioPorTipo"></div></div>
+    <div class="panel"><h3>Valor médio por bairro</h3><div id="valorMedioPorBairro"></div></div>
+  </div>
 </div>
 
 <div class="view" id="view-owners">
@@ -635,6 +647,9 @@ let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[] };
 let personaFilter=null, priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
+async function setOwnerStage(id, stage){
+  await setDoc(doc(db,'proprietarios',id), {stage, stageChangedAt: new Date().toISOString()}, {merge:true});
+}
 function daysSince(dateStr){
   if(!dateStr) return 999;
   const d = new Date(dateStr+'T00:00:00');
@@ -874,6 +889,79 @@ function renderDashboard(){
   const totalSt = Math.max(1, stCounts.reduce((a,g)=>a+g.n,0));
   document.getElementById('statusBars').innerHTML = stCounts.map(g=> g.n? `<div style="width:${g.n/totalSt*100}%;background:${g.color}"></div>` : '').join('');
   document.getElementById('statusLegend').innerHTML = stCounts.map(g=>`<span><span class="dot" style="background:${g.color}"></span>${g.id} (${g.n})</span>`).join('');
+
+  // ---- Conversão por etapa (proprietários) ----
+  const stageOrder = OWNER_STAGES.filter(s=>s.id!=='perdido');
+  document.getElementById('ownerConversion').innerHTML = stageOrder.map((stage,i)=>{
+    const n = owners.filter(o=>o.stage===stage.id).length;
+    // % de quantos chegaram nessa etapa ou além, em relação ao total ativo
+    const chegaramAteAqui = owners.filter(o=>{
+      const idxOwner = stageOrder.findIndex(s=>s.id===o.stage);
+      return idxOwner>=i;
+    }).length;
+    const pct = ownersActive.length ? Math.round(chegaramAteAqui/ownersActive.length*100) : 0;
+    return `<div class="funnel-row"><div class="funnel-lbl">${stage.label}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,pct)}%;background:${stage.color}"><span>${n} · ${pct}%</span></div></div></div>`;
+  }).join('');
+
+  // ---- Tempo médio na etapa atual (proprietários) ----
+  document.getElementById('ownerAvgTime').innerHTML = stageOrder.map(stage=>{
+    const nesta = owners.filter(o=>o.stage===stage.id);
+    if(nesta.length===0) return `<div class="funnel-row"><div class="funnel-lbl">${stage.label}</div><div class="funnel-track"><div class="funnel-fill" style="width:6%;background:${stage.color}"><span>—</span></div></div></div>`;
+    const dias = nesta.map(o=>{
+      const ref = o.stageChangedAt ? o.stageChangedAt.slice(0,10) : (o.ultimoContato||null);
+      return ref ? daysSince(ref) : 0;
+    });
+    const media = Math.round(dias.reduce((a,b)=>a+b,0)/dias.length);
+    return `<div class="funnel-row"><div class="funnel-lbl">${stage.label}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,Math.min(100,media*3))}%;background:${stage.color}"><span>${media}d (méd.)</span></div></div></div>`;
+  }).join('');
+
+  // ---- Imóveis por tipo / bairro / valor médio ----
+  const imoveisAtivos = data.imoveis.filter(im=>im.status==='disponivel');
+  const tipoCounts = {};
+  imoveisAtivos.forEach(im=>{ const t = im.tipo || 'Sem tipo'; tipoCounts[t] = (tipoCounts[t]||0)+1; });
+  const tipoList = Object.entries(tipoCounts).sort((a,b)=>b[1]-a[1]);
+  const maxTipo = Math.max(1, ...tipoList.map(t=>t[1]));
+  document.getElementById('imoveisPorTipo').innerHTML = tipoList.length ? tipoList.map(([tipo,n])=>
+    `<div class="funnel-row"><div class="funnel-lbl">${tipo}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,n/maxTipo*100)}%;background:${tipoColor(tipo)}"><span>${n}</span></div></div></div>`
+  ).join('') : `<div class="empty" style="padding:20px;">Nenhum imóvel disponível ainda.</div>`;
+
+  const bairroCounts = {};
+  imoveisAtivos.forEach(im=>{ chipsFrom(im.bairro).forEach(b=>{ bairroCounts[b] = (bairroCounts[b]||0)+1; }); });
+  const bairroList = Object.entries(bairroCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxBairro = Math.max(1, ...bairroList.map(b=>b[1]));
+  document.getElementById('imoveisPorBairro').innerHTML = bairroList.length ? bairroList.map(([bairro,n])=>
+    `<div class="funnel-row"><div class="funnel-lbl">${bairro}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,n/maxBairro*100)}%;background:#3E7C93"><span>${n}</span></div></div></div>`
+  ).join('') : `<div class="empty" style="padding:20px;">Nenhum imóvel disponível ainda.</div>`;
+
+  // valor médio por tipo (usa venda se tiver, senão locação)
+  function valorDoImovel(im){
+    const fin = im.finalidade||[];
+    if(fin.includes('compra') && im.valorVenda) return Number(im.valorVenda);
+    if(fin.includes('aluguel') && im.valorLocacao) return Number(im.valorLocacao);
+    return null;
+  }
+  const valoresPorTipo = {};
+  imoveisAtivos.forEach(im=>{
+    const v = valorDoImovel(im);
+    if(v==null) return;
+    const t = im.tipo || 'Sem tipo';
+    (valoresPorTipo[t] = valoresPorTipo[t]||[]).push(v);
+  });
+  const valorTipoList = Object.entries(valoresPorTipo).map(([t,arr])=>[t, arr.reduce((a,b)=>a+b,0)/arr.length]).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('valorMedioPorTipo').innerHTML = valorTipoList.length ? valorTipoList.map(([tipo,media])=>
+    `<div class="funnel-row"><div class="funnel-lbl">${tipo}</div><div class="funnel-track"><div class="funnel-fill" style="width:60%;background:${tipoColor(tipo)}"><span>${money(Math.round(media))}</span></div></div></div>`
+  ).join('') : `<div class="empty" style="padding:20px;">Sem valores cadastrados ainda.</div>`;
+
+  const valoresPorBairro = {};
+  imoveisAtivos.forEach(im=>{
+    const v = valorDoImovel(im);
+    if(v==null) return;
+    chipsFrom(im.bairro).forEach(b=>{ (valoresPorBairro[b] = valoresPorBairro[b]||[]).push(v); });
+  });
+  const valorBairroList = Object.entries(valoresPorBairro).map(([b,arr])=>[b, arr.reduce((a,b2)=>a+b2,0)/arr.length]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('valorMedioPorBairro').innerHTML = valorBairroList.length ? valorBairroList.map(([bairro,media])=>
+    `<div class="funnel-row"><div class="funnel-lbl">${bairro}</div><div class="funnel-track"><div class="funnel-fill" style="width:60%;background:#3E7C93"><span>${money(Math.round(media))}</span></div></div></div>`
+  ).join('') : `<div class="empty" style="padding:20px;">Sem valores cadastrados ainda.</div>`;
 }
 
 /* ---------- OWNERS VIEW ---------- */
@@ -945,7 +1033,7 @@ function bindOwnerCardEvents(){
   });
   document.querySelectorAll('[data-oact]').forEach(b=>{ b.onclick = ()=>ownerAction(b.dataset.oact, b.dataset.id); });
   document.querySelectorAll('.owner-stage-select').forEach(sel=>{
-    sel.onchange = async ()=>{ await setDoc(doc(db,'proprietarios',sel.dataset.id), {stage:sel.value}, {merge:true}); };
+    sel.onchange = ()=> setOwnerStage(sel.dataset.id, sel.value);
   });
   document.querySelectorAll('.owner-sug-btn').forEach(b=>{ b.onclick = ()=>document.getElementById('osug-'+b.dataset.id).classList.toggle('open'); });
   document.querySelectorAll('.owner-copy-btn').forEach(b=>{ b.onclick = ()=>copyText(b.dataset.text, b); });
@@ -980,7 +1068,7 @@ function renderOwnersKanban(){
     zone.addEventListener('drop', async e=>{
       e.preventDefault(); zone.classList.remove('over');
       const id = e.dataTransfer.getData('text/plain');
-      await setDoc(doc(db,'proprietarios',id), {stage: zone.dataset.stage}, {merge:true});
+      await setDoc(doc(db,'proprietarios',id), {stage: zone.dataset.stage, stageChangedAt: new Date().toISOString()}, {merge:true});
     });
   });
   document.querySelectorAll('#ownersList .card').forEach(el=>{
@@ -1082,7 +1170,7 @@ async function ownerAction(act, id){
   if(!o) return;
   if(act==='contato'){
     const update = { ultimoContato: new Date().toISOString().slice(0,10), mensagemEnviada: true };
-    if(o.stage==='contato') update.stage = 'negociando';
+    if(o.stage==='contato'){ update.stage = 'negociando'; update.stageChangedAt = new Date().toISOString(); }
     await setDoc(doc(db,'proprietarios',id), update, {merge:true});
   }
   else if(act==='edit'){ openOwnerModal(o); }
@@ -1117,17 +1205,20 @@ document.getElementById('overlayOwner').onclick = e=>{ if(e.target.id==='overlay
 document.getElementById('ownerSaveBtn').onclick = async ()=>{
   const nome = document.getElementById('o-nome').value.trim();
   if(!nome){ alert('Digite o nome do proprietário'); return; }
+  const novaEtapa = document.getElementById('o-stage').value;
+  const ownerAtual = editingOwnerId ? data.proprietarios.find(o=>o.id===editingOwnerId) : null;
   const rec = {
     nome, imovel: document.getElementById('o-imovel').value.trim(),
     contato: document.getElementById('o-contato').value.trim(),
     contatoDigits: document.getElementById('o-contato').value.replace(/\D/g,''),
-    stage: document.getElementById('o-stage').value,
+    stage: novaEtapa,
     status: document.getElementById('o-status').value,
     ultimoContato: document.getElementById('o-data').value || new Date().toISOString().slice(0,10),
     metodo: document.getElementById('o-metodo').value,
     proximaAcao: acaoPickerOwnerHandle.getValue(),
     notas: document.getElementById('o-notas').value.trim(),
   };
+  if(!ownerAtual || ownerAtual.stage!==novaEtapa) rec.stageChangedAt = new Date().toISOString();
   const id = editingOwnerId || rec.contatoDigits || doc(ownersCol).id;
   await setDoc(doc(db,'proprietarios',id), rec, {merge:true});
   document.getElementById('overlayOwner').classList.remove('open');
@@ -1471,7 +1562,7 @@ function bindWaSendLinks(){
       if(col==='proprietarios'){
         update.mensagemEnviada = true;
         const owner = data.proprietarios.find(o=>o.id===a.dataset.id);
-        if(owner && owner.stage==='contato') update.stage = 'negociando';
+        if(owner && owner.stage==='contato'){ update.stage = 'negociando'; update.stageChangedAt = new Date().toISOString(); }
       }
       setDoc(doc(db, col, a.dataset.id), update, {merge:true}).catch(()=>{});
     });
@@ -1860,7 +1951,7 @@ function bindImovelCardEvents(){
       const dias = im.dataConfirmadoDisponivel ? daysBetween(im.dataConfirmadoDisponivel, new Date().toISOString().slice(0,10)) : null;
       await setDoc(doc(db,'imoveis',im.id), { status:'indisponivel', dataIndisponivel:new Date().toISOString().slice(0,10), motivoIndisponivel:motivo, diasNoMercado: dias }, {merge:true});
       if(im.proprietarioId){
-        await setDoc(doc(db,'proprietarios',im.proprietarioId), {stage:'perdido'}, {merge:true});
+        await setOwnerStage(im.proprietarioId, 'perdido');
       }
     };
   });
@@ -2154,7 +2245,7 @@ document.getElementById('imovelSaveBtn').onclick = async ()=>{
     const id = doc(imoveisCol).id;
     await setDoc(doc(db,'imoveis',id), rec, {merge:true});
     if(rec.proprietarioId){
-      await setDoc(doc(db,'proprietarios',rec.proprietarioId), {stage:'publicado'}, {merge:true});
+      await setOwnerStage(rec.proprietarioId, 'publicado');
     }
   }
   document.getElementById('overlayImovel').classList.remove('open');
@@ -2461,7 +2552,7 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
         nome, contato: contatoVal, contatoDigits: contatoVal.replace(/\D/g,''),
         imovel: (fields[2]||'').trim(),
         status: ['quente','morno','frio'].includes((fields[3]||'').trim().toLowerCase()) ? fields[3].trim().toLowerCase() : 'morno',
-        stage: 'contato', ultimoContato: normalizeDate(fields[4]),
+        stage: 'contato', stageChangedAt: new Date().toISOString(), ultimoContato: normalizeDate(fields[4]),
         proximaAcao: (fields[5]||'').trim(), notas: (fields[6]||'').trim(),
       };
       await setDoc(doc(db,'proprietarios', rec.contatoDigits || doc(ownersCol).id), rec, {merge:true});
@@ -2501,7 +2592,7 @@ document.getElementById('importConfirmBtn').onclick = async ()=>{
             nome: propNome || 'Proprietário '+codigo,
             contato: propTel, contatoDigits: propDigits,
             imovel: `${rua}${(fields[2]||'').trim()?', '+(fields[2]||'').trim():''}`,
-            status: 'morno', stage: 'contato', ultimoContato: today, notas: 'Criado automaticamente na importação de imóveis.',
+            status: 'morno', stage: 'contato', stageChangedAt: new Date().toISOString(), ultimoContato: today, notas: 'Criado automaticamente na importação de imóveis.',
           }, {merge:true});
           proprietarioId = propDigits;
         }

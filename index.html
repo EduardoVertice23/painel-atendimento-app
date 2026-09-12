@@ -1170,7 +1170,6 @@ async function ownerAction(act, id){
   if(!o) return;
   if(act==='contato'){
     const update = { ultimoContato: new Date().toISOString().slice(0,10), mensagemEnviada: true };
-    if(o.stage==='contato'){ update.stage = 'negociando'; update.stageChangedAt = new Date().toISOString(); }
     await setDoc(doc(db,'proprietarios',id), update, {merge:true});
   }
   else if(act==='edit'){ openOwnerModal(o); }
@@ -1561,8 +1560,6 @@ function bindWaSendLinks(){
       const update = { ultimoContato: new Date().toISOString().slice(0,10) };
       if(col==='proprietarios'){
         update.mensagemEnviada = true;
-        const owner = data.proprietarios.find(o=>o.id===a.dataset.id);
-        if(owner && owner.stage==='contato'){ update.stage = 'negociando'; update.stageChangedAt = new Date().toISOString(); }
       }
       setDoc(doc(db, col, a.dataset.id), update, {merge:true}).catch(()=>{});
     });
@@ -1950,9 +1947,6 @@ function bindImovelCardEvents(){
       const motivo = prompt('Motivo (opcional): vendido, alugado, desistiu...') || '';
       const dias = im.dataConfirmadoDisponivel ? daysBetween(im.dataConfirmadoDisponivel, new Date().toISOString().slice(0,10)) : null;
       await setDoc(doc(db,'imoveis',im.id), { status:'indisponivel', dataIndisponivel:new Date().toISOString().slice(0,10), motivoIndisponivel:motivo, diasNoMercado: dias }, {merge:true});
-      if(im.proprietarioId){
-        await setOwnerStage(im.proprietarioId, 'perdido');
-      }
     };
   });
   document.querySelectorAll('[data-iact="reativar"]').forEach(b=>{
@@ -2244,9 +2238,6 @@ document.getElementById('imovelSaveBtn').onclick = async ()=>{
     rec.ultimaConfirmacao = today;
     const id = doc(imoveisCol).id;
     await setDoc(doc(db,'imoveis',id), rec, {merge:true});
-    if(rec.proprietarioId){
-      await setOwnerStage(rec.proprietarioId, 'publicado');
-    }
   }
   document.getElementById('overlayImovel').classList.remove('open');
 };

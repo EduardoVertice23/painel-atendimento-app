@@ -258,7 +258,6 @@ document.getElementById('submitBtn').onclick = async ()=>{
         const id = doc(imoveisCol).id;
         await setDoc(doc(db,'imoveis',id), rec, {merge:true});
       }
-      await setDoc(doc(db,'proprietarios',ownerDoc.id), {stage:'publicado', stageChangedAt: new Date().toISOString()}, {merge:true});
     } else {
       if(existingImovel){
         const dias = existingImovel.dataConfirmadoDisponivel ? Math.round((new Date(today)-new Date(existingImovel.dataConfirmadoDisponivel))/86400000) : null;
@@ -268,7 +267,6 @@ document.getElementById('submitBtn').onclick = async ()=>{
           diasNoMercado: dias,
         }, {merge:true});
       }
-      await setDoc(doc(db,'proprietarios',ownerDoc.id), {stage:'perdido', stageChangedAt: new Date().toISOString()}, {merge:true});
     }
     document.getElementById('formCard').classList.add('hidden');
     document.getElementById('successCard').classList.remove('hidden');

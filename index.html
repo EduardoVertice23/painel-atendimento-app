@@ -236,7 +236,8 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="view" id="view-owners">
-  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="addbtn" id="copyCadastroLink" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔗 Link "Quero anunciar meu imóvel"</button>
     <button class="addbtn" id="openImportOwner" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
     <button class="addbtn" id="openAddOwner">+ Novo proprietário</button>
   </div>
@@ -1199,6 +1200,7 @@ function openOwnerModal(o){
   document.getElementById('overlayOwner').classList.add('open');
 }
 document.getElementById('openAddOwner').onclick = ()=>openOwnerModal(null);
+document.getElementById('copyCadastroLink').onclick = (e)=>{ copyText(siteBaseUrl()+'formulario-cadastro-proprietario.html', e.target); };
 document.getElementById('ownerCancelBtn').onclick = ()=>document.getElementById('overlayOwner').classList.remove('open');
 document.getElementById('overlayOwner').onclick = e=>{ if(e.target.id==='overlayOwner') e.target.classList.remove('open'); };
 document.getElementById('ownerSaveBtn').onclick = async ()=>{

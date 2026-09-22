@@ -305,6 +305,15 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   </div>
 </div>
 
+<div class="overlay" id="overlayBuyerView">
+  <div class="modal" style="max-width:420px;">
+    <div id="buyerViewContent"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="buyerViewCloseBtn" style="flex:1;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="overlayOwnerView">
   <div class="modal" style="max-width:420px;">
     <div id="ownerViewContent"></div>
@@ -1315,6 +1324,7 @@ function bindBuyerCardEvents(){
   });
   document.querySelectorAll('.stage-select').forEach(sel=>{ sel.onchange = ()=>moveBuyer(sel.dataset.id, sel.value); });
   document.querySelectorAll('[data-bact="edit"]').forEach(b=>{ b.onclick=()=>openBuyerModal(data.compradores.find(c=>c.id===b.dataset.id)); });
+  document.querySelectorAll('[data-bact="verdetalhes"]').forEach(b=>{ b.onclick=()=>openBuyerViewModal(data.compradores.find(c=>c.id===b.dataset.id)); });
   document.querySelectorAll('[data-bact="del"]').forEach(b=>{
     b.onclick = async ()=>{ const c=data.compradores.find(x=>x.id===b.dataset.id); if(confirm(`Remover "${c.nome}"?`)){ await deleteDoc(doc(db,'compradores',c.id)); } };
   });
@@ -1405,6 +1415,7 @@ function renderBoardTable(){
       <td style="padding:10px 8px;white-space:nowrap;">
         ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">💬</button></a>`:''}
         <button data-bact="contato" data-id="${c.id}" class="editbtn" title="Marcar contato hoje">📅</button>
+        <button class="editbtn" data-bact="verdetalhes" data-id="${c.id}" title="Ver detalhes">👁</button>
         <button class="editbtn" data-bact="edit" data-id="${c.id}">Editar</button>
         <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
       </td>
@@ -1665,6 +1676,7 @@ function buyerCardHtml(c, stageColor){
         ${waOpcoes?`<a href="${waOpcoes}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">📨 Enviar opções (${opcoes.length})</button></a>`:''}
         ${waIndisponivel?`<a href="${waIndisponivel}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${c.id}" style="text-decoration:none;"><button type="button" class="editbtn">🚫 Imóvel indisponível</button></a>`:''}
         <button class="editbtn" data-bact="agendarvisita" data-id="${c.id}">📅 Agendar visita</button>
+        <button class="editbtn" data-bact="verdetalhes" data-id="${c.id}">👁 Ver detalhes</button>
         <button class="editbtn" data-bact="edit" data-id="${c.id}">Editar</button>
         <button class="delbtn" data-bact="del" data-id="${c.id}">✕</button>
       </div>
@@ -1763,6 +1775,34 @@ function renderPersonaGrid(){
     el.onclick = ()=>{ selectedPersona = selectedPersona===el.dataset.p?null:el.dataset.p; renderPersonaGrid(); document.getElementById('personaTip').textContent = selectedPersona?personaOf(selectedPersona).tip:''; };
   });
 }
+function openBuyerViewModal(c){
+  const days = daysSince(c.ultimoContato);
+  const stage = BUYER_STAGES.find(s=>s.id===c.stage) || BUYER_STAGES[0];
+  const persona = personaOf(c.persona);
+  const pri = priorityInfo(c);
+  const bairroChips = chipsFrom(c.bairros);
+  const mustChips = chipsFrom(c.musthave);
+  const priceRange = (c.precomin||c.precomax) ? `${c.precomin?money(c.precomin):'—'} – ${c.precomax?money(c.precomax):'—'}` : '—';
+  document.getElementById('buyerViewContent').innerHTML = `
+    <h2 style="margin-bottom:4px;">${escapeHtml(c.nome)}</h2>
+    <div style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">${escapeHtml(c.contato||'Sem telefone')}</div>
+    <div class="owner-meta"><b>Operação:</b> ${c.operacao==='aluguel'?'Aluguel':'Compra'}</div>
+    <div class="owner-meta"><b>Etapa:</b> ${stage.label}</div>
+    <div class="owner-meta"><b>Prioridade:</b> ${pri.label}</div>
+    ${persona?`<div class="owner-meta"><b>Perfil:</b> ${persona.label}</div>`:''}
+    <div class="owner-meta"><b>Último contato:</b> ${c.ultimoContato ? (days===0?'hoje':days+' dia(s) atrás') : 'nunca'}</div>
+    ${bairroChips.length?`<div class="owner-meta"><b>Bairros:</b> ${bairroChips.map(escapeHtml).join(', ')}</div>`:''}
+    ${c.tipo?`<div class="owner-meta"><b>Tipo:</b> ${escapeHtml(chipsFrom(c.tipo).join(', '))}</div>`:''}
+    <div class="owner-meta"><b>Faixa de preço:</b> ${priceRange}</div>
+    ${mustChips.length?`<div class="owner-meta"><b>Diferenciais:</b> ${mustChips.map(escapeHtml).join(', ')}</div>`:''}
+    ${c.proximaAcao?`<div class="owner-meta"><b>Próxima ação:</b> ${escapeHtml(c.proximaAcao)}</div>`:''}
+    <div class="owner-meta"><b>Observações:</b><br>${c.notas?escapeHtml(c.notas):'<span style="color:var(--text-faint);">Nenhuma observação registrada.</span>'}</div>
+  `;
+  document.getElementById('overlayBuyerView').classList.add('open');
+}
+document.getElementById('buyerViewCloseBtn').onclick = ()=>document.getElementById('overlayBuyerView').classList.remove('open');
+document.getElementById('overlayBuyerView').onclick = e=>{ if(e.target.id==='overlayBuyerView') e.target.classList.remove('open'); };
+
 function openBuyerModal(c){
   editingBuyerId = c ? c.id : null;
   document.getElementById('buyerModalTitle').textContent = c ? 'Editar cliente' : 'Novo cliente';

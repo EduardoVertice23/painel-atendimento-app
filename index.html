@@ -1438,6 +1438,7 @@ const MSG_TONES = [ {id:'gentil', label:'Gentil'}, {id:'direta', label:'Direta'}
 const BUYER_MSG_TYPES = [
   {id:'primeiro', label:'Primeiro contato'},
   {id:'retorno', label:'Cobrar retorno'},
+  {id:'semresposta', label:'Sem resposta / retomar'},
   {id:'visita', label:'Confirmar visita'},
   {id:'posvisita', label:'Pós-visita'},
   {id:'proposta', label:'Proposta'},
@@ -1458,6 +1459,11 @@ function buildBuyerMessage(c, typeId, toneId){
       gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu seguir te ajudando na busca${bairro?' em '+bairro:''} — sem pressa nenhuma, só quero saber se sigo por aqui.`,
       direta: `Oi ${first}, tudo bem? Ainda está buscando imóvel${bairro?' em '+bairro:''}? Fico no aguardo do seu retorno.`,
       urgencia: `Oi ${first}! Surgiram novas opções que combinam com o que você procura${bairro?' em '+bairro:''}, mas preciso saber se ainda está buscando pra eu te passar antes que fechem.`,
+    },
+    semresposta: {
+      gentil: `Oi ${first}! Ainda tô no aguardo do que você achou — pode me dar um retorno quando puder? Assim consigo seguir te ajudando direitinho.`,
+      direta: `Oi ${first}! Só confirmando: ainda tem interesse em seguir com a busca? Fico no aguardo do seu retorno.`,
+      urgencia: `Oi ${first}! Preciso da sua confirmação pra não perder as opções que separei — ainda tem interesse em seguir?`,
     },
     visita: {
       gentil: `Oi ${first}, tudo bem? Vamos marcar aquela visita quando for melhor pra você? Fico à disposição pros horários.`,
@@ -1486,6 +1492,7 @@ function buildBuyerMessage(c, typeId, toneId){
 const OWNER_MSG_TYPES = [
   {id:'primeiro', label:'Primeiro contato'},
   {id:'retorno', label:'Cobrar retorno'},
+  {id:'semresposta', label:'Sem resposta / retomar'},
   {id:'reforcar', label:'Reforçar captação'},
   {id:'pospublicacao', label:'Pós-publicação'},
   {id:'reengajar', label:'Reengajar'},
@@ -1505,6 +1512,11 @@ function buildOwnerMessage(o, typeId, toneId){
       gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu te ajudar com o imóvel${imv} — sem pressa, só quero saber se sigo por aqui.`,
       direta: `Oi ${first}, tudo bem? Ainda tem interesse em avançar com o imóvel${imv}? Fico no aguardo do seu retorno.`,
       urgencia: `Oi ${first}! Tenho interessados perguntando sobre imóveis parecidos com o seu${imv} — preciso saber se ainda podemos seguir, pra eu não perder essa janela.`,
+    },
+    semresposta: {
+      gentil: `Oi ${first}! Ainda sobre o imóvel${imv} — consegue me confirmar se ele continua disponível e se as informações conferem por gentileza, assim já ajusto aqui pra finalizar o anúncio.\nAgradeço desde já! 🙏`,
+      direta: `Oi ${first}! Sobre o imóvel${imv} — só preciso que confirme se continua disponível e se os dados conferem, pra eu finalizar o anúncio.`,
+      urgencia: `Oi ${first}! Preciso confirmar o imóvel${imv} pra não perder o timing de publicação — consegue me dizer se ainda está disponível e se os dados conferem?`,
     },
     reforcar: {
       gentil: `Oi ${first}, tudo bem? Queria retomar a conversa sobre o imóvel${imv} com calma — posso te mostrar como tem sido a procura na região ultimamente?`,

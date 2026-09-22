@@ -305,6 +305,15 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   </div>
 </div>
 
+<div class="overlay" id="overlayOwnerView">
+  <div class="modal" style="max-width:420px;">
+    <div id="ownerViewContent"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="ownerViewCloseBtn" style="flex:1;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="overlayOwner">
   <div class="modal">
     <h2 id="ownerModalTitle">Novo proprietário</h2>
@@ -1158,6 +1167,7 @@ function ownerCardHtml(o){
         ${waConfirmarDadosOwner?`<a href="${waConfirmarDadosOwner}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${o.id}" style="text-decoration:none;"><button type="button">✅ Confirmar dados</button></a>`:''}
         <button data-oact="cadastrarimovel" data-id="${o.id}">🏠 Cadastrar imóvel</button>
         <button data-oact="linkconfirmacao" data-id="${o.id}">🔗 Link de confirmação</button>
+        <button data-oact="verdetalhes" data-id="${o.id}">👁 Ver detalhes</button>
         <button data-oact="edit" data-id="${o.id}">Editar</button>
         <button class="danger" data-oact="del" data-id="${o.id}">✕</button>
       </div>
@@ -1169,7 +1179,8 @@ function ownerCardHtml(o){
 async function ownerAction(act, id){
   const o = data.proprietarios.find(x=>x.id===id);
   if(!o) return;
-  if(act==='contato'){
+  if(act==='verdetalhes'){ openOwnerViewModal(o); }
+  else if(act==='contato'){
     const update = { ultimoContato: new Date().toISOString().slice(0,10), mensagemEnviada: true };
     await setDoc(doc(db,'proprietarios',id), update, {merge:true});
   }
@@ -1185,6 +1196,28 @@ async function ownerAction(act, id){
 function fillOwnerStageSelect(current){
   document.getElementById('o-stage').innerHTML = OWNER_STAGES.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.label}</option>`).join('');
 }
+function openOwnerViewModal(o){
+  const imoveisVinculados = data.imoveis.filter(im=>im.proprietarioId===o.id);
+  const days = daysSince(o.ultimoContato);
+  const stage = stageOfOwner(o.stage);
+  document.getElementById('ownerViewContent').innerHTML = `
+    <h2 style="margin-bottom:4px;">${escapeHtml(o.nome)}</h2>
+    <div style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">${escapeHtml(o.contato||'Sem telefone')}</div>
+    <div class="owner-meta"><b>Status:</b> ${o.status||'—'}</div>
+    <div class="owner-meta"><b>Etapa:</b> ${stage.label}</div>
+    <div class="owner-meta"><b>Último contato:</b> ${o.ultimoContato ? (days===0?'hoje':days+' dia(s) atrás') : 'nunca'}</div>
+    <div class="owner-meta"><b>Já mandei mensagem:</b> ${o.mensagemEnviada?'Sim':'Ainda não'}</div>
+    ${o.imovel?`<div class="owner-meta"><b>Imóvel (descrição):</b> ${escapeHtml(o.imovel)}</div>`:''}
+    ${imoveisVinculados.length?`<div class="owner-meta"><b>Imóveis vinculados:</b> ${imoveisVinculados.map(im=>escapeHtml(im.codigo||im.rua||'imóvel')).join(', ')}</div>`:''}
+    ${o.metodo?`<div class="owner-meta"><b>Método:</b> ${o.metodo} · ${METHOD_NAMES[o.metodo]||''}</div>`:''}
+    ${o.proximaAcao?`<div class="owner-meta"><b>Próxima ação:</b> ${escapeHtml(o.proximaAcao)}</div>`:''}
+    <div class="owner-meta"><b>Observações:</b><br>${o.notas?escapeHtml(o.notas):'<span style="color:var(--text-faint);">Nenhuma observação registrada.</span>'}</div>
+  `;
+  document.getElementById('overlayOwnerView').classList.add('open');
+}
+document.getElementById('ownerViewCloseBtn').onclick = ()=>document.getElementById('overlayOwnerView').classList.remove('open');
+document.getElementById('overlayOwnerView').onclick = e=>{ if(e.target.id==='overlayOwnerView') e.target.classList.remove('open'); };
+
 function openOwnerModal(o){
   editingOwnerId = o ? o.id : null;
   document.getElementById('ownerModalTitle').textContent = o ? 'Editar proprietário' : 'Novo proprietário';

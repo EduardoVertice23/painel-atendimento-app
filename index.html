@@ -1437,6 +1437,7 @@ const MSG_TONES = [ {id:'gentil', label:'Gentil'}, {id:'direta', label:'Direta'}
 
 const BUYER_MSG_TYPES = [
   {id:'primeiro', label:'Primeiro contato'},
+  {id:'primeirosemimovel', label:'Primeiro contato (sem imóvel específico)'},
   {id:'retorno', label:'Cobrar retorno'},
   {id:'semresposta', label:'Sem resposta / retomar'},
   {id:'visita', label:'Confirmar visita'},
@@ -1454,6 +1455,11 @@ function buildBuyerMessage(c, typeId, toneId){
       gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Vi que você se interessou pelo imóvel abaixo:\n${linkTxt}\nVou verificar a disponibilidade dele. Pra eu já te adiantar outras opções parecidas, me conta rapidinho o que você procura aqui (leva 1 minutinho): ${formLink}`,
       direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Vi seu interesse no imóvel abaixo:\n${linkTxt}\nVou checar a disponibilidade. Preenche seus critérios aqui pra eu já te mandar mais opções: ${formLink}`,
       urgencia: `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Esse imóvel está com bastante procura:\n${linkTxt}\nPra eu te trazer opções rápido (inclusive de reserva, se precisar), preenche seus critérios aqui: ${formLink}`,
+    },
+    primeirosemimovel: {
+      gentil: `Oi ${first}, tudo bem? Sou o Paulo, consultor da Baru Imóveis. Fico feliz em te ajudar a encontrar o imóvel ideal! Pra eu já entender o que você procura, pode me contar rapidinho aqui mesmo (bairro, tipo, faixa de valor) ou, se preferir, preencher esse formuláriozinho rápido: ${formLink}. Do jeito que for melhor pra você!`,
+      direta: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Me conta o que você procura (bairro, tipo, valor) ou preenche esse formulário rápido: ${formLink} — do jeito que preferir eu já começo a buscar.`,
+      urgencia: `Oi ${first}! Sou o Paulo, da Baru Imóveis. Quanto antes eu souber o que você procura, mais rápido te mando as melhores opções antes delas saírem do mercado. Me conta aqui mesmo (bairro, tipo, valor) ou preenche esse formulário rápido (leva menos de 1 minuto, é só clicar): ${formLink}`,
     },
     retorno: {
       gentil: `Oi ${first}, tudo bem? Passando só pra saber se ainda faz sentido eu seguir te ajudando na busca${bairro?' em '+bairro:''} — sem pressa nenhuma, só quero saber se sigo por aqui.`,

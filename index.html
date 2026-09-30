@@ -58,6 +58,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .hoje-item .hi-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
 .hoje-item button{font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;}
 .hoje-empty{font-size:13px;color:var(--text-dim);padding:6px 0;}
+.ok-btn{background:var(--primary)!important;color:#fff!important;border-color:var(--primary)!important;}
 .panel h3{font-size:15px;font-weight:600;margin-bottom:14px;}
 .funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
 .funnel-lbl{width:120px;font-size:12px;color:var(--text-dim);flex:0 0 auto;text-align:right;}
@@ -225,11 +226,15 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   <div class="hoje-block"><h3>🟡 Hoje</h3><div id="hojeHoje"></div></div>
   <div class="hoje-block"><h3>🟢 Concluídas hoje</h3><div id="hojeConcluidas"></div></div>
   <div class="hoje-block"><h3>⚠️ Sem próxima ação definida</h3><div id="hojeSemProxima"></div></div>
+  <div class="hoje-block"><h3>🔁 Reconfirmar disponibilidade (15d aluguel / 30d venda)</h3><div id="hojeReconfirmar"></div></div>
   <div class="hoje-block"><h3>💰 Propostas sem retorno</h3><div id="hojePropostas"></div></div>
   <div class="hoje-block"><h3>📅 Visitas hoje e amanhã</h3><div id="hojeVisitas"></div></div>
 </div>
 
 <div class="view" id="view-dash">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button id="zerarPendenciasBtn" style="background:var(--card);color:var(--text-dim);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;">🔄 Zerar pendências (marcar tudo em dia)</button>
+  </div>
   <div class="kpi-row" id="kpiRow"></div>
   <div class="panel-row">
     <div class="panel"><h3>Funil · Leads</h3><div id="funnelBuyers"></div></div>
@@ -875,7 +880,7 @@ function startListeners(){
 
   onSnapshot(imoveisCol, snap=>{
     data.imoveis = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    renderImoveis(); renderDashboard(); markSynced();
+    renderImoveis(); renderDashboard(); renderHoje(); markSynced();
   }, err=>{ console.error(err); });
 
   onSnapshot(visitasCol, snap=>{
@@ -2035,6 +2040,26 @@ function suggestRecheckMessage(im){
   const endTxt = im.rua ? `${im.rua}${im.numero?', '+im.numero:''}` : (im.codigo||'');
   return `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Só confirmando: o imóvel${endTxt?' ('+endTxt+')':''} continua disponível pra ${finalidadeLabel(im)}?`;
 }
+function suggestRecheckMessageMulti(prop, imoveisList){
+  const first = (prop.nome||'').split(' ')[0] || 'tudo bem';
+  const linhas = imoveisList.map(im=>{
+    const endTxt = im.rua ? `${im.rua}${im.numero?', '+im.numero:''}` : (im.codigo||'imóvel');
+    return `- ${endTxt} (${finalidadeLabel(im)})`;
+  }).join('\n');
+  return `Oi ${first}, tudo bem? Sou o Paulo, da Baru Imóveis. Passando aqui pra confirmar se esses imóveis continuam disponíveis:\n${linhas}\nMe confirma quando puder, por favor 🙏`;
+}
+function imoveisPrecisandoRecheckPorProprietario(){
+  const grupos = {};
+  data.imoveis.filter(im=>im.status==='disponivel' && im.proprietarioId).forEach(im=>{
+    if(needsRecheck(im)){
+      if(!grupos[im.proprietarioId]) grupos[im.proprietarioId] = [];
+    }
+  });
+  Object.keys(grupos).forEach(pid=>{
+    grupos[pid] = data.imoveis.filter(im=>im.proprietarioId===pid && im.status==='disponivel');
+  });
+  return grupos;
+}
 
 function suggestConfirmacaoDadosMessage(im){
   const c = imovelContato(im);
@@ -2096,12 +2121,23 @@ function bindImovelCardEvents(){
   document.querySelectorAll('[data-iact="del"]').forEach(b=>{
     b.onclick = async ()=>{ const im=data.imoveis.find(x=>x.id===b.dataset.id); if(confirm(`Remover o cadastro de "${im.codigo||im.rua||'imóvel'}"?`)){ await deleteDoc(doc(db,'imoveis',im.id)); } };
   });
+  document.querySelectorAll('[data-iact="disponivel"]').forEach(b=>{
+    b.onclick = async ()=>{
+      await setDoc(doc(db,'imoveis',b.dataset.id), { ultimaConfirmacao: new Date().toISOString().slice(0,10) }, {merge:true});
+    };
+  });
   document.querySelectorAll('[data-iact="indisponivel"]').forEach(b=>{
     b.onclick = async ()=>{
       const im = data.imoveis.find(x=>x.id===b.dataset.id);
       const motivo = prompt('Motivo (opcional): vendido, alugado, desistiu...') || '';
       const dias = im.dataConfirmadoDisponivel ? daysBetween(im.dataConfirmadoDisponivel, new Date().toISOString().slice(0,10)) : null;
       await setDoc(doc(db,'imoveis',im.id), { status:'indisponivel', dataIndisponivel:new Date().toISOString().slice(0,10), motivoIndisponivel:motivo, diasNoMercado: dias }, {merge:true});
+      if(im.proprietarioId){
+        const outros = data.imoveis.some(x=>x.proprietarioId===im.proprietarioId && x.id!==im.id && x.status==='disponivel');
+        if(!outros){
+          await setDoc(doc(db,'proprietarios',im.proprietarioId), { stage:'perdido', stageChangedAt: new Date().toISOString() }, {merge:true});
+        }
+      }
     };
   });
   document.querySelectorAll('[data-iact="reativar"]').forEach(b=>{
@@ -2109,11 +2145,6 @@ function bindImovelCardEvents(){
       const today = new Date().toISOString().slice(0,10);
       await setDoc(doc(db,'imoveis',b.dataset.id), { status:'disponivel', dataConfirmadoDisponivel:today, ultimaConfirmacao:today, dataIndisponivel:null, motivoIndisponivel:null }, {merge:true});
     };
-  });
-  document.querySelectorAll('.im-confirmar-link').forEach(a=>{
-    a.addEventListener('click', ()=>{
-      setDoc(doc(db,'imoveis',a.dataset.id), {ultimaConfirmacao:new Date().toISOString().slice(0,10)}, {merge:true}).catch(()=>{});
-    });
   });
 }
 
@@ -2278,7 +2309,8 @@ function imovelCardHtml(im){
       <div class="owner-actions">
         ${im.status==='disponivel' && waConfirmarDados && im.proprietarioId?`<a href="${waConfirmarDados}" target="_blank" rel="noopener" class="wa-send-link" data-kind="owner" data-id="${im.proprietarioId}" style="text-decoration:none;flex:1;"><button style="width:100%;">✅ Confirmar dados</button></a>`:''}
         ${im.status==='disponivel' && waConfirmar?`<a href="${waConfirmar}" target="_blank" rel="noopener" class="im-confirmar-link" data-id="${im.id}" style="text-decoration:none;flex:1;"><button style="width:100%;">💬 Reconfirmar</button></a>`:''}
-        ${im.status==='disponivel'?`<button data-iact="indisponivel" data-id="${im.id}">Marcar indisponível</button>`:`<button data-iact="reativar" data-id="${im.id}">Reativar</button>`}
+        ${im.status==='disponivel'?`<button class="ok-btn" data-iact="disponivel" data-id="${im.id}">✅ Disponível</button>`:''}
+        ${im.status==='disponivel'?`<button data-iact="indisponivel" data-id="${im.id}">🚫 Indisponível</button>`:`<button data-iact="reativar" data-id="${im.id}">Reativar</button>`}
         <button data-iact="edit" data-id="${im.id}">Editar</button>
         <button class="danger" data-iact="del" data-id="${im.id}">✕</button>
       </div>
@@ -2608,6 +2640,19 @@ function renderHoje(){
   ];
   elS.innerHTML = semProxima.length ? semProxima.map(x=>`<div class="hoje-item"><div><div class="hi-main">${escapeHtml(x.nome)}</div><div class="hi-sub">${x.tipo}</div></div></div>`).join('') : `<div class="hoje-empty">Todo mundo ativo tem próxima ação. 👍</div>`;
 
+  const elR = document.getElementById('hojeReconfirmar');
+  const grupos = imoveisPrecisandoRecheckPorProprietario();
+  const pids = Object.keys(grupos);
+  elR.innerHTML = pids.length ? pids.map(pid=>{
+    const prop = data.proprietarios.find(p=>p.id===pid);
+    if(!prop) return '';
+    const imsDoDono = grupos[pid];
+    const msg = suggestRecheckMessageMulti(prop, imsDoDono);
+    const wa = prop.contato ? waLink(prop.contato, msg) : null;
+    const lista = imsDoDono.map(im=>im.rua?`${im.rua}${im.numero?', '+im.numero:''}`:(im.codigo||'imóvel')).join(' · ');
+    return `<div class="hoje-item"><div><div class="hi-main">${escapeHtml(prop.nome)}</div><div class="hi-sub">${escapeHtml(lista)}</div></div>${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button>💬 Perguntar</button></a>`:''}</div>`;
+  }).join('') : `<div class="hoje-empty">Nada pra reconfirmar agora.</div>`;
+
   const propostasSemRetorno = (data.compradores||[]).filter(c=>c.stage==='proposta' && daysSince(c.ultimoContato)>=PROPOSTA_SEM_RETORNO_DAYS);
   elP.innerHTML = propostasSemRetorno.length ? propostasSemRetorno.map(c=>`<div class="hoje-item"><div><div class="hi-main">${escapeHtml(c.nome)}</div><div class="hi-sub">${daysSince(c.ultimoContato)} dia(s) sem contato</div></div></div>`).join('') : `<div class="hoje-empty">Nenhuma proposta parada.</div>`;
 
@@ -2621,6 +2666,20 @@ function renderHoje(){
 
   document.querySelectorAll('[data-concluir]').forEach(b=>{ b.onclick = ()=>concluirTarefa(b.dataset.concluir); });
 }
+
+document.getElementById('zerarPendenciasBtn').onclick = async ()=>{
+  if(!confirm('Isso vai marcar TODOS os proprietários e leads como "contato hoje" (não apaga nenhum cadastro) e esvaziar a lista de tarefas. Confirma?')) return;
+  const btn = document.getElementById('zerarPendenciasBtn');
+  btn.disabled = true; btn.textContent = 'Zerando...';
+  const today = new Date().toISOString().slice(0,10);
+  try{
+    for(const t of data.tarefas){ await deleteDoc(doc(db,'tarefas',t.id)); }
+    for(const o of data.proprietarios){ await setDoc(doc(db,'proprietarios',o.id), {ultimoContato: today}, {merge:true}); }
+    for(const c of data.compradores){ await setDoc(doc(db,'compradores',c.id), {ultimoContato: today}, {merge:true}); }
+    alert('Pronto! Tudo marcado como em dia.');
+  }catch(e){ console.error(e); alert('Deu erro em alguma etapa — confere se as regras do Firestore da coleção tarefas já foram publicadas.'); }
+  btn.disabled = false; btn.textContent = '🔄 Zerar pendências (marcar tudo em dia)';
+};
 
 document.getElementById('buyerSearchInput').addEventListener('input', e=>{ buyerSearchQuery = e.target.value; renderBoard(); });
 document.getElementById('ownerSearchInput').addEventListener('input', e=>{ ownerSearchQuery = e.target.value; renderOwners(); });

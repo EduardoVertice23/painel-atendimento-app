@@ -1,5 +1,5 @@
-const CACHE = 'atendimento-bv-v2';
-const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'vertice-painel-v3';
+const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './logo-vertice.jpg'];
 
 self.addEventListener('install', e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));

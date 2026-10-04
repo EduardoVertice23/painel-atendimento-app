@@ -1,6 +1,6 @@
 {
-  "name": "Atendimento Cliente BV",
-  "short_name": "AtendimentoBV",
+  "name": "Vértice Marketing Digital",
+  "short_name": "Vértice",
   "description": "Painel de atendimento a proprietários e compradores",
   "start_url": "./index.html",
   "display": "standalone",
@@ -8,7 +8,15 @@
   "theme_color": "#11241F",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

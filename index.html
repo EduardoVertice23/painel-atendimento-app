@@ -59,6 +59,36 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .hoje-item button{font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;}
 .hoje-empty{font-size:13px;color:var(--text-dim);padding:6px 0;}
 .ok-btn{background:var(--primary)!important;color:#fff!important;border-color:var(--primary)!important;}
+.hoje-block h3 .cnt{font-size:12px;font-weight:600;color:var(--text-dim);margin-left:6px;}
+.hoje-item.done .hi-main{text-decoration:line-through;color:var(--text-dim);}
+.hoje-item.visita{background:#F6F2E8;border-radius:8px;padding-left:8px;padding-right:8px;}
+.hi-actions{display:flex;gap:6px;flex-shrink:0;}
+.chip-prio{font-size:10.5px;padding:1px 6px;border-radius:6px;margin-left:4px;font-weight:600;}
+.chip-prio.alta{background:#FBE3DA;color:var(--urgent);}
+.chip-prio.baixa{background:var(--bg);color:var(--text-dim);}
+.cal-wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;}
+.cal-card{flex:1 1 420px;min-width:300px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;}
+.cal-day-card{flex:1 1 340px;min-width:300px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;}
+.cal-day-card h3{margin:0 0 4px;font-size:15px;}
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.cal-nav button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 11px;font-size:15px;cursor:pointer;}
+.cal-title{flex:1;text-align:center;font-weight:600;font-size:15px;}
+.cal-today-btn{font-size:12.5px!important;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-dow{text-align:center;font-size:11px;color:var(--text-dim);padding:4px 0;font-weight:600;}
+.cal-cell{min-height:58px;border:1px solid var(--line);border-radius:8px;padding:4px 5px;cursor:pointer;background:var(--card);}
+.cal-cell.empty{border:none;background:transparent;cursor:default;}
+.cal-cell.today{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary);}
+.cal-cell.sel{background:#E5F2EC;}
+.cal-num{font-size:12.5px;font-weight:600;}
+.cal-badges{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
+.cb{font-size:10.5px;font-style:normal;padding:1px 5px;border-radius:6px;font-weight:600;line-height:1.3;}
+.cb.pend{background:#DCE9F2;color:#2D5F7F;}
+.cb.late{background:#FBE3DA;color:var(--urgent);}
+.cb.vis{background:#F3EBD2;color:#8A6D1F;}
+.cb.done{background:#E1F1E8;color:#2F8F6E;}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--text-dim);margin-top:10px;}
+@media(max-width:600px){.cal-cell{min-height:50px;padding:3px;}.cb{font-size:9.5px;padding:1px 3px;}}
 .panel h3{font-size:15px;font-weight:600;margin-bottom:14px;}
 .funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
 .funnel-lbl{width:120px;font-size:12px;color:var(--text-dim);flex:0 0 auto;text-align:right;}
@@ -212,6 +242,8 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
     <button id="logoutBtn" class="addbtn" style="background:var(--card);color:var(--text-dim);border:1px solid var(--line);">Sair</button>
     <div class="tabs">
       <div class="tab active" data-view="hoje">Hoje</div>
+      <div class="tab" data-view="tarefas">Tarefas</div>
+      <div class="tab" data-view="pendencias">Pendências</div>
       <div class="tab" data-view="dash">Dashboard</div>
       <div class="tab" data-view="owners">Proprietários</div>
       <div class="tab" data-view="buyers">Leads</div>
@@ -222,13 +254,42 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="view active" id="view-hoje">
-  <div class="hoje-block"><h3>🔴 Atrasadas</h3><div id="hojeAtrasadas"></div></div>
-  <div class="hoje-block"><h3>🟡 Hoje</h3><div id="hojeHoje"></div></div>
-  <div class="hoje-block"><h3>🟢 Concluídas hoje</h3><div id="hojeConcluidas"></div></div>
-  <div class="hoje-block"><h3>⚠️ Sem próxima ação definida</h3><div id="hojeSemProxima"></div></div>
-  <div class="hoje-block"><h3>🔁 Reconfirmar disponibilidade (15d aluguel / 30d venda)</h3><div id="hojeReconfirmar"></div></div>
-  <div class="hoje-block"><h3>💰 Propostas sem retorno</h3><div id="hojePropostas"></div></div>
+  <div class="hoje-block"><h3>🔴 Atrasadas <span class="cnt" id="cntAtrasadas"></span></h3><div id="hojeAtrasadas"></div></div>
+  <div class="hoje-block"><h3>🟡 Hoje <span class="cnt" id="cntHoje"></span></h3><div id="hojeHoje"></div></div>
   <div class="hoje-block"><h3>📅 Visitas hoje e amanhã</h3><div id="hojeVisitas"></div></div>
+  <div class="hoje-block"><h3>🟢 Concluídas hoje <span class="cnt" id="cntConcluidas"></span></h3><div id="hojeConcluidas"></div></div>
+</div>
+
+<div class="view" id="view-tarefas">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="novaTarefaBtn">+ Nova tarefa</button></div>
+  <div class="cal-wrap">
+    <div class="cal-card">
+      <div class="cal-nav">
+        <button id="calPrev" aria-label="Mês anterior">‹</button>
+        <div id="calTitle" class="cal-title"></div>
+        <button id="calNext" aria-label="Próximo mês">›</button>
+        <button id="calHoje" class="cal-today-btn">Hoje</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i class="cb pend">n</i> pendentes</span>
+        <span><i class="cb late">n</i> atrasadas</span>
+        <span><i class="cb vis">📅</i> visitas</span>
+        <span><i class="cb done">✓</i> concluídas</span>
+      </div>
+    </div>
+    <div class="cal-day-card">
+      <h3 id="calDayTitle"></h3>
+      <div id="calDaySummary" class="hi-sub" style="margin-bottom:8px;"></div>
+      <div id="calDayList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-pendencias">
+  <div class="hoje-block"><h3>⚠️ Sem próxima ação definida <span class="cnt" id="cntSemProxima"></span></h3><div id="hojeSemProxima"></div></div>
+  <div class="hoje-block"><h3>🔁 Reconfirmar disponibilidade (15d aluguel / 30d venda) <span class="cnt" id="cntReconfirmar"></span></h3><div id="hojeReconfirmar"></div></div>
+  <div class="hoje-block"><h3>💰 Propostas sem retorno <span class="cnt" id="cntPropostas"></span></h3><div id="hojePropostas"></div></div>
 </div>
 
 <div class="view" id="view-dash">
@@ -331,7 +392,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 <div class="overlay" id="overlayTarefa">
   <div class="modal" style="max-width:420px;">
     <h2 id="tarefaModalTitle">Nova tarefa</h2>
-    <div class="field" id="tarefaClienteLabel" style="color:var(--text-dim);font-size:13px;"></div>
+    <div class="field"><label>Vincular a <span>(opcional — lead, proprietário ou deixe em branco)</span></label><input type="text" id="ta-vinculo" list="ta-vinculo-list" placeholder="Digite o nome pra buscar"><datalist id="ta-vinculo-list"></datalist></div>
     <div class="field"><label>O que fazer</label><input type="text" id="ta-titulo" placeholder="Ex: Ligar pra confirmar visita"></div>
     <div class="field-row">
       <div class="field"><label>Tipo</label><select id="ta-tipo"></select></div>
@@ -2123,7 +2184,7 @@ function bindImovelCardEvents(){
   });
   document.querySelectorAll('[data-iact="disponivel"]').forEach(b=>{
     b.onclick = async ()=>{
-      await setDoc(doc(db,'imoveis',b.dataset.id), { ultimaConfirmacao: new Date().toISOString().slice(0,10) }, {merge:true});
+      await setDoc(doc(db,'imoveis',b.dataset.id), { ultimaConfirmacao: localDateStr() }, {merge:true});
     };
   });
   document.querySelectorAll('[data-iact="indisponivel"]').forEach(b=>{
@@ -2547,18 +2608,56 @@ document.getElementById('visitaSaveBtn').onclick = async ()=>{
 };
 
 /* ---------- TAREFAS ---------- */
-let tarefaContext = null; // {area, refId, refNome}
-function openTarefaModal(area, refId, refNome){
-  tarefaContext = { area, refId, refNome };
-  document.getElementById('tarefaModalTitle').textContent = 'Nova tarefa';
-  document.getElementById('tarefaClienteLabel').textContent = 'Pra: ' + (refNome||'');
-  document.getElementById('ta-titulo').value = '';
-  document.getElementById('ta-tipo').innerHTML = TAREFA_TIPOS.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+function localDateStr(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_PT = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const DOW_CURTO = ['D','S','T','Q','Q','S','S'];
+const TAREFA_TIPO_LABEL = Object.fromEntries(TAREFA_TIPOS.map(t=>[t.id,t.label]));
+let tarefaEditId = null;
+let tarefaVinculoMap = {};
+let calMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let calSelected = localDateStr();
+
+function dataBR(s){ const p=(s||'').split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : s; }
+function tarefaTemHora(t){ return !!(t.vencimento && t.vencimento.length>=16 && t.vencimento.slice(11,16)!=='00:00'); }
+function tarefaHoraTxt(t){ return tarefaTemHora(t) ? t.vencimento.slice(11,16) : 'Sem horário'; }
+
+function buildVinculoOptions(){
+  const entries = [
+    ...data.compradores.map(c=>({area:'comprador', id:c.id, nome:c.nome||'(sem nome)', tag:'Lead', contato:c.contato})),
+    ...data.proprietarios.map(o=>({area:'proprietario', id:o.id, nome:o.nome||'(sem nome)', tag:'Proprietário', contato:o.contato})),
+  ];
+  const cont = {};
+  entries.forEach(e=>{ const k=e.nome+' · '+e.tag; cont[k]=(cont[k]||0)+1; });
+  tarefaVinculoMap = {};
+  entries.forEach(e=>{
+    let label = e.nome+' · '+e.tag;
+    if(cont[label]>1) label += ' · '+(e.contato||e.id.slice(0,4));
+    e.label = label;
+    tarefaVinculoMap[label] = {area:e.area, id:e.id};
+  });
+  document.getElementById('ta-vinculo-list').innerHTML = entries.map(e=>`<option value="${escapeHtml(e.label)}"></option>`).join('');
+  return entries;
+}
+function openTarefaModal(area, refId, refNome, t, defaultDate){
+  const entries = buildVinculoOptions();
+  tarefaEditId = t ? t.id : null;
+  document.getElementById('tarefaModalTitle').textContent = t ? 'Editar tarefa' : 'Nova tarefa';
+  document.getElementById('ta-tipo').innerHTML = TAREFA_TIPOS.map(x=>`<option value="${x.id}">${x.label}</option>`).join('');
   document.getElementById('ta-prioridade').innerHTML = TAREFA_PRIORIDADES.map(p=>`<option value="${p.id}">${p.label}</option>`).join('');
-  document.getElementById('ta-prioridade').value = 'media';
-  document.getElementById('ta-data').value = new Date().toISOString().slice(0,10);
-  document.getElementById('ta-hora').value = '';
-  document.getElementById('ta-obs').value = '';
+  let vincArea = area, vincId = refId;
+  if(t){ vincArea = t.compradorId ? 'comprador' : (t.proprietarioId ? 'proprietario' : null); vincId = t.compradorId || t.proprietarioId || null; }
+  const found = vincId ? entries.find(e=>e.area===vincArea && e.id===vincId) : null;
+  document.getElementById('ta-vinculo').value = found ? found.label : '';
+  document.getElementById('ta-titulo').value = t ? (t.titulo||'') : '';
+  document.getElementById('ta-tipo').value = t && t.tipo ? t.tipo : 'ligar';
+  document.getElementById('ta-prioridade').value = t && t.prioridade ? t.prioridade : 'media';
+  document.getElementById('ta-data').value = t && t.vencimento ? t.vencimento.slice(0,10) : (defaultDate || localDateStr());
+  document.getElementById('ta-hora').value = t && tarefaTemHora(t) ? t.vencimento.slice(11,16) : '';
+  document.getElementById('ta-obs').value = t ? (t.observacao||'') : '';
   document.getElementById('overlayTarefa').classList.add('open');
 }
 document.getElementById('tarefaCancelBtn').onclick = ()=>document.getElementById('overlayTarefa').classList.remove('open');
@@ -2568,70 +2667,121 @@ document.getElementById('tarefaSaveBtn').onclick = async ()=>{
   const dataV = document.getElementById('ta-data').value;
   if(!titulo){ alert('Descreve o que precisa fazer.'); return; }
   if(!dataV){ alert('Escolhe a data.'); return; }
+  const vincTxt = document.getElementById('ta-vinculo').value.trim();
+  let area = null, compradorId = null, proprietarioId = null;
+  if(vincTxt){
+    const m = tarefaVinculoMap[vincTxt];
+    if(!m){ alert('Escolhe um nome da lista que aparece ao digitar, ou deixa "Vincular a" em branco.'); return; }
+    area = m.area;
+    if(area==='comprador') compradorId = m.id; else proprietarioId = m.id;
+  }
   const hora = document.getElementById('ta-hora').value || '00:00';
-  const rec = {
+  const campos = {
     titulo,
     tipo: document.getElementById('ta-tipo').value,
-    area: tarefaContext ? tarefaContext.area : null,
+    area, compradorId, proprietarioId,
     prioridade: document.getElementById('ta-prioridade').value,
-    status: 'pendente',
-    compradorId: tarefaContext && tarefaContext.area==='comprador' ? tarefaContext.refId : null,
-    proprietarioId: tarefaContext && tarefaContext.area==='proprietario' ? tarefaContext.refId : null,
-    imovelId: null,
-    visitaId: null,
     proximaAcao: titulo,
     vencimento: dataV + 'T' + hora,
-    criadoEm: new Date().toISOString(),
-    concluidoEm: null,
-    origem: 'manual',
-    regraAutomacao: null,
     observacao: document.getElementById('ta-obs').value.trim(),
   };
-  const id = doc(tarefasCol).id;
-  await setDoc(doc(db,'tarefas',id), rec, {merge:true});
-  document.getElementById('overlayTarefa').classList.remove('open');
+  try{
+    if(tarefaEditId){
+      await setDoc(doc(db,'tarefas',tarefaEditId), campos, {merge:true});
+    }else{
+      const id = doc(tarefasCol).id;
+      await setDoc(doc(db,'tarefas',id), {
+        ...campos,
+        status: 'pendente',
+        imovelId: null, visitaId: null,
+        criadoEm: new Date().toISOString(),
+        concluidoEm: null,
+        origem: 'manual',
+        regraAutomacao: null,
+      }, {merge:true});
+    }
+    calSelected = dataV;
+    const dd = new Date(dataV+'T00:00:00'); calMonth = new Date(dd.getFullYear(), dd.getMonth(), 1);
+    document.getElementById('overlayTarefa').classList.remove('open');
+  }catch(e){ console.error(e); alert('Não consegui salvar a tarefa. Confere se a regra do Firestore da coleção tarefas está publicada.'); }
 };
-async function concluirTarefa(id){
-  await setDoc(doc(db,'tarefas',id), {status:'concluida', concluidoEm:new Date().toISOString()}, {merge:true});
-}
+async function concluirTarefa(id){ await setDoc(doc(db,'tarefas',id), {status:'concluida', concluidoEm:new Date().toISOString()}, {merge:true}); }
+async function reabrirTarefa(id){ await setDoc(doc(db,'tarefas',id), {status:'pendente', concluidoEm:null}, {merge:true}); }
+async function excluirTarefa(id){ if(confirm('Excluir esta tarefa?')) await deleteDoc(doc(db,'tarefas',id)); }
+
 function tarefaClienteNome(t){
   if(t.compradorId){ const c=data.compradores.find(x=>x.id===t.compradorId); return c?c.nome:'(lead removido)'; }
   if(t.proprietarioId){ const o=data.proprietarios.find(x=>x.id===t.proprietarioId); return o?o.nome:'(proprietário removido)'; }
   return '';
 }
-function tarefaHoraLabel(t){
-  const d = new Date(t.vencimento);
-  if(isNaN(d)) return '';
-  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-}
-function tarefaItemHtml(t){
-  return `<div class="hoje-item">
-    <div>
-      <div class="hi-main">${escapeHtml(t.titulo)}</div>
-      <div class="hi-sub">${escapeHtml(tarefaClienteNome(t))} · ${tarefaHoraLabel(t)}</div>
+function tarefaItemHtml(t, showDate){
+  const done = t.status==='concluida';
+  const cli = tarefaClienteNome(t);
+  const prio = t.prioridade==='alta' ? '<span class="chip-prio alta">Alta</span>' : (t.prioridade==='baixa' ? '<span class="chip-prio baixa">Baixa</span>' : '');
+  const quando = (showDate && t.vencimento ? dataBR(t.vencimento.slice(0,10))+' · ' : '') + tarefaHoraTxt(t);
+  return `<div class="hoje-item${done?' done':''}">
+    <div style="min-width:0;">
+      <div class="hi-main">${done?'✓ ':''}${escapeHtml(t.titulo)}${prio}</div>
+      <div class="hi-sub">${TAREFA_TIPO_LABEL[t.tipo]||'• Outro'} · ${quando}${cli?' · '+escapeHtml(cli):''}</div>
+      ${t.observacao?`<div class="hi-sub" style="margin-top:3px;">${escapeHtml(t.observacao)}</div>`:''}
     </div>
-    <button data-concluir="${t.id}">✓ Concluir</button>
+    <div class="hi-actions">
+      ${done?`<button data-reabrir="${t.id}">↩ Reabrir</button>`:`<button data-concluir="${t.id}">✓ Concluir</button>`}
+      <button data-editar="${t.id}" title="Editar">✏️</button>
+      <button data-excluir="${t.id}" title="Excluir">🗑</button>
+    </div>
   </div>`;
 }
+function bindTarefaActions(container){
+  if(!container) return;
+  container.querySelectorAll('[data-concluir]').forEach(b=>{ b.onclick = ()=>concluirTarefa(b.dataset.concluir); });
+  container.querySelectorAll('[data-reabrir]').forEach(b=>{ b.onclick = ()=>reabrirTarefa(b.dataset.reabrir); });
+  container.querySelectorAll('[data-excluir]').forEach(b=>{ b.onclick = ()=>excluirTarefa(b.dataset.excluir); });
+  container.querySelectorAll('[data-editar]').forEach(b=>{ b.onclick = ()=>{ const t=data.tarefas.find(x=>x.id===b.dataset.editar); if(t) openTarefaModal(null,null,'',t); }; });
+}
+function visitaImovelTxt(v){
+  if(v.imovelId){ const im=data.imoveis.find(x=>x.id===v.imovelId); if(im) return im.rua?`${im.rua}${im.numero?', '+im.numero:''}`:(im.codigo||''); }
+  return v.imovelLivre||'';
+}
+function visitaItemHtml(v, mostrarDia){
+  const lead = data.compradores.find(x=>x.id===v.leadId);
+  const im = visitaImovelTxt(v);
+  return `<div class="hoje-item visita"><div><div class="hi-main">📅 Visita · ${escapeHtml(lead?lead.nome:'Lead')}</div><div class="hi-sub">${mostrarDia?mostrarDia+' · ':''}${v.hora?v.hora:'Sem horário'}${im?' · '+escapeHtml(im):''}</div></div></div>`;
+}
+function setCnt(id, n){ const el=document.getElementById(id); if(el) el.textContent = n ? `(${n})` : ''; }
+
 function renderHoje(){
   const elA = document.getElementById('hojeAtrasadas');
+  if(!elA) return;
   const elH = document.getElementById('hojeHoje');
   const elC = document.getElementById('hojeConcluidas');
-  const elS = document.getElementById('hojeSemProxima');
-  const elP = document.getElementById('hojePropostas');
   const elV = document.getElementById('hojeVisitas');
-  if(!elA) return; // view ainda não montada
   const now = new Date();
-  const todayStr = now.toISOString().slice(0,10);
-  const pendentes = (data.tarefas||[]).filter(t=>t.status!=='concluida');
-  const atrasadasList = pendentes.filter(t=>t.vencimento && t.vencimento.slice(0,10) < todayStr);
-  const hojeList = pendentes.filter(t=>t.vencimento && t.vencimento.slice(0,10) === todayStr).sort((a,b)=> a.vencimento.localeCompare(b.vencimento));
-  const concluidasHoje = (data.tarefas||[]).filter(t=>t.status==='concluida' && t.concluidoEm && t.concluidoEm.slice(0,10)===todayStr);
+  const todayStr = localDateStr(now);
+  const amanha = new Date(now); amanha.setDate(amanha.getDate()+1);
+  const amanhaStr = localDateStr(amanha);
+  const tarefas = data.tarefas||[];
+  const pendentes = tarefas.filter(t=>t.status!=='concluida' && t.vencimento);
+  const atrasadas = pendentes.filter(t=>t.vencimento.slice(0,10) < todayStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  const hoje = pendentes.filter(t=>t.vencimento.slice(0,10) === todayStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  const concluidasHoje = tarefas.filter(t=>t.status==='concluida' && t.concluidoEm && localDateStr(new Date(t.concluidoEm))===todayStr);
 
-  elA.innerHTML = atrasadasList.length ? atrasadasList.sort((a,b)=>a.vencimento.localeCompare(b.vencimento)).map(tarefaItemHtml).join('') : `<div class="hoje-empty">Nenhuma tarefa atrasada 🎉</div>`;
-  elH.innerHTML = hojeList.length ? hojeList.map(tarefaItemHtml).join('') : `<div class="hoje-empty">Nenhuma tarefa pra hoje.</div>`;
-  elC.innerHTML = concluidasHoje.length ? concluidasHoje.map(t=>`<div class="hoje-item"><div><div class="hi-main">${escapeHtml(t.titulo)}</div><div class="hi-sub">${escapeHtml(tarefaClienteNome(t))}</div></div></div>`).join('') : `<div class="hoje-empty">Nada concluído ainda hoje.</div>`;
+  elA.innerHTML = atrasadas.length ? atrasadas.map(t=>tarefaItemHtml(t,true)).join('') : `<div class="hoje-empty">Nenhuma tarefa atrasada 🎉</div>`;
+  elH.innerHTML = hoje.length ? hoje.map(t=>tarefaItemHtml(t,false)).join('') : `<div class="hoje-empty">Nenhuma tarefa pra hoje.</div>`;
+  elC.innerHTML = concluidasHoje.length ? concluidasHoje.map(t=>tarefaItemHtml(t,false)).join('') : `<div class="hoje-empty">Nada concluído ainda hoje.</div>`;
+  setCnt('cntAtrasadas', atrasadas.length); setCnt('cntHoje', hoje.length); setCnt('cntConcluidas', concluidasHoje.length);
 
+  const visitasProx = (data.visitas||[]).filter(v=>v.status==='agendada' && (v.data===todayStr || v.data===amanhaStr)).sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
+  elV.innerHTML = visitasProx.length ? visitasProx.map(v=>visitaItemHtml(v, v.data===todayStr?'Hoje':'Amanhã')).join('') : `<div class="hoje-empty">Sem visitas hoje ou amanhã.</div>`;
+
+  bindTarefaActions(document.getElementById('view-hoje'));
+  renderPendencias();
+  renderTarefasView();
+}
+
+function renderPendencias(){
+  const elS = document.getElementById('hojeSemProxima');
+  if(!elS) return;
   const ownersAtivos = (data.proprietarios||[]).filter(o=>o.stage!=='publicado' && o.stage!=='perdido' && !(o.proximaAcao&&o.proximaAcao.trim()));
   const buyersAtivos = (data.compradores||[]).filter(c=>c.stage!=='fechado' && c.stage!=='perdido' && !(c.proximaAcao&&c.proximaAcao.trim()));
   const semProxima = [
@@ -2639,39 +2789,85 @@ function renderHoje(){
     ...buyersAtivos.map(c=>({nome:c.nome, tipo:'Lead'})),
   ];
   elS.innerHTML = semProxima.length ? semProxima.map(x=>`<div class="hoje-item"><div><div class="hi-main">${escapeHtml(x.nome)}</div><div class="hi-sub">${x.tipo}</div></div></div>`).join('') : `<div class="hoje-empty">Todo mundo ativo tem próxima ação. 👍</div>`;
+  setCnt('cntSemProxima', semProxima.length);
 
   const elR = document.getElementById('hojeReconfirmar');
   const grupos = imoveisPrecisandoRecheckPorProprietario();
-  const pids = Object.keys(grupos);
+  const pids = Object.keys(grupos).filter(pid=>data.proprietarios.some(p=>p.id===pid));
   elR.innerHTML = pids.length ? pids.map(pid=>{
     const prop = data.proprietarios.find(p=>p.id===pid);
-    if(!prop) return '';
     const imsDoDono = grupos[pid];
     const msg = suggestRecheckMessageMulti(prop, imsDoDono);
     const wa = prop.contato ? waLink(prop.contato, msg) : null;
     const lista = imsDoDono.map(im=>im.rua?`${im.rua}${im.numero?', '+im.numero:''}`:(im.codigo||'imóvel')).join(' · ');
     return `<div class="hoje-item"><div><div class="hi-main">${escapeHtml(prop.nome)}</div><div class="hi-sub">${escapeHtml(lista)}</div></div>${wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button>💬 Perguntar</button></a>`:''}</div>`;
   }).join('') : `<div class="hoje-empty">Nada pra reconfirmar agora.</div>`;
+  setCnt('cntReconfirmar', pids.length);
 
+  const elP = document.getElementById('hojePropostas');
   const propostasSemRetorno = (data.compradores||[]).filter(c=>c.stage==='proposta' && daysSince(c.ultimoContato)>=PROPOSTA_SEM_RETORNO_DAYS);
   elP.innerHTML = propostasSemRetorno.length ? propostasSemRetorno.map(c=>`<div class="hoje-item"><div><div class="hi-main">${escapeHtml(c.nome)}</div><div class="hi-sub">${daysSince(c.ultimoContato)} dia(s) sem contato</div></div></div>`).join('') : `<div class="hoje-empty">Nenhuma proposta parada.</div>`;
-
-  const amanha = new Date(now); amanha.setDate(amanha.getDate()+1);
-  const amanhaStr = amanha.toISOString().slice(0,10);
-  const visitasProx = (data.visitas||[]).filter(v=>v.status==='agendada' && (v.data===todayStr || v.data===amanhaStr)).sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
-  elV.innerHTML = visitasProx.length ? visitasProx.map(v=>{
-    const lead = data.compradores.find(x=>x.id===v.leadId);
-    return `<div class="hoje-item"><div><div class="hi-main">${escapeHtml(lead?lead.nome:'Lead')}${v.imovelLivre?' · '+escapeHtml(v.imovelLivre):''}</div><div class="hi-sub">${v.data===todayStr?'Hoje':'Amanhã'}${v.hora?' às '+v.hora:''}</div></div></div>`;
-  }).join('') : `<div class="hoje-empty">Sem visitas hoje ou amanhã.</div>`;
-
-  document.querySelectorAll('[data-concluir]').forEach(b=>{ b.onclick = ()=>concluirTarefa(b.dataset.concluir); });
+  setCnt('cntPropostas', propostasSemRetorno.length);
 }
+
+function renderTarefasView(){
+  const grid = document.getElementById('calGrid');
+  if(!grid) return;
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  document.getElementById('calTitle').textContent = `${MESES_PT[m]} ${y}`;
+  const startDow = new Date(y,m,1).getDay();
+  const diasNoMes = new Date(y,m+1,0).getDate();
+  const todayStr = localDateStr();
+  const tPorDia = {}, vPorDia = {};
+  (data.tarefas||[]).forEach(t=>{ if(!t.vencimento) return; const k=t.vencimento.slice(0,10); (tPorDia[k]=tPorDia[k]||[]).push(t); });
+  (data.visitas||[]).forEach(v=>{ if(v.status!=='agendada' || !v.data) return; (vPorDia[v.data]=vPorDia[v.data]||[]).push(v); });
+
+  let html = DOW_CURTO.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) html += '<div class="cal-cell empty"></div>';
+  for(let d=1; d<=diasNoMes; d++){
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ts = tPorDia[key]||[];
+    const pend = ts.filter(t=>t.status!=='concluida').length;
+    const feitas = ts.length - pend;
+    const vis = (vPorDia[key]||[]).length;
+    const atrasado = key < todayStr && pend>0;
+    html += `<div class="cal-cell${key===todayStr?' today':''}${key===calSelected?' sel':''}" data-day="${key}">
+      <div class="cal-num">${d}</div>
+      <div class="cal-badges">${pend?`<span class="cb ${atrasado?'late':'pend'}">${pend}</span>`:''}${vis?`<span class="cb vis">📅${vis}</span>`:''}${feitas?`<span class="cb done">✓${feitas}</span>`:''}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('[data-day]').forEach(c=>{ c.onclick = ()=>{ calSelected = c.dataset.day; renderTarefasView(); }; });
+
+  const sel = new Date(calSelected+'T00:00:00');
+  const rel = calSelected===todayStr ? ' — Hoje' : '';
+  document.getElementById('calDayTitle').textContent = `${DIAS_PT[sel.getDay()]}, ${dataBR(calSelected)}${rel}`;
+  const tsDia = (tPorDia[calSelected]||[]).slice().sort((a,b)=>{
+    if((a.status==='concluida')!==(b.status==='concluida')) return a.status==='concluida' ? 1 : -1;
+    return a.vencimento.localeCompare(b.vencimento);
+  });
+  const vsDia = (vPorDia[calSelected]||[]).slice().sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const pendDia = tsDia.filter(t=>t.status!=='concluida').length;
+  const partes = [];
+  partes.push(`${pendDia} pendente${pendDia===1?'':'s'}`);
+  if(tsDia.length-pendDia) partes.push(`${tsDia.length-pendDia} concluída${tsDia.length-pendDia===1?'':'s'}`);
+  if(vsDia.length) partes.push(`${vsDia.length} visita${vsDia.length===1?'':'s'}`);
+  document.getElementById('calDaySummary').textContent = partes.join(' · ');
+  const itens = [...vsDia.map(v=>visitaItemHtml(v,'')), ...tsDia.map(t=>tarefaItemHtml(t,false))];
+  const lista = document.getElementById('calDayList');
+  lista.innerHTML = itens.length ? itens.join('') : `<div class="hoje-empty">Nada marcado pra este dia. Use "+ Nova tarefa" pra criar.</div>`;
+  bindTarefaActions(lista);
+}
+document.getElementById('calPrev').onclick = ()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderTarefasView(); };
+document.getElementById('calNext').onclick = ()=>{ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderTarefasView(); };
+document.getElementById('calHoje').onclick = ()=>{ const n=new Date(); calMonth = new Date(n.getFullYear(), n.getMonth(), 1); calSelected = localDateStr(n); renderTarefasView(); };
+document.getElementById('novaTarefaBtn').onclick = ()=>openTarefaModal(null,null,'',null,calSelected);
 
 document.getElementById('zerarPendenciasBtn').onclick = async ()=>{
   if(!confirm('Isso vai marcar TODOS os proprietários e leads como "contato hoje" (não apaga nenhum cadastro) e esvaziar a lista de tarefas. Confirma?')) return;
   const btn = document.getElementById('zerarPendenciasBtn');
   btn.disabled = true; btn.textContent = 'Zerando...';
-  const today = new Date().toISOString().slice(0,10);
+  const today = localDateStr();
   try{
     for(const t of data.tarefas){ await deleteDoc(doc(db,'tarefas',t.id)); }
     for(const o of data.proprietarios){ await setDoc(doc(db,'proprietarios',o.id), {ultimoContato: today}, {merge:true}); }

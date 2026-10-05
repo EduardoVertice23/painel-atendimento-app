@@ -1,4 +1,4 @@
-const CACHE = 'vertice-painel-v3';
+const CACHE = 'vertice-painel-v4';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './logo-vertice.jpg'];
 
 self.addEventListener('install', e=>{

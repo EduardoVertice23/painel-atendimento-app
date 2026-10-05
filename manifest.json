@@ -4,8 +4,8 @@
   "description": "Painel de atendimento a proprietários e compradores",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#F2F6F4",
-  "theme_color": "#11241F",
+  "background_color": "#021535",
+  "theme_color": "#021535",
   "orientation": "portrait-primary",
   "icons": [
     {

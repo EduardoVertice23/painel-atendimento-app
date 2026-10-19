@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#021535">
+<title>Vértice Marketing Digital — Briefing da Goma</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap');
+:root{color-scheme:light;--ink:#021535;--bg:#F4F6FA;--card:#fff;--line:#DDE3EC;--primary:#021535;--on-primary:#fff;--gold:#D88820;--text:#14213A;--dim:#5A667A;--err:#C42B2B;--ok:#2F8F6E;--warn-bg:#FBF1DD;--warn-fg:#7A4E0C;--sel-bg:#E3EAF6}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--ink:#F2F5FB;--bg:#050E21;--card:#0C1B3A;--line:#1E3059;--primary:#D88820;--on-primary:#021535;--gold:#E3A33F;--text:#E6ECF8;--dim:#9AA8C4;--err:#F26B6B;--ok:#4CC29A;--warn-bg:rgba(216,136,32,.16);--warn-fg:#F0C27A;--sel-bg:rgba(216,136,32,.18)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 120px}
+.logo{display:block;width:100%;max-width:260px;border-radius:12px;margin:4px auto 14px}
+h1,h2{font-family:'Newsreader',serif;color:var(--ink);margin:0;font-weight:600}
+h1{font-size:24px;text-align:center}
+.lead{text-align:center;color:var(--dim);margin:6px 0 16px;font-size:15px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.warn{background:var(--warn-bg);color:var(--warn-fg);border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:14px;font-weight:500}
+.cfgwarn{background:#FBE4E4;color:#8F1D1D;border:2px solid var(--err)}
+.privacy{font-size:13.5px;color:var(--dim)}
+.privacy b{color:var(--text)}
+.progress{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:6px}
+#bar{height:100%;width:0;background:var(--gold);transition:width .25s ease}
+#stepLabel{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+h2{font-size:21px;margin:18px 0 2px}
+.sub{color:var(--dim);font-size:14px;margin:0 0 14px}
+.q{margin-bottom:20px}
+.ql{display:block;font-weight:600;font-size:15.5px;margin-bottom:6px}
+.opt-tag{font-weight:400;color:var(--dim);font-size:13px}
+.help{font-size:13.5px;color:var(--dim);margin:0 0 8px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:14px}
+details summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details ol{margin:8px 0 2px;padding-left:20px}
+details li{margin-bottom:5px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts.num{flex-direction:row;flex-wrap:wrap}
+.opts.num .opt{flex:1 0 56px;text-align:center}
+.opt{width:100%;min-height:52px;padding:12px 14px;text-align:left;font:inherit;font-size:15.5px;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;cursor:pointer}
+.opt.sel{background:var(--primary);color:var(--on-primary);border-color:var(--primary);font-weight:600}
+input[type=text],textarea{width:100%;font:inherit;font-size:16px;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--text)}
+textarea{min-height:96px;resize:vertical}
+input:focus,textarea:focus,.opt:focus-visible{outline:3px solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:1px}
+.inwrap{position:relative}
+.inwrap .suf{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none}
+.err{color:var(--err);font-size:13.5px;margin-top:5px;display:none}
+.q.bad .err{display:block}
+.q.bad input,.q.bad textarea{border-color:var(--err)}
+.q.bad .opt{border-color:var(--err)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px;margin-top:10px}
+.check input{width:24px;height:24px;margin:1px 0 0;flex:0 0 auto;accent-color:var(--primary)}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:10}
+.nav .in{max-width:560px;margin:0 auto;display:flex;gap:10px}
+.btn{flex:1;min-height:54px;border-radius:14px;font:inherit;font-size:16.5px;font-weight:600;border:1.5px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.btn.main{flex:2;background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.btn:disabled{opacity:.55}
+.done{text-align:center;padding:30px 6px}
+.done h2{font-size:26px;margin-bottom:8px}
+.done ol{text-align:left;max-width:420px;margin:14px auto;padding-left:22px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="logo-vertice.jpg" alt="Vértice Marketing Digital">
+  <h1>Briefing da Goma</h1>
+  <p class="lead" id="lead"></p>
+  <div class="warn cfgwarn" id="cfgwarn" hidden>PÁGINA EM CONFIGURAÇÃO. Ainda não envie este link ao cliente.</div>
+  <div class="warn" id="jaEnviou" hidden></div>
+  <div id="app">
+    <div id="stepLabel"><span id="stepTxt"></span><span id="stepName"></span></div>
+    <div class="progress"><div id="bar"></div></div>
+    <div id="stepBox"></div>
+  </div>
+  <div id="doneBox" class="done" hidden></div>
+  <input class="hp" type="text" id="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+</div>
+<div class="nav" id="nav"><div class="in">
+  <button class="btn" id="bBack" type="button">Voltar</button>
+  <button class="btn" id="bSkip" type="button" hidden>Pular e enviar</button>
+  <button class="btn main" id="bNext" type="button">Continuar</button>
+</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* Preenchido na publicação. Enquanto algum estiver vazio, a página avisa e não deixa enviar. */
+const CONFIG = {"nomeDono": "", "email": "", "businessId": ""};
+const CLIENTE = 'Goma';
+const COLECAO = 'briefings_clientes_vertice';
+const LS_KEY = 'briefing_goma_v1';
+const SECOES = [{"id": "s1", "titulo": "Acessos", "sub": "Sem esses acessos os anúncios não saem do papel.", "obrig": true, "fields": [{"key": "s1_gmb_acesso", "n": 1, "type": "choice", "req": true, "label": "Acesso ao Perfil da Empresa no Google (antigo Google Meu Negócio)", "opts": [["ja_dei", "Já dei o acesso"], ["preciso_ajuda", "Preciso de ajuda"], ["ficha_nao_verificada", "A ficha ainda não está no meu nome ou não foi verificada"]], "help": "gmb"}, {"key": "s1_instagram_comercial", "n": 2, "type": "choice", "req": true, "label": "O Instagram da loja é uma conta comercial e está conectado a uma Página do Facebook?", "opts": [["sim", "Sim"], ["nao", "Não"], ["nao_sei", "Não sei"]], "help_txt": "Conta comercial é a que mostra botões como \"Contato\" e \"Estatísticas\" no perfil."}, {"key": "s1_meta_parceira", "n": 3, "type": "choice", "req": true, "label": "Você já adicionou a Vértice como parceira no Gerenciador de Negócios da Meta (Facebook e Instagram)?", "opts": [["sim", "Sim"], ["nao", "Não"], ["preciso_ajuda", "Preciso de ajuda"]], "help": "meta"}, {"key": "s1_cartao_empresa", "n": 4, "type": "choice", "req": true, "label": "Você tem um cartão da empresa para pagar os anúncios?", "opts": [["sim", "Sim"], ["nao", "Não"]]}]}, {"id": "s2", "titulo": "Números da loja", "sub": "Pode ser uma estimativa. Esses números servem para eu calcular quanto cada venda realmente deixa de lucro.", "obrig": true, "fields": [{"key": "s2_ticket_medio", "n": 5, "type": "money", "req": true, "min": 0.01, "label": "Ticket médio: quanto, em média, cada cliente gasta por compra?"}, {"key": "s2_cm", "n": 6, "type": "custo_margem", "req": true, "label": "Custo médio de cada peça (em R$) OU margem bruta (em %). Escolha o que for mais fácil.", "help_txt": "Margem bruta é o quanto sobra do preço depois de pagar a peça. Exemplo: vende por 100 e a peça custou 40, então a margem é 60%."}, {"key": "s2_imposto_pct", "n": 7, "type": "pct", "req": true, "label": "Imposto sobre a venda (Simples, MEI ou outro), em %", "help_txt": "Se não souber, pergunte ao contador ou coloque uma estimativa."}, {"key": "s2_taxa_maquininha_pct", "n": 8, "type": "pct", "req": true, "label": "Taxa da maquininha ou do Pix, em %"}, {"key": "s2_frete_embalagem", "n": 9, "type": "money", "req": true, "min": 0, "label": "Frete e embalagem que a loja paga por pedido (em R$)", "help_txt": "Pode ser R$ 0,00."}, {"key": "s2_trocas_de_10", "n": 10, "type": "num10", "req": true, "label": "De cada 10 vendas, quantas voltam em troca ou devolução?"}, {"key": "s2_invest_mensal", "n": 11, "type": "money", "req": true, "min": 0.01, "label": "Quanto você aceita investir em anúncios por mês (em R$)?"}]}, {"id": "s3", "titulo": "A loja", "sub": "Para os clientes dos anúncios chegarem no lugar certo.", "obrig": true, "fields": [{"key": "s3_endereco", "n": 12, "type": "text", "req": true, "max": 200, "label": "Endereço da loja (rua e número)"}, {"key": "s3_bairro", "type": "text", "req": true, "max": 80, "label": "Bairro"}, {"key": "s3_cidade", "type": "text", "req": true, "max": 80, "label": "Cidade"}, {"key": "s3_whatsapp", "n": 13, "type": "phone", "req": true, "label": "WhatsApp que vai atender os clientes que chegarem pelos anúncios", "help_txt": "Com DDD."}, {"key": "s3_quem_responde", "n": 14, "type": "textarea", "req": true, "max": 300, "label": "Quem responde as mensagens e em quais dias e horários?"}, {"key": "s3_quem_aprova", "n": 15, "type": "text", "req": true, "max": 120, "label": "Quem aprova as artes (imagens e vídeos) dos anúncios?"}]}, {"id": "s4", "titulo": "Importante", "sub": "Opcional, mas ajuda muito. Se puder, envie até quinta-feira, 22/10.", "obrig": false, "fields": [{"key": "s4_faturamento_mensal", "n": 16, "type": "money", "req": false, "label": "Faturamento médio por mês nos últimos 6 meses (em R$)"}, {"key": "s4_vendas_mes", "n": 17, "type": "int", "req": false, "label": "Quantas vendas por mês, em média?"}, {"key": "s4_top5_produtos", "n": 18, "type": "textarea", "req": false, "max": 1500, "label": "Os 5 produtos que mais vendem (nome e preço)"}, {"key": "s4_link_drive", "n": 19, "type": "text", "req": false, "max": 300, "label": "Link da pasta com fotos e vídeos da loja (Google Drive)"}, {"key": "s4_formas_pagamento", "n": 20, "type": "text", "req": false, "max": 300, "label": "Formas de pagamento que a loja aceita"}, {"key": "s4_desconto_pix", "type": "text", "req": false, "max": 120, "label": "Desconto no Pix (qual?)"}, {"key": "s4_politica_troca", "type": "textarea", "req": false, "max": 500, "label": "Política de troca"}, {"key": "s4_tem_site", "n": 21, "type": "choice", "req": false, "label": "A loja tem site ou loja virtual?", "opts": [["sim", "Sim"], ["nao", "Não"]]}, {"key": "s4_plataforma_site", "type": "text", "req": false, "max": 100, "label": "Se tem, qual plataforma? (exemplos: Shopify, Nuvemshop)"}, {"key": "s4_tem_lista_clientes", "n": 22, "type": "choice", "req": false, "label": "Você tem uma lista de clientes (nomes e telefones)?", "opts": [["sim", "Sim"], ["nao", "Não"]], "help_txt": "Só responda sim ou não. Não envie a lista por aqui."}]}, {"id": "s5", "titulo": "Se quiser adiantar", "sub": "Tudo opcional. Escreva do seu jeito, sem se preocupar com a forma.", "obrig": false, "fields": [{"key": "s5_concorrentes", "n": 23, "type": "textarea", "req": false, "max": 800, "label": "Quais lojas concorrentes você observa?"}, {"key": "s5_ja_anunciou", "n": 24, "type": "textarea", "req": false, "max": 1500, "label": "Você já anunciou antes? O que funcionou e o que não funcionou?"}, {"key": "s5_elogios_reclamacoes", "n": 25, "type": "textarea", "req": false, "max": 1500, "label": "Quais são os principais elogios e reclamações que você ouve dos clientes?"}, {"key": "s5_faixa_idade", "n": 26, "type": "text", "req": false, "max": 100, "label": "Qual faixa de idade mais compra na loja?"}, {"key": "s5_duvidas_clientes", "n": 27, "type": "textarea", "req": false, "max": 1500, "label": "Quais dúvidas os clientes costumam ter antes de comprar?"}, {"key": "s5_quem_cuida_instagram", "n": 28, "type": "text", "req": false, "max": 200, "label": "Quem cuida do Instagram da loja hoje?"}, {"key": "s5_resultado_90_dias", "n": 29, "type": "textarea", "req": false, "max": 800, "label": "Que resultado você espera em 90 dias?"}, {"key": "s5_frequencia_relatorio", "n": 30, "type": "choice", "req": false, "label": "Com que frequência você quer receber o relatório de resultados?", "opts": [["semanal", "Toda semana"], ["quinzenal", "A cada 15 dias"], ["mensal", "Todo mês"]]}]}];
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
+  authDomain: "atendimentoclientebv-658e7.firebaseapp.com",
+  projectId: "atendimentoclientebv-658e7",
+  storageBucket: "atendimentoclientebv-658e7.firebasestorage.app",
+  messagingSenderId: "641137924211",
+  appId: "1:641137924211:web:30adb0e6924abed1b7b206"
+};
+const db = getFirestore(initializeApp(firebaseConfig));
+
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const configOk = !!(CONFIG.nomeDono && CONFIG.email && CONFIG.businessId);
+const FIELDS = SECOES.flatMap(s=>s.fields.map(f=>({...f, secao:s.id})));
+
+let S = (function(){ try{ const d=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(d&&d.raw) return {raw:d.raw, step:Math.min(d.step||0,SECOES.length-1), consent:!!d.consent, enviadoVersao:d.enviadoVersao||0}; }catch(e){} return {raw:{},step:0,consent:false,enviadoVersao:0}; })();
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------- máscaras e leitura de valores ---------- */
+function maskMoney(v){ let d=String(v).replace(/\D/g,'').slice(0,11).replace(/^0+(?=\d)/,''); if(d==='') return ''; return 'R$ '+(parseInt(d,10)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function parseMoney(v){ const d=String(v==null?'':v).replace(/\D/g,''); return d===''?null:Math.round(parseInt(d,10))/100; }
+function maskPct(v){ let s=String(v).replace(/[^\d,.]/g,'').replace(/\./g,','); const i=s.indexOf(','); if(i>=0) s=s.slice(0,i+1)+s.slice(i+1).replace(/,/g,'').slice(0,2); s=s.replace(/^0+(?=\d)/,''); if(parseFloat(s.replace(',','.'))>100) s='100'; return s; }
+function parsePct(v){ const s=String(v==null?'':v).replace(',','.'); if(s===''||s==='.') return null; const n=parseFloat(s); return isNaN(n)?null:n; }
+function maskInt(v){ return String(v).replace(/\D/g,'').slice(0,7).replace(/^0+(?=\d)/,''); }
+function maskPhone(v){ const d=String(v).replace(/\D/g,'').slice(0,11); if(!d) return ''; if(d.length<=2) return '('+d; if(d.length<=6) return `(${d.slice(0,2)}) ${d.slice(2)}`; if(d.length<=10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; }
+const digits = v=>String(v==null?'':v).replace(/\D/g,'');
+
+/* ---------- desenho dos campos ---------- */
+function helpHtml(f){
+  let h='';
+  if(f.help==='gmb') h+=`<details><summary>Como dar o acesso (passo a passo)</summary><ol>
+    <li>No Google, pesquise o nome da sua loja e abra a ficha dela (o perfil com mapa e avaliações). Entre na conta que administra a ficha.</li>
+    <li>Toque em <b>Configurações do perfil</b> (ou nos três pontinhos) e procure <b>Pessoas e acesso</b> (ou "Gerenciadores").</li>
+    <li>Toque em <b>Adicionar</b> e digite o e-mail <b>${esc(CONFIG.email)}</b>.</li>
+    <li>Em "Função", escolha <b>Gerente</b> e confirme.</li></ol></details>`;
+  if(f.help==='meta') h+=`<details><summary>Como me adicionar como parceira (passo a passo)</summary><ol>
+    <li>Abra o Gerenciador de Negócios da Meta (business.facebook.com) com a conta que administra a empresa.</li>
+    <li>Vá em <b>Configurações da empresa</b> e procure <b>Parceiros</b>.</li>
+    <li>Toque em <b>Adicionar</b> e escolha dar acesso a um parceiro.</li>
+    <li>Digite o ID da empresa: <b>${esc(CONFIG.businessId)}</b>, e libere o acesso à Página e ao Instagram da loja.</li></ol></details>`;
+  if(f.help_txt) h+=`<p class="help">${esc(f.help_txt)}</p>`;
+  return h;
+}
+function ctlHtml(f){
+  const v = S.raw[f.key]==null ? '' : S.raw[f.key];
+  if(f.type==='choice') return `<div class="opts">${f.opts.map(o=>`<button type="button" class="opt${v===o[0]?' sel':''}" data-v="${o[0]}">${esc(o[1])}</button>`).join('')}</div>`;
+  if(f.type==='num10') return `<div class="opts num">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" class="opt${String(v)===String(n)?' sel':''}" data-v="${n}">${n}</button>`).join('')}</div>`;
+  if(f.type==='custo_margem'){
+    const m=S.raw[f.key+'_modo']||'', val=S.raw[f.key+'_valor']||'';
+    return `<div class="opts"><button type="button" class="opt${m==='custo'?' sel':''}" data-modo="custo">Sei o custo médio da peça (R$)</button><button type="button" class="opt${m==='margem'?' sel':''}" data-modo="margem">Sei a margem bruta (%)</button></div>
+      <div class="inwrap" style="margin-top:8px" ${m?'':'hidden'}><input type="text" inputmode="${m==='margem'?'decimal':'numeric'}" data-cm value="${esc(val)}" placeholder="${m==='margem'?'Ex.: 60':'Ex.: R$ 40,00'}" autocomplete="off">${m==='margem'?'<span class="suf">%</span>':''}</div>`;
+  }
+  if(f.type==='textarea') return `<textarea maxlength="${f.max}" data-in>${esc(v)}</textarea>`;
+  if(f.type==='pct') return `<div class="inwrap"><input type="text" inputmode="decimal" data-in value="${esc(v)}" placeholder="Ex.: 6" autocomplete="off"><span class="suf">%</span></div>`;
+  if(f.type==='money') return `<input type="text" inputmode="numeric" data-in value="${esc(v)}" placeholder="R$ 0,00" autocomplete="off">`;
+  if(f.type==='int') return `<input type="text" inputmode="numeric" data-in value="${esc(v)}" placeholder="Ex.: 80" autocomplete="off">`;
+  if(f.type==='phone') return `<input type="text" inputmode="tel" data-in value="${esc(v)}" placeholder="(11) 91234-5678" autocomplete="off">`;
+  return `<input type="text" maxlength="${f.max}" data-in value="${esc(v)}" autocomplete="off">`;
+}
+function qHtml(f){
+  return `<div class="q" data-k="${f.key}"><label class="ql">${f.n?f.n+'. ':''}${esc(f.label)}${f.req?'':' <span class="opt-tag">(opcional)</span>'}</label>${helpHtml(f)}${ctlHtml(f)}<div class="err"></div></div>`;
+}
+function consentHtml(){
+  return `<div class="box privacy"><b>Seus dados.</b> As respostas são usadas só para montar a estratégia dos anúncios da loja. Ficam guardadas com a Vértice Marketing Digital, não são vendidas nem repassadas, e você pode pedir a exclusão quando quiser pelo e-mail <b>${esc(CONFIG.email)}</b>.</div>
+    <div class="warn">Não envie senhas. O acesso é por permissão, e você pode retirar quando quiser.</div>
+    <div class="q" data-k="__consent"><label class="check"><input type="checkbox" id="consent" ${S.consent?'checked':''}><span>Li e concordo com o uso dos meus dados como descrito acima.</span></label><div class="err">Marque a caixinha para continuar.</div></div>`;
+}
+function render(){
+  const sec=SECOES[S.step], last=S.step===SECOES.length-1;
+  $('#stepTxt').textContent=`Etapa ${S.step+1} de ${SECOES.length}`;
+  $('#stepName').textContent=sec.obrig?'Obrigatória':'Opcional';
+  $('#bar').style.width=((S.step+1)/SECOES.length*100)+'%';
+  $('#stepBox').innerHTML=`<h2>${esc(sec.titulo)}</h2><p class="sub">${esc(sec.sub)}</p>`+(S.step===0?consentHtml():'')+sec.fields.map(qHtml).join('');
+  $('#bBack').hidden = S.step===0;
+  $('#bSkip').hidden = !(S.step===3);
+  $('#bNext').textContent = last ? 'Enviar' : (S.step===2 ? 'Continuar (opcional)' : 'Continuar');
+  bind(); window.scrollTo(0,0);
+}
+function bind(){
+  const box=$('#stepBox');
+  const cons=$('#consent'); if(cons) cons.onchange=()=>{ S.consent=cons.checked; save(); clearBad('__consent'); };
+  box.querySelectorAll('.q[data-k]').forEach(q=>{
+    const f=FIELDS.find(x=>x.key===q.dataset.k); if(!f) return;
+    q.querySelectorAll('.opt[data-v]').forEach(b=>b.onclick=()=>{ S.raw[f.key]=(S.raw[f.key]===b.dataset.v&&!f.req)?'':b.dataset.v; save(); q.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.v===S.raw[f.key])); q.classList.remove('bad'); });
+    q.querySelectorAll('.opt[data-modo]').forEach(b=>b.onclick=()=>{ S.raw[f.key+'_modo']=b.dataset.modo; S.raw[f.key+'_valor']=''; save(); q.outerHTML=qHtml(f); bind(); });
+    const cm=q.querySelector('[data-cm]'); if(cm) cm.oninput=()=>{ const modo=S.raw[f.key+'_modo']; cm.value = modo==='margem'?maskPct(cm.value):maskMoney(cm.value); S.raw[f.key+'_valor']=cm.value; save(); q.classList.remove('bad'); };
+    const inp=q.querySelector('[data-in]'); if(inp) inp.oninput=()=>{
+      if(f.type==='money') inp.value=maskMoney(inp.value); else if(f.type==='pct') inp.value=maskPct(inp.value); else if(f.type==='int') inp.value=maskInt(inp.value); else if(f.type==='phone') inp.value=maskPhone(inp.value);
+      S.raw[f.key]=inp.value; save(); q.classList.remove('bad'); };
+  });
+}
+function clearBad(k){ const q=$(`.q[data-k="${k}"]`); if(q) q.classList.remove('bad'); }
+
+/* ---------- validação ---------- */
+function problema(f){
+  const v = S.raw[f.key]==null ? '' : S.raw[f.key];
+  if(f.type==='custo_margem'){
+    const m=S.raw[f.key+'_modo'], raw=S.raw[f.key+'_valor']||'';
+    if(!m) return 'Escolha uma das duas opções.';
+    const n = m==='custo'?parseMoney(raw):parsePct(raw);
+    if(n===null||n<=0) return m==='custo'?'Digite o custo da peça.':'Digite a margem (maior que 0).';
+    if(m==='margem'&&n>100) return 'A margem não pode passar de 100%.';
+    return '';
+  }
+  if(!f.req) return '';
+  if(f.type==='choice'||f.type==='num10') return v===''?'Escolha uma opção.':'';
+  if(f.type==='money'){ const n=parseMoney(v); if(n===null) return 'Preencha este campo.'; if(f.min>0&&n<f.min) return 'O valor precisa ser maior que zero.'; return ''; }
+  if(f.type==='pct'){ const n=parsePct(v); return n===null?'Preencha este campo.':(n>100?'Máximo 100%.':''); }
+  if(f.type==='phone'){ const d=digits(v); return (d.length<10||d.length>11)?'Digite o DDD e o número.':''; }
+  return String(v).trim()===''?'Preencha este campo.':'';
+}
+function validaEtapa(i){
+  let primeiro=null;
+  if(i===0 && !S.consent){ const q=$('.q[data-k="__consent"]'); if(q){ q.classList.add('bad'); primeiro=primeiro||q; } }
+  SECOES[i].fields.forEach(f=>{
+    const msg=problema(f), q=$(`.q[data-k="${f.key}"]`);
+    if(msg){ if(q){ q.classList.add('bad'); q.querySelector('.err').textContent=msg; primeiro=primeiro||q; } }
+    else if(q) q.classList.remove('bad');
+  });
+  if(primeiro) primeiro.scrollIntoView({behavior:'smooth',block:'center'});
+  return !primeiro;
+}
+function primeiraEtapaInvalida(){
+  if(!S.consent) return 0;
+  for(let i=0;i<SECOES.length;i++){ if(!SECOES[i].obrig) continue; if(SECOES[i].fields.some(f=>problema(f))) return i; }
+  return -1;
+}
+
+/* ---------- envio ---------- */
+function montaPayload(){
+  const p={};
+  FIELDS.forEach(f=>{
+    const raw = S.raw[f.key]==null ? '' : S.raw[f.key];
+    if(f.type==='custo_margem'){ const m=S.raw[f.key+'_modo'], val=S.raw[f.key+'_valor']||''; p.s2_custo_peca = m==='custo'?parseMoney(val):null; p.s2_margem_bruta_pct = m==='margem'?parsePct(val):null; return; }
+    if(f.type==='money') p[f.key]=parseMoney(raw);
+    else if(f.type==='pct') p[f.key]=parsePct(raw);
+    else if(f.type==='int') p[f.key]= raw===''?null:parseInt(raw,10);
+    else if(f.type==='num10') p[f.key]=parseInt(raw,10);
+    else if(f.type==='phone') p[f.key]=digits(raw);
+    else if(f.type==='choice') p[f.key]=String(raw);
+    else p[f.key]=String(raw).trim();
+  });
+  p.cliente=CLIENTE; p.versao=(S.enviadoVersao||0)+1; p.aceitePrivacidade=true; p.enviadoEm=serverTimestamp();
+  return p;
+}
+function mostraFim(){
+  $('#app').hidden=true; $('#nav').hidden=true; $('#jaEnviou').hidden=true;
+  const box=$('#doneBox'); box.hidden=false;
+  box.innerHTML=`<h2>Pronto, ${esc(CONFIG.nomeDono||'tudo certo')}! Recebemos o seu briefing.</h2>
+    <p>Obrigado pelo tempo. O que acontece agora:</p>
+    <ol><li>O Eduardo confere os acessos e os números que você enviou.</li><li>Se precisar de algum ajuste, ele chama você no WhatsApp.</li><li>Com tudo certo, ele monta a estratégia e prepara os primeiros anúncios da Goma.</li></ol>
+    <p>Faltou alguma informação das etapas 4 e 5? Abra este mesmo link de novo até <b>quinta-feira, 22/10</b>, complete e envie outra vez. O que você já digitou continua salvo neste celular.</p>`;
+  window.scrollTo(0,0);
+}
+async function enviar(){
+  if(!configOk){ alert('Esta página ainda está em configuração. Fale com o Eduardo.'); return; }
+  const i=primeiraEtapaInvalida();
+  if(i>=0){ S.step=i; save(); render(); validaEtapa(i); return; }
+  if($('#hp').value){ mostraFim(); return; }   // robô: finge que enviou e não grava
+  const bN=$('#bNext'), bS=$('#bSkip'); bN.disabled=true; bS.disabled=true; const txt=bN.textContent; bN.textContent='Enviando...';
+  try{
+    const payload=montaPayload();
+    await setDoc(doc(collection(db,COLECAO)), payload);
+    S.enviadoVersao=payload.versao; save(); mostraFim();
+  }catch(e){
+    console.error(e); bN.disabled=false; bS.disabled=false; bN.textContent=txt;
+    alert('Não consegui enviar. Confira a internet e tente de novo. Se continuar, avise o Eduardo.');
+  }
+}
+$('#bBack').onclick=()=>{ if(S.step>0){ S.step--; save(); render(); } };
+$('#bSkip').onclick=()=>enviar();
+$('#bNext').onclick=()=>{
+  if(!validaEtapa(S.step)) return;
+  if(S.step===SECOES.length-1){ enviar(); return; }
+  S.step++; save(); render();
+};
+
+/* ---------- início ---------- */
+$('#lead').textContent = CONFIG.nomeDono ? `Olá, ${CONFIG.nomeDono}! São poucas perguntas, e você pode parar e voltar quando quiser: o que digitar fica salvo neste celular.` : 'São poucas perguntas, e você pode parar e voltar quando quiser.';
+if(!configOk) $('#cfgwarn').hidden=false;
+if(S.enviadoVersao){ const j=$('#jaEnviou'); j.hidden=false; j.textContent=`Você já enviou este briefing (versão ${S.enviadoVersao}). Pode completar e enviar de novo até quinta-feira, 22/10. O envio mais recente é o que vale.`; }
+render();
+</script>
+</body>
+</html>

@@ -72,6 +72,16 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .hoje-item .hi-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
 .hoje-item button{font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;}
 .hoje-empty{font-size:13px;color:var(--text-dim);padding:6px 0;}
+.brf summary{cursor:pointer;font-size:14px;list-style:none;}
+.brf summary::-webkit-details-marker{display:none;}
+.brf-tag{background:var(--sel-bg);color:var(--ink);font-size:11px;padding:1px 7px;border-radius:6px;margin-left:6px;font-weight:600;}
+.brf-sec{margin-top:16px;}
+.brf-sec-t{font-family:'Newsreader',serif;font-weight:600;font-size:15px;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:6px;}
+.brf-row{display:flex;gap:14px;justify-content:space-between;padding:6px 0;font-size:13.5px;border-bottom:1px dashed var(--line);}
+.brf-l{color:var(--text-dim);flex:1 1 55%;}
+.brf-v{flex:1 1 45%;text-align:right;white-space:pre-wrap;word-break:break-word;}
+.brf-v a{color:var(--ink);}
+@media(max-width:600px){.brf-row{flex-direction:column;gap:2px;}.brf-v{text-align:left;}}
 .ok-btn{background:var(--primary)!important;color:var(--on-primary)!important;border-color:var(--primary)!important;}
 .hoje-block h3 .cnt{font-size:12px;font-weight:600;color:var(--text-dim);margin-left:6px;}
 .hoje-item.done .hi-main{text-decoration:line-through;color:var(--text-dim);}
@@ -264,6 +274,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
       <div class="tab" data-view="buyers">Leads</div>
       <div class="tab" data-view="imoveis">Imóveis</div>
       <div class="tab" data-view="visitas">Visitas</div>
+      <div class="tab" data-view="briefings">Briefings</div>
     </div>
   </div>
 </div>
@@ -305,6 +316,10 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   <div class="hoje-block"><h3>⚠️ Sem próxima ação definida <span class="cnt" id="cntSemProxima"></span></h3><div id="hojeSemProxima"></div></div>
   <div class="hoje-block"><h3>🔁 Reconfirmar disponibilidade (15d aluguel / 30d venda) <span class="cnt" id="cntReconfirmar"></span></h3><div id="hojeReconfirmar"></div></div>
   <div class="hoje-block"><h3>💰 Propostas sem retorno <span class="cnt" id="cntPropostas"></span></h3><div id="hojePropostas"></div></div>
+</div>
+
+<div class="view" id="view-briefings">
+  <div id="briefingsBox"></div>
 </div>
 
 <div class="view" id="view-dash">
@@ -712,6 +727,7 @@ const buyersCol = collection(db, 'compradores');
 const imoveisCol = collection(db, 'imoveis');
 const visitasCol = collection(db, 'visitas');
 const tarefasCol = collection(db, 'tarefas');
+const briefingsCol = collection(db, 'briefings_clientes_vertice');
 
 const PROPOSTA_SEM_RETORNO_DAYS = 3;
 const TAREFA_TIPOS = [
@@ -794,7 +810,7 @@ const BUYER_STAGE_MSG_ALUGUEL = {
   perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
 };
 
-let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[] };
+let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[], briefings:[] };
 let personaFilter=null, priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
@@ -963,6 +979,11 @@ function startListeners(){
     data.visitas = snap.docs.map(d=>({id:d.id, ...d.data()}));
     renderVisitas(); renderHoje(); markSynced();
   }, err=>{ console.error(err); });
+
+  onSnapshot(briefingsCol, snap=>{
+    data.briefings = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderBriefings();
+  }, err=>{ console.error(err); data.briefings = null; renderBriefings(); });
 
   onSnapshot(tarefasCol, snap=>{
     data.tarefas = snap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -2891,6 +2912,49 @@ document.getElementById('zerarPendenciasBtn').onclick = async ()=>{
   }catch(e){ console.error(e); alert('Deu erro em alguma etapa — confere se as regras do Firestore da coleção tarefas já foram publicadas.'); }
   btn.disabled = false; btn.textContent = '🔄 Zerar pendências (marcar tudo em dia)';
 };
+
+/* ---------- BRIEFINGS (aba, só leitura) ---------- */
+const BRIEFING_VIEW = [{"id": "s1", "titulo": "Acessos", "obrig": true, "items": [{"key": "s1_gmb_acesso", "label": "Acesso ao Perfil da Empresa no Google (antigo Google Meu Negócio)", "type": "choice", "n": 1, "opts": {"ja_dei": "Já dei o acesso", "preciso_ajuda": "Preciso de ajuda", "ficha_nao_verificada": "A ficha ainda não está no meu nome ou não foi verificada"}}, {"key": "s1_instagram_comercial", "label": "O Instagram da loja é uma conta comercial e está conectado a uma Página do Facebook?", "type": "choice", "n": 2, "opts": {"sim": "Sim", "nao": "Não", "nao_sei": "Não sei"}}, {"key": "s1_meta_parceira", "label": "Você já adicionou a Vértice como parceira no Gerenciador de Negócios da Meta (Facebook e Instagram)?", "type": "choice", "n": 3, "opts": {"sim": "Sim", "nao": "Não", "preciso_ajuda": "Preciso de ajuda"}}, {"key": "s1_cartao_empresa", "label": "Você tem um cartão da empresa para pagar os anúncios?", "type": "choice", "n": 4, "opts": {"sim": "Sim", "nao": "Não"}}]}, {"id": "s2", "titulo": "Números da loja", "obrig": true, "items": [{"key": "s2_ticket_medio", "label": "Ticket médio: quanto, em média, cada cliente gasta por compra?", "type": "money", "n": 5}, {"key": "s2_custo_peca", "n": 6, "label": "Custo médio da peça", "type": "money"}, {"key": "s2_margem_bruta_pct", "label": "Margem bruta", "type": "pct"}, {"key": "s2_imposto_pct", "label": "Imposto sobre a venda (Simples, MEI ou outro), em %", "type": "pct", "n": 7}, {"key": "s2_taxa_maquininha_pct", "label": "Taxa da maquininha ou do Pix, em %", "type": "pct", "n": 8}, {"key": "s2_frete_embalagem", "label": "Frete e embalagem que a loja paga por pedido (em R$)", "type": "money", "n": 9}, {"key": "s2_trocas_de_10", "label": "De cada 10 vendas, quantas voltam em troca ou devolução?", "type": "num10", "n": 10}, {"key": "s2_invest_mensal", "label": "Quanto você aceita investir em anúncios por mês (em R$)?", "type": "money", "n": 11}]}, {"id": "s3", "titulo": "A loja", "obrig": true, "items": [{"key": "s3_endereco", "label": "Endereço da loja (rua e número)", "type": "text", "n": 12}, {"key": "s3_bairro", "label": "Bairro", "type": "text"}, {"key": "s3_cidade", "label": "Cidade", "type": "text"}, {"key": "s3_whatsapp", "label": "WhatsApp que vai atender os clientes que chegarem pelos anúncios", "type": "phone", "n": 13}, {"key": "s3_quem_responde", "label": "Quem responde as mensagens e em quais dias e horários?", "type": "textarea", "n": 14}, {"key": "s3_quem_aprova", "label": "Quem aprova as artes (imagens e vídeos) dos anúncios?", "type": "text", "n": 15}]}, {"id": "s4", "titulo": "Importante", "obrig": false, "items": [{"key": "s4_faturamento_mensal", "label": "Faturamento médio por mês nos últimos 6 meses (em R$)", "type": "money", "n": 16, "opt": true}, {"key": "s4_vendas_mes", "label": "Quantas vendas por mês, em média?", "type": "int", "n": 17, "opt": true}, {"key": "s4_top5_produtos", "label": "Os 5 produtos que mais vendem (nome e preço)", "type": "textarea", "n": 18, "opt": true}, {"key": "s4_link_drive", "label": "Link da pasta com fotos e vídeos da loja (Google Drive)", "type": "text", "n": 19, "opt": true}, {"key": "s4_formas_pagamento", "label": "Formas de pagamento que a loja aceita", "type": "text", "n": 20, "opt": true}, {"key": "s4_desconto_pix", "label": "Desconto no Pix (qual?)", "type": "text", "opt": true}, {"key": "s4_politica_troca", "label": "Política de troca", "type": "textarea", "opt": true}, {"key": "s4_tem_site", "label": "A loja tem site ou loja virtual?", "type": "choice", "n": 21, "opts": {"sim": "Sim", "nao": "Não"}, "opt": true}, {"key": "s4_plataforma_site", "label": "Se tem, qual plataforma? (exemplos: Shopify, Nuvemshop)", "type": "text", "opt": true}, {"key": "s4_tem_lista_clientes", "label": "Você tem uma lista de clientes (nomes e telefones)?", "type": "choice", "n": 22, "opts": {"sim": "Sim", "nao": "Não"}, "opt": true}]}, {"id": "s5", "titulo": "Se quiser adiantar", "obrig": false, "items": [{"key": "s5_concorrentes", "label": "Quais lojas concorrentes você observa?", "type": "textarea", "n": 23, "opt": true}, {"key": "s5_ja_anunciou", "label": "Você já anunciou antes? O que funcionou e o que não funcionou?", "type": "textarea", "n": 24, "opt": true}, {"key": "s5_elogios_reclamacoes", "label": "Quais são os principais elogios e reclamações que você ouve dos clientes?", "type": "textarea", "n": 25, "opt": true}, {"key": "s5_faixa_idade", "label": "Qual faixa de idade mais compra na loja?", "type": "text", "n": 26, "opt": true}, {"key": "s5_duvidas_clientes", "label": "Quais dúvidas os clientes costumam ter antes de comprar?", "type": "textarea", "n": 27, "opt": true}, {"key": "s5_quem_cuida_instagram", "label": "Quem cuida do Instagram da loja hoje?", "type": "text", "n": 28, "opt": true}, {"key": "s5_resultado_90_dias", "label": "Que resultado você espera em 90 dias?", "type": "textarea", "n": 29, "opt": true}, {"key": "s5_frequencia_relatorio", "label": "Com que frequência você quer receber o relatório de resultados?", "type": "choice", "n": 30, "opts": {"semanal": "Toda semana", "quinzenal": "A cada 15 dias", "mensal": "Todo mês"}, "opt": true}]}];
+function brfMs(b){ const t=b.enviadoEm; return t && t.toMillis ? t.toMillis() : 0; }
+function brfDataTxt(b){ const ms=brfMs(b); return ms ? new Date(ms).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : 'agora'; }
+function brfVazio(v){ return v===null || v===undefined || v===''; }
+function fmtBrf(it, v){
+  if(brfVazio(v)) return '—';
+  if(it.type==='choice') return (it.opts && it.opts[v]) || v;
+  if(it.type==='money') return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(it.type==='pct') return String(v).replace('.',',')+'%';
+  if(it.type==='num10') return v+' de 10';
+  if(it.type==='phone'){ const d=String(v); return d.length===11 ? `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}` : (d.length===10 ? `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}` : d); }
+  return String(v);
+}
+function brfValorHtml(it, v){
+  const t = fmtBrf(it, v);
+  if(it.key==='s4_link_drive' && /^https?:\/\//i.test(String(v||''))) return `<a href="${escapeHtml(String(v))}" target="_blank" rel="noopener noreferrer">${escapeHtml(t)}</a>`;
+  return escapeHtml(t);
+}
+function renderBriefings(){
+  const box = document.getElementById('briefingsBox'); if(!box) return;
+  if(data.briefings===null){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Não consegui ler os briefings. Confira se as regras novas do Firestore já foram publicadas (com o seu UID) e se você está logado.</div></div>`; return; }
+  if(!data.briefings.length){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Nenhum briefing recebido ainda.</div></div>`; return; }
+  const lista = [...data.briefings].sort((a,b)=>brfMs(b)-brfMs(a));
+  const recente = {}; lista.forEach(b=>{ if(!recente[b.cliente]) recente[b.cliente]=b.id; });
+  box.innerHTML = lista.map(b=>{
+    let resp=0, tot=0;
+    BRIEFING_VIEW.forEach(s=>{ if(s.obrig) return; s.items.forEach(it=>{ tot++; if(!brfVazio(b[it.key])) resp++; }); });
+    const secoes = BRIEFING_VIEW.map(s=>`<div class="brf-sec"><div class="brf-sec-t">${escapeHtml(s.titulo)}</div>${s.items.map(it=>`<div class="brf-row"><div class="brf-l">${it.n?it.n+'. ':''}${escapeHtml(it.label)}</div><div class="brf-v">${brfValorHtml(it,b[it.key])}</div></div>`).join('')}</div>`).join('');
+    return `<details class="hoje-block brf"><summary><b>${escapeHtml(b.cliente||'Cliente')}</b> · enviado em ${brfDataTxt(b)} · versão ${b.versao||1}${recente[b.cliente]===b.id?'<span class="brf-tag">mais recente</span>':''}<div class="hi-sub">Opcionais respondidos: ${resp} de ${tot}</div></summary>
+      <div style="margin:12px 0 0;"><button class="addbtn" data-brf-copy="${b.id}" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">Copiar resumo</button></div>${secoes}</details>`;
+  }).join('');
+  box.querySelectorAll('[data-brf-copy]').forEach(btn=>{ btn.onclick = ev=>{ ev.preventDefault(); ev.stopPropagation(); copiarBriefing(btn.dataset.brfCopy, btn); }; });
+}
+function copiarBriefing(id, btn){
+  const b = data.briefings.find(x=>x.id===id); if(!b) return;
+  let txt = `BRIEFING ${String(b.cliente||'').toUpperCase()} (versão ${b.versao||1}, enviado em ${brfDataTxt(b)})\n`;
+  BRIEFING_VIEW.forEach(s=>{ txt += `\n${s.titulo.toUpperCase()}\n`; s.items.forEach(it=>{ txt += `- ${it.label}: ${fmtBrf(it,b[it.key])}\n`; }); });
+  const ok = ()=>{ btn.textContent='Copiado!'; setTimeout(()=>{ btn.textContent='Copiar resumo'; },1500); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie o texto abaixo:', txt));
+  else prompt('Copie o texto abaixo:', txt);
+}
 
 /* ---------- TEMA (automático / claro / escuro) ---------- */
 function temaModo(){ try{ return localStorage.getItem('tema')||'auto'; }catch(e){ return 'auto'; } }

@@ -2934,7 +2934,13 @@ function brfValorHtml(it, v){
 }
 function renderBriefings(){
   const box = document.getElementById('briefingsBox'); if(!box) return;
-  if(data.briefings===null){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Não consegui ler os briefings. Confira se as regras novas do Firestore já foram publicadas (com o seu UID) e se você está logado.</div></div>`; return; }
+  if(data.briefings===null){
+    const u = auth.currentUser;
+    box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Ainda não consigo ler os briefings. Isso é esperado enquanto o seu UID não estiver nas regras do Firestore.</div>${u?`<div class="hi-sub" style="margin-top:12px;">Seu UID (cole nas regras, no lugar de COLE_AQUI_O_SEU_UID):</div><code style="display:block;margin-top:6px;padding:9px 11px;background:var(--bg);border:1px solid var(--line);border-radius:8px;user-select:all;word-break:break-all;font-size:13px;">${escapeHtml(u.uid)}</code><div style="margin-top:10px;"><button class="addbtn" id="copiarUidBtn" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">Copiar UID</button></div>`:''}</div>`;
+    const cb = document.getElementById('copiarUidBtn');
+    if(cb && u) cb.onclick = ()=>{ const ok=()=>{ cb.textContent='Copiado!'; setTimeout(()=>{ cb.textContent='Copiar UID'; },1500); }; if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u.uid).then(ok).catch(()=>prompt('Copie o UID:', u.uid)); else prompt('Copie o UID:', u.uid); };
+    return;
+  }
   if(!data.briefings.length){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Nenhum briefing recebido ainda.</div></div>`; return; }
   const lista = [...data.briefings].sort((a,b)=>brfMs(b)-brfMs(a));
   const recente = {}; lista.forEach(b=>{ if(!recente[b.cliente]) recente[b.cliente]=b.id; });

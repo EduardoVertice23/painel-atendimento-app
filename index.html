@@ -319,6 +319,9 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="view" id="view-briefings">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="addbtn" id="copyBriefingLink" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔗 Copiar link do formulário da Goma</button>
+  </div>
   <div id="briefingsBox"></div>
 </div>
 
@@ -2949,10 +2952,18 @@ function renderBriefings(){
     BRIEFING_VIEW.forEach(s=>{ if(s.obrig) return; s.items.forEach(it=>{ tot++; if(!brfVazio(b[it.key])) resp++; }); });
     const secoes = BRIEFING_VIEW.map(s=>`<div class="brf-sec"><div class="brf-sec-t">${escapeHtml(s.titulo)}</div>${s.items.map(it=>`<div class="brf-row"><div class="brf-l">${it.n?it.n+'. ':''}${escapeHtml(it.label)}</div><div class="brf-v">${brfValorHtml(it,b[it.key])}</div></div>`).join('')}</div>`).join('');
     return `<details class="hoje-block brf"><summary><b>${escapeHtml(b.cliente||'Cliente')}</b> · enviado em ${brfDataTxt(b)} · versão ${b.versao||1}${recente[b.cliente]===b.id?'<span class="brf-tag">mais recente</span>':''}<div class="hi-sub">Opcionais respondidos: ${resp} de ${tot}</div></summary>
-      <div style="margin:12px 0 0;"><button class="addbtn" data-brf-copy="${b.id}" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">Copiar resumo</button></div>${secoes}</details>`;
+      <div style="margin:12px 0 0;"><button class="addbtn" data-brf-copy="${b.id}" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">Copiar resumo</button> <button class="addbtn" data-brf-del="${b.id}" style="background:var(--card);color:var(--urgent);border:1px solid var(--line);margin-left:6px;">🗑 Excluir</button></div>${secoes}</details>`;
   }).join('');
   box.querySelectorAll('[data-brf-copy]').forEach(btn=>{ btn.onclick = ev=>{ ev.preventDefault(); ev.stopPropagation(); copiarBriefing(btn.dataset.brfCopy, btn); }; });
+  box.querySelectorAll('[data-brf-del]').forEach(btn=>{ btn.onclick = async ev=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const b = data.briefings.find(x=>x.id===btn.dataset.brfDel); if(!b) return;
+    if(!confirm(`Excluir o briefing de ${b.cliente||'cliente'} enviado em ${brfDataTxt(b)} (versão ${b.versao||1})? Não dá pra desfazer.`)) return;
+    try{ await deleteDoc(doc(db,'briefings_clientes_vertice',b.id)); }
+    catch(e){ console.error(e); alert('Não consegui excluir. Confira se as regras do Firestore já têm o seu UID.'); }
+  }; });
 }
+document.getElementById('copyBriefingLink').onclick = e=>{ copyText(siteBaseUrl()+'formulario-goma.html', e.target); };
 function copiarBriefing(id, btn){
   const b = data.briefings.find(x=>x.id===id); if(!b) return;
   let txt = `BRIEFING ${String(b.cliente||'').toUpperCase()} (versão ${b.versao||1}, enviado em ${brfDataTxt(b)})\n`;

@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Vértice Marketing Digital</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
 
 :root{
   color-scheme:light;
@@ -21,7 +21,7 @@
   --text:#14213A; --text-dim:#5A667A; --text-faint:#667186;
   --urgent-bg:#FBE4E4; --pend-bg:#E3EAF6; --pend-fg:#0B2559;
   --vis-bg:#FBF1DD; --vis-fg:#8A5A10; --done-bg:#E1F1E8; --done-fg:#2F8F6E;
-  --sel-bg:#FBF1DD; --visita-row:#FBF4E4; --overlay:rgba(2,10,28,.55);
+  --sel-bg:#FBF1DD; --visita-row:#FBF4E4; --overlay:rgba(2,10,28,.55); --ok-text:#1E6B4F;
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
@@ -32,41 +32,86 @@
   --text:#E6ECF8; --text-dim:#9AA8C4; --text-faint:#7384A6;
   --urgent-bg:rgba(242,107,107,.16); --pend-bg:rgba(120,160,230,.18); --pend-fg:#A9C4F5;
   --vis-bg:rgba(216,136,32,.2); --vis-fg:#F0C27A; --done-bg:rgba(76,194,154,.16); --done-fg:#4CC29A;
-  --sel-bg:rgba(216,136,32,.16); --visita-row:rgba(216,136,32,.1); --overlay:rgba(0,4,14,.7);
+  --sel-bg:rgba(216,136,32,.16); --visita-row:rgba(216,136,32,.1); --overlay:rgba(0,4,14,.7); --ok-text:#4CC29A;
 }
 :root[data-theme="dark"] .col-title{color:color-mix(in srgb,var(--stage-color) 62%,#fff);}
 :root[data-theme="dark"] .pri-badge{color:color-mix(in srgb,var(--pri-color) 65%,#fff);}
 *{box-sizing:border-box;}
 body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
-h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
+h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 0;flex-wrap:wrap;gap:12px;position:sticky;top:0;background:var(--bg);z-index:30;padding-bottom:12px;}
-.brand{display:flex;align-items:center;gap:10px;}
-.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Newsreader',serif;font-weight:700;font-size:15px;}
-.brand img.mark{width:40px;height:40px;border-radius:10px;display:block;flex-shrink:0;}
-.brand h1{font-size:20px;font-weight:600;letter-spacing:-0.01em;}
-.brand p{margin:1px 0 0;font-size:12px;color:var(--text-dim);}
 .syncdot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);}
 .syncdot .d{width:7px;height:7px;border-radius:50%;background:var(--ok);}
 .syncdot .d.off{background:var(--urgent);}
-.tabs{display:flex;gap:6px;background:var(--card);padding:4px;border-radius:12px;border:1px solid var(--line);}
-.tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;transition:all .15s ease;}
-.tab.active{background:var(--ink);color:var(--on-ink);box-shadow:inset 0 -2px 0 var(--gold);}
+.app{display:flex;min-height:100vh;align-items:flex-start;}
+.sidebar{flex:0 0 248px;width:248px;box-sizing:border-box;background:#021535;color:#fff;padding:26px 14px 18px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:40;}
+:root[data-theme="dark"] .sidebar{background:#030B1A;border-right:1px solid var(--line);}
+.sb-brand{display:flex;flex-direction:column;gap:4px;padding:0 8px;}
+.sb-brand .bar{width:34px;height:3px;background:#D88820;border-radius:2px;margin-bottom:8px;}
+.sb-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:26px;letter-spacing:.02em;line-height:1;color:#fff;}
+.sb-sub{font-family:'Montserrat',sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.2em;color:#E3A33F;}
+.tabs{display:flex;flex-direction:column;gap:4px;}
+.tab{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;font-size:14px;font-weight:600;color:#C9D3E8;cursor:pointer;transition:background .15s ease,color .15s ease;}
+.tab:hover{background:rgba(255,255,255,.06);}
+.tab svg{flex:0 0 20px;}
+.tab.active{background:rgba(216,136,32,.18);color:#F0C27A;box-shadow:inset 3px 0 0 #D88820;}
+.sb-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);}
+.sidebar .syncdot{color:#C9D3E8;font-size:12px;padding:0 4px 4px;}
+.sb-btn{background:transparent;color:#C9D3E8;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;}
+.sb-btn:hover{background:rgba(255,255,255,.07);}
+.sb-btn:disabled{opacity:.6;cursor:default;}
+.sidebar .lado-switch{background:rgba(255,255,255,.08);border:none;}
+.sidebar .lado-btn{flex:1;color:#C9D3E8;}
+.sidebar .lado-btn.active{background:#D88820;color:#021535;}
+.main{flex:1 1 auto;min-width:0;}
+.pagehead{padding:32px 36px 0;display:flex;flex-direction:column;gap:4px;}
+.pagehead h1{font-size:30px;font-weight:700;}
+.pagehead .sub{font-size:14px;font-weight:500;color:var(--text-dim);}
+.cli-grid{display:flex;flex-wrap:wrap;gap:16px;}
+.cli-card{flex:1 1 320px;max-width:560px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 2px rgba(2,21,53,.04);}
+.cli-av{flex:0 0 48px;width:48px;height:48px;border-radius:14px;background:#021535;color:#E3A33F;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;}
+:root[data-theme="dark"] .cli-av{background:#13285A;}
+.cli-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px;}
+.mobilebar,.sb-backdrop{display:none;}
+.kpi-hoje{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
+.kh{flex:1 1 160px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:inset 0 3px 0 var(--kc),0 1px 2px rgba(2,21,53,.04);}
+.kh .n{font-family:'Montserrat',sans-serif;font-weight:700;font-size:32px;color:var(--ink);line-height:1;}
+.kh .l{font-size:13px;font-weight:600;color:var(--text-dim);margin-top:6px;}
 .lado-switch{display:flex;gap:4px;background:var(--card);padding:4px;border-radius:12px;border:1px solid var(--line);}
 .lado-btn{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:700;color:var(--text-dim);cursor:pointer;border:none;background:transparent;font-family:inherit;}
-.lado-btn.active{background:var(--primary);color:var(--on-primary);}
+.lado-btn.active{background:var(--primary);color:var(--on-primary);box-shadow:inset 0 -2px 0 var(--gold);}
 .chip-status{font-size:10.5px;padding:2px 8px;border-radius:6px;margin-left:6px;font-weight:600;background:var(--line);color:var(--text-dim);}
-.chip-status.ativo{background:var(--primary);color:var(--on-primary);}
-.chip-status.pausado{background:var(--gold);color:#fff;}
+.chip-status.ativo{background:var(--done-bg);color:var(--ok-text);}
+.chip-status.pausado{background:var(--vis-bg);color:var(--vis-fg);}
 .chip-lado{font-size:10.5px;padding:1px 6px;border-radius:6px;font-weight:600;background:var(--line);color:var(--text-dim);}
-.addbtn{background:var(--primary);color:var(--on-primary);border:none;border-radius:10px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.chip-lado.vertice{background:var(--vis-bg);color:var(--vis-fg);}
+.chip-lado.baru{background:var(--pend-bg);color:var(--pend-fg);}
+.addbtn{background:var(--gold);color:#021535;border:none;border-radius:10px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
 
-.view{padding:16px 20px 60px;display:none;}
+.view{padding:20px 36px 60px;display:none;}
 .view.active{display:block;}
+.hoje-block{border-radius:16px;box-shadow:0 1px 2px rgba(2,21,53,.04);}
+.hoje-block h3{font-size:15px;font-weight:700;}
+@media(max-width:900px){
+  .app{flex-direction:column;align-items:stretch;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;height:100%;width:280px;flex:none;transform:translateX(-100%);transition:transform .2s ease;box-shadow:none;}
+  .sidebar.open{transform:none;box-shadow:0 0 40px rgba(0,0,0,.4);}
+  .sb-backdrop.show{display:block;position:fixed;inset:0;background:var(--overlay);z-index:35;}
+  .mobilebar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:30;background:#021535;color:#fff;padding:10px 14px;}
+  .mobilebar button{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .mobilebar .mb-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;letter-spacing:.02em;}
+  .pagehead{padding:20px 16px 0;}
+  .pagehead h1{font-size:24px;}
+  .kpi-hoje{gap:10px;}
+  .kh{flex:1 1 90px;padding:12px 12px;}
+  .kh .n{font-size:26px;}
+  .kh .l{font-size:12px;}
+  .view{padding:16px 14px 60px;}
+}
 
 .kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
 .kpi{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-top:3px solid var(--kpi-color, var(--ink));}
-.kpi .num{font-family:'Newsreader',serif;font-weight:700;font-size:28px;color:var(--ink);line-height:1;}
+.kpi .num{font-family:'Montserrat',sans-serif;font-weight:700;font-size:28px;color:var(--ink);line-height:1;}
 .kpi .lbl{font-size:12px;color:var(--text-dim);margin-top:6px;}
 
 .panel-row{display:flex;gap:16px;flex-wrap:wrap;}
@@ -83,7 +128,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .brf summary::-webkit-details-marker{display:none;}
 .brf-tag{background:var(--sel-bg);color:var(--ink);font-size:11px;padding:1px 7px;border-radius:6px;margin-left:6px;font-weight:600;}
 .brf-sec{margin-top:16px;}
-.brf-sec-t{font-family:'Newsreader',serif;font-weight:600;font-size:15px;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:6px;}
+.brf-sec-t{font-family:'Montserrat',sans-serif;font-weight:600;font-size:15px;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:6px;}
 .brf-row{display:flex;gap:14px;justify-content:space-between;padding:6px 0;font-size:13.5px;border-bottom:1px dashed var(--line);}
 .brf-l{color:var(--text-dim);flex:1 1 55%;}
 .brf-v{flex:1 1 45%;text-align:right;white-space:pre-wrap;word-break:break-word;}
@@ -135,7 +180,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 
 .chips{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0;}
 .chip{font-size:10.5px;background:var(--bg);color:var(--text-dim);padding:2px 7px;border-radius:6px;border:1px solid var(--line);}
-.mono-sm{width:16px;height:16px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-weight:700;font-size:7px;color:#fff;margin-top:1px;}
+.mono-sm{width:16px;height:16px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:700;font-size:7px;color:#fff;margin-top:1px;}
 .pri-badge{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--pri-color);white-space:nowrap;}
 .pri-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--pri-color);flex:0 0 auto;}
 .gauge{flex:1;height:6px;background:var(--line);border-radius:4px;overflow:hidden;}
@@ -147,7 +192,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .chipbar{display:flex;gap:6px;padding-bottom:14px;overflow-x:auto;}
 .pchip{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:5px 11px 5px 5px;border-radius:20px;background:var(--card);border:1px solid var(--line);cursor:pointer;font-size:12px;font-weight:500;color:var(--text-dim);transition:all .15s ease;white-space:nowrap;}
 .pchip.active{border-color:var(--mono-color);background:color-mix(in srgb, var(--mono-color) 10%, var(--card));color:var(--ink);}
-.mono{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-weight:700;font-size:9px;color:#fff;background:var(--mono-color);}
+.mono{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:700;font-size:9px;color:#fff;background:var(--mono-color);}
 .pri-chip{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:6px 12px;border-radius:20px;background:var(--card);border:1.5px solid var(--line);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-dim);transition:all .15s ease;white-space:nowrap;}
 .pri-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--dot-color);}
 .pri-chip.active{border-color:var(--dot-color);color:var(--ink);background:color-mix(in srgb, var(--dot-color) 10%, var(--card));}
@@ -177,7 +222,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .card.expanded .card-details{display:block;}
 .expand-hint{font-size:10.5px;color:var(--text-faint);text-align:center;margin-top:6px;}
 .card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;}
-.card-name{font-family:'Newsreader',serif;font-weight:600;font-size:14.5px;color:var(--ink);flex:1;line-height:1.25;}
+.card-name{font-family:'Montserrat',sans-serif;font-weight:600;font-size:14.5px;color:var(--ink);flex:1;line-height:1.25;}
 .op-tag{font-size:10px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.03em;}
 .price-range{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink);margin:4px 0;font-weight:500;}
 .next-action{font-size:12px;color:var(--text);margin:6px 0 4px;padding-top:6px;border-top:1px solid var(--line);}
@@ -200,7 +245,7 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .stage-group-head .cnt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);}
 .owner-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--status-color);}
 .owner-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.owner-name{font-family:'Newsreader',serif;font-weight:600;font-size:15.5px;color:var(--ink);}
+.owner-name{font-family:'Montserrat',sans-serif;font-weight:600;font-size:15.5px;color:var(--ink);}
 .owner-imovel{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
 .status-pill{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;color:#fff;background:var(--status-color);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
 .gauge-row{display:flex;align-items:center;gap:10px;margin:11px 0 8px;}
@@ -234,10 +279,10 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 .modal-actions{display:flex;gap:10px;margin-top:16px;}
 .modal-actions button{flex:1;padding:12px;border-radius:10px;font-family:inherit;font-weight:600;font-size:14px;border:none;cursor:pointer;}
 .modal-actions .cancel{background:var(--bg);color:var(--text-dim);}
-.modal-actions .save{background:var(--primary);color:var(--on-primary);}
+.modal-actions .save{background:var(--gold);color:#021535;}
 .empty{text-align:center;padding:50px 20px;color:var(--text-dim);}
 .errormsg{color:var(--urgent);font-size:12.5px;margin-top:-6px;margin-bottom:10px;display:none;}
-.empty .big{font-family:'Newsreader',serif;font-size:17px;color:var(--ink);margin-bottom:6px;}
+.empty .big{font-family:'Montserrat',sans-serif;font-size:17px;color:var(--ink);margin-bottom:6px;}
 </style>
 </head>
 <body>
@@ -259,44 +304,55 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 
 <div id="appShell" style="display:none;">
 
-<div class="topbar">
-  <div class="brand">
-    <img class="mark" src="icon-192.png" alt="Vértice">
-    <div>
-      <h1>Vértice Marketing Digital</h1>
-      <p>Painel de atendimento</p>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div class="syncdot"><span class="d" id="syncDot"></span><span id="syncLabel">conectando...</span></div>
-    <button id="themeBtn" class="addbtn" title="Trocar tema: automático, claro ou escuro" style="background:var(--card);color:var(--text-dim);border:1px solid var(--line);">🌓 Auto</button>
-    <button id="notifBtn" class="addbtn" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔔 Ativar avisos</button>
-    <button id="logoutBtn" class="addbtn" style="background:var(--card);color:var(--text-dim);border:1px solid var(--line);">Sair</button>
-    <div class="lado-switch" id="ladoSwitch">
-      <button class="lado-btn active" data-lado-btn="baru">Baru</button>
-      <button class="lado-btn" data-lado-btn="vertice">Vértice</button>
-    </div>
-    <div class="tabs">
-      <div class="tab active" data-view="hoje" data-lado="geral">Hoje</div>
-      <div class="tab" data-view="tarefas" data-lado="baru">Tarefas</div>
-      <div class="tab" data-view="vtarefas" data-lado="vertice" style="display:none;">Tarefas</div>
-      <div class="tab" data-view="pendencias" data-lado="baru">Pendências</div>
-      <div class="tab" data-view="dash" data-lado="baru">Dashboard</div>
-      <div class="tab" data-view="owners" data-lado="baru">Proprietários</div>
-      <div class="tab" data-view="buyers" data-lado="baru">Leads</div>
-      <div class="tab" data-view="imoveis" data-lado="baru">Imóveis</div>
-      <div class="tab" data-view="visitas" data-lado="baru">Visitas</div>
-      <div class="tab" data-view="clientes" data-lado="vertice" style="display:none;">Clientes</div>
-      <div class="tab" data-view="briefings" data-lado="vertice" style="display:none;">Briefings</div>
-    </div>
-  </div>
+<div class="app">
+<div class="mobilebar">
+  <button type="button" id="menuBtn" aria-label="Abrir menu"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <span class="mb-name">VÉRTICE</span>
 </div>
+<div class="sb-backdrop" id="sbBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="bar"></div>
+    <div class="sb-name">VÉRTICE</div>
+    <div class="sb-sub">MARKETING DIGITAL</div>
+  </div>
+  <div class="lado-switch" id="ladoSwitch">
+    <button class="lado-btn active" data-lado-btn="baru">Baru</button>
+    <button class="lado-btn" data-lado-btn="vertice">Vértice</button>
+  </div>
+  <nav class="tabs" aria-label="Menu principal">
+      <div class="tab active" data-view="hoje" data-lado="geral"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 15l2 2 4-4"/></svg>Hoje</div>
+      <div class="tab" data-view="tarefas" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></svg>Tarefas</div>
+      <div class="tab" data-view="vtarefas" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></svg>Tarefas</div>
+      <div class="tab" data-view="pendencias" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Pendências</div>
+      <div class="tab" data-view="dash" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Dashboard</div>
+      <div class="tab" data-view="owners" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12M9 21v-6h6v6"/></svg>Proprietários</div>
+      <div class="tab" data-view="buyers" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Leads</div>
+      <div class="tab" data-view="imoveis" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4"/></svg>Imóveis</div>
+      <div class="tab" data-view="visitas" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Visitas</div>
+      <div class="tab" data-view="clientes" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.2c2.4.3 4 2.1 4 4.8"/></svg>Clientes</div>
+      <div class="tab" data-view="briefings" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h7M9 17h7"/></svg>Briefings</div>
+  </nav>
+  <div class="sb-foot">
+    <div class="syncdot"><span class="d" id="syncDot"></span><span id="syncLabel">conectando...</span></div>
+    <button id="themeBtn" class="sb-btn" title="Trocar tema: automático, claro ou escuro">🌓 Auto</button>
+    <button id="notifBtn" class="sb-btn">🔔 Ativar avisos</button>
+    <button id="logoutBtn" class="sb-btn">Sair</button>
+  </div>
+</aside>
+<div class="main">
+<div class="pagehead"><h1 id="pageTitle">Hoje</h1><div class="sub" id="pageSub"></div></div>
 
 <div class="view active" id="view-hoje">
   <div class="lado-switch" id="hojeFiltro" style="display:inline-flex;margin-bottom:14px;">
     <button class="lado-btn active" data-hoje-filtro="tudo">Tudo</button>
     <button class="lado-btn" data-hoje-filtro="baru">Baru</button>
     <button class="lado-btn" data-hoje-filtro="vertice">Vértice</button>
+  </div>
+  <div class="kpi-hoje">
+    <div class="kh" style="--kc:var(--urgent)"><div class="n" id="kpiAtrasadas">0</div><div class="l">Atrasadas</div></div>
+    <div class="kh" style="--kc:var(--gold)"><div class="n" id="kpiHoje">0</div><div class="l">Para hoje</div></div>
+    <div class="kh" style="--kc:var(--ok)"><div class="n" id="kpiConcluidas">0</div><div class="l">Concluídas hoje</div></div>
   </div>
   <div class="hoje-block"><h3>🔴 Atrasadas <span class="cnt" id="cntAtrasadas"></span></h3><div id="hojeAtrasadas"></div></div>
   <div class="hoje-block"><h3>🟡 Hoje <span class="cnt" id="cntHoje"></span></h3><div id="hojeHoje"></div></div>
@@ -403,6 +459,9 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
   <div class="filterlabel">Mostrar</div>
   <div class="chipbar" id="visitaStatusBar"></div>
   <div id="visitasList"></div>
+</div>
+
+</div>
 </div>
 
 <div class="overlay" id="overlayVisita">
@@ -761,30 +820,30 @@ const TAREFA_PRIORIDADES = [ {id:'alta', label:'Alta'}, {id:'media', label:'Méd
 const OVERDUE_DAYS_BUYER = 2;
 const OWNER_THRESH = { quente:2, morno:2, frio:2 };
 const RECHECK_DAYS = { aluguel:15, compra:30 };
-const OWNER_STATUS_COLOR = { quente:'#E1653D', morno:'#C9A24C', frio:'#7A8C84' };
+const OWNER_STATUS_COLOR = { quente:'#C42B2B', morno:'#D88820', frio:'#7A8CA8' };
 
 const BUYER_STAGES = [
-  {id:'novo', label:'Novo', color:'#7A8C84'},
-  {id:'qualificando', label:'Qualificando', color:'#3E7C93'},
-  {id:'procurando', label:'Procurando imóveis', color:'#6B5B95'},
-  {id:'visitando', label:'Visitando', color:'#2F8F6E'},
-  {id:'proposta', label:'Proposta', color:'#C9A24C'},
-  {id:'negociacao', label:'Negociação', color:'#E1653D'},
-  {id:'documentacao', label:'Documentação', color:'#B8562B'},
+  {id:'novo', label:'Novo', color:'#8795B0'},
+  {id:'qualificando', label:'Qualificando', color:'#5B7DB8'},
+  {id:'procurando', label:'Procurando imóveis', color:'#2F5FA8'},
+  {id:'visitando', label:'Visitando', color:'#1B3F8B'},
+  {id:'proposta', label:'Proposta', color:'#D88820'},
+  {id:'negociacao', label:'Negociação', color:'#B8691A'},
+  {id:'documentacao', label:'Documentação', color:'#8A5A10'},
   {id:'fechado', label:'Fechado', color:'#1E6B4F'},
   {id:'perdido', label:'Perdido/Pausado', color:'#A7B2AB'},
 ];
 const OWNER_STAGES = [
-  {id:'contato', label:'Contato inicial', color:'#7A8C84'},
-  {id:'negociando', label:'Negociando captação', color:'#3E7C93'},
-  {id:'documentacao', label:'Captado aguardando ativação', color:'#C9A24C'},
+  {id:'contato', label:'Contato inicial', color:'#8795B0'},
+  {id:'negociando', label:'Negociando captação', color:'#2F5FA8'},
+  {id:'documentacao', label:'Captado aguardando ativação', color:'#D88820'},
   {id:'publicado', label:'Publicado/Ativo', color:'#1E6B4F'},
   {id:'perdido', label:'Descartado', color:'#A7B2AB'},
 ];
 
 const PERSONAS = [
   {id:'realizador', label:'O Realizador', mono:'RE', color:'#B8562B', tip:'Destaque exclusividade, status e diferenciais raros do imóvel.'},
-  {id:'escalador', label:'O Escalador', mono:'ES', color:'#3E7C93', tip:'Compare com o que ele tem hoje — enfatize crescimento e evolução.'},
+  {id:'escalador', label:'O Escalador', mono:'ES', color:'#2F5FA8', tip:'Compare com o que ele tem hoje — enfatize crescimento e evolução.'},
   {id:'guardiao', label:'O Guardião', mono:'GU', color:'#2F8F6E', tip:'Foque segurança, estrutura familiar, escolas e estabilidade do bairro.'},
   {id:'estrategista', label:'O Estrategista', mono:'ST', color:'#5B4E8C', tip:'Traga dados: preço/m², comparativo ITBI, valorização histórica.'},
   {id:'curador', label:'O Curador', mono:'CU', color:'#A8477A', tip:'Valorize estética, design, acabamento e a narrativa do espaço.'},
@@ -792,8 +851,8 @@ const PERSONAS = [
   {id:'consolidado', label:'O Consolidado', mono:'CO', color:'#8A6D3B', tip:'Enfatize tradição do bairro, baixo risco e estabilidade a longo prazo.'},
 ];
 const PRIORITY_GROUPS = [
-  {id:'prioridade', label:'Prioridade', color:'#E1653D', rank:4},
-  {id:'acompanhar', label:'Acompanhar', color:'#C9A24C', rank:3},
+  {id:'prioridade', label:'Prioridade', color:'#C42B2B', rank:4},
+  {id:'acompanhar', label:'Acompanhar', color:'#D88820', rank:3},
   {id:'baixa', label:'Baixa prioridade', color:'#A7B2AB', rank:2},
   {id:'descartar', label:'Descartar', color:'#D8DEDA', rank:1},
 ];
@@ -1054,8 +1113,24 @@ document.querySelectorAll('.tab').forEach(t=>{
     t.classList.add('active');
     document.getElementById('view-'+t.dataset.view).classList.add('active');
     if(t.dataset.lado==='baru' || t.dataset.lado==='vertice') ultimaAbaPorLado[t.dataset.lado] = t.dataset.view;
+    atualizarTitulo(t);
+    setMenu(false);
   };
 });
+function setMenu(aberto){
+  document.getElementById('sidebar').classList.toggle('open', aberto);
+  document.getElementById('sbBackdrop').classList.toggle('show', aberto);
+}
+document.getElementById('menuBtn').onclick = ()=>setMenu(true);
+document.getElementById('sbBackdrop').onclick = ()=>setMenu(false);
+function atualizarTitulo(t){
+  const titulo = t.dataset.view==='vtarefas' ? 'Tarefas' : t.textContent.trim();
+  document.getElementById('pageTitle').textContent = titulo;
+  const sub = document.getElementById('pageSub');
+  if(t.dataset.view==='hoje'){ const dt = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}); sub.textContent = dt.charAt(0).toUpperCase()+dt.slice(1); }
+  else{ sub.textContent = t.dataset.lado==='vertice' ? 'Vértice Marketing Digital' : 'Baru Imóveis'; }
+}
+atualizarTitulo(document.querySelector('.tabs .tab.active'));
 function setLado(l){
   ladoAtual = l;
   document.querySelectorAll('#ladoSwitch .lado-btn').forEach(b=>b.classList.toggle('active', b.dataset.ladoBtn===l));
@@ -1063,7 +1138,9 @@ function setLado(l){
   const ativa = document.querySelector('.tabs .tab.active');
   if(ativa && ativa.dataset.lado==='geral') return;
   const alvo = document.querySelector('.tabs .tab[data-view="'+(ultimaAbaPorLado[l]||'hoje')+'"]');
+  const menuAberto = document.getElementById('sidebar').classList.contains('open');
   if(alvo) alvo.click();
+  if(menuAberto) setMenu(true);
 }
 document.querySelectorAll('#ladoSwitch .lado-btn').forEach(b=>{ b.onclick = ()=>setLado(b.dataset.ladoBtn); });
 
@@ -1078,7 +1155,7 @@ function renderDashboard(){
   const convOwners = ownersActive.length ? Math.round(owners.filter(o=>o.stage==='publicado').length/ownersActive.length*100) : 0;
 
   document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi" style="--kpi-color:#3E7C93"><div class="num">${buyers.length+owners.length}</div><div class="lbl">Contatos ativos no CRM</div></div>
+    <div class="kpi" style="--kpi-color:#2F5FA8"><div class="num">${buyers.length+owners.length}</div><div class="lbl">Contatos ativos no CRM</div></div>
     <div class="kpi" id="kpiOverdue" style="--kpi-color:var(--urgent);cursor:pointer;"><div class="num">${overdueBuyersList.length+overdueOwnersList.length}</div><div class="lbl">Atrasados (precisam de retorno) · toque para ver</div></div>
     <div class="kpi" style="--kpi-color:#1E6B4F"><div class="num">${convBuyers}%</div><div class="lbl">Conversão leads → fechado</div></div>
     <div class="kpi" style="--kpi-color:#8A6D3B"><div class="num">${convOwners}%</div><div class="lbl">Conversão captação → publicado</div></div>
@@ -1143,7 +1220,7 @@ function renderDashboard(){
   const bairroList = Object.entries(bairroCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
   const maxBairro = Math.max(1, ...bairroList.map(b=>b[1]));
   document.getElementById('imoveisPorBairro').innerHTML = bairroList.length ? bairroList.map(([bairro,n])=>
-    `<div class="funnel-row"><div class="funnel-lbl">${bairro}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,n/maxBairro*100)}%;background:#3E7C93"><span>${n}</span></div></div></div>`
+    `<div class="funnel-row"><div class="funnel-lbl">${bairro}</div><div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6,n/maxBairro*100)}%;background:#2F5FA8"><span>${n}</span></div></div></div>`
   ).join('') : `<div class="empty" style="padding:20px;">Nenhum imóvel disponível ainda.</div>`;
 
   // valor médio por tipo (usa venda se tiver, senão locação)
@@ -1173,7 +1250,7 @@ function renderDashboard(){
   });
   const valorBairroList = Object.entries(valoresPorBairro).map(([b,arr])=>[b, arr.reduce((a,b2)=>a+b2,0)/arr.length]).sort((a,b)=>b[1]-a[1]).slice(0,10);
   document.getElementById('valorMedioPorBairro').innerHTML = valorBairroList.length ? valorBairroList.map(([bairro,media])=>
-    `<div class="funnel-row"><div class="funnel-lbl">${bairro}</div><div class="funnel-track"><div class="funnel-fill" style="width:60%;background:#3E7C93"><span>${money(Math.round(media))}</span></div></div></div>`
+    `<div class="funnel-row"><div class="funnel-lbl">${bairro}</div><div class="funnel-track"><div class="funnel-fill" style="width:60%;background:#2F5FA8"><span>${money(Math.round(media))}</span></div></div></div>`
   ).join('') : `<div class="empty" style="padding:20px;">Sem valores cadastrados ainda.</div>`;
 }
 
@@ -1465,7 +1542,7 @@ document.getElementById('ownerSaveBtn').onclick = async ()=>{
 
 /* ---------- BUYERS VIEW ---------- */
 function renderOperationBar(){
-  const opts = [ {id:'compra', label:'Compra', color:'#3E7C93'}, {id:'aluguel', label:'Locação', color:'#2F8F6E'} ];
+  const opts = [ {id:'compra', label:'Compra', color:'#2F5FA8'}, {id:'aluguel', label:'Locação', color:'#2F8F6E'} ];
   document.getElementById('operationbar').innerHTML = opts.map(o=>{
     const active = operationFilter===o.id;
     return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${o.color}" data-o="${o.id}"><span class="dot"></span>${o.label}</div>`;
@@ -1598,7 +1675,7 @@ function renderBoardTable(){
     const wa = waLink(c.contato, suggestBuyer(c).ready);
     return `<tr style="border-bottom:1px solid var(--line);">
       <td style="padding:10px 8px;">
-        <div style="font-family:'Newsreader',serif;font-weight:600;color:var(--ink);">${escapeHtml(c.nome)}</div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:600;color:var(--ink);">${escapeHtml(c.nome)}</div>
         ${c.contato?`<div style="font-size:11.5px;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
       </td>
       <td style="padding:10px 8px;"><span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span></td>
@@ -1910,9 +1987,9 @@ function fillBuyerStageSelect(current){
 }
 const TIPO_IMOVEL_OPTIONS = ['Apartamento','Casa','Sobrado','Studio','Kitnet','Cobertura','Flat','Loft','Sala Comercial','Conjunto Comercial','Galpão','Terreno','Loja'];
 const TIPO_IMOVEL_COLORS = {
-  'Apartamento':'#3E7C93', 'Casa':'#4C7A5D', 'Sobrado':'#8A6D3B', 'Studio':'#A8477A',
+  'Apartamento':'#2F5FA8', 'Casa':'#4C7A5D', 'Sobrado':'#8A6D3B', 'Studio':'#A8477A',
   'Kitnet':'#B8562B', 'Cobertura':'#5B4E8C', 'Flat':'#6B5B95', 'Loft':'#2F8F6E',
-  'Sala Comercial':'#C9A24C', 'Conjunto Comercial':'#E1653D', 'Galpão':'#7A8C84',
+  'Sala Comercial':'#D88820', 'Conjunto Comercial':'#C42B2B', 'Galpão':'#7A8C84',
   'Terreno':'#5C6B73', 'Loja':'#B8863E',
 };
 function tipoColor(tipo){ return TIPO_IMOVEL_COLORS[tipo] || '#7A8C84'; }
@@ -2371,7 +2448,7 @@ function renderImoveisKanban(){
   list.innerHTML = colunas.map(tipo=>{
     const items = tipo==='Sem tipo' ? semTipo : filtered.filter(im=>im.tipo===tipo);
     return `<div class="col">
-      <div class="col-head"><span class="col-title" style="--stage-color:#3E7C93">${tipo}</span><span class="col-count">${items.length}</span></div>
+      <div class="col-head"><span class="col-title" style="--stage-color:#2F5FA8">${tipo}</span><span class="col-count">${items.length}</span></div>
       <div class="dropzone" data-tipo="${tipo==='Sem tipo'?'':tipo}">${items.map(im=>imovelCardHtml(im)).join('')}</div>
     </div>`;
   }).join('');
@@ -2567,7 +2644,7 @@ let visitaStatusFilter = 'agendada';
 let editingVisitaId = null;
 
 function renderVisitaStatusBar(){
-  const opts = [ {id:'agendada', label:'Agendadas', color:'#3E7C93'}, {id:'realizada', label:'Realizadas', color:'#2F8F6E'}, {id:'cancelada', label:'Canceladas', color:'#A7B2AB'} ];
+  const opts = [ {id:'agendada', label:'Agendadas', color:'#2F5FA8'}, {id:'realizada', label:'Realizadas', color:'#2F8F6E'}, {id:'cancelada', label:'Canceladas', color:'#A7B2AB'} ];
   document.getElementById('visitaStatusBar').innerHTML = opts.map(o=>{
     const active = visitaStatusFilter===o.id;
     return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${o.color}" data-s="${o.id}"><span class="dot"></span>${o.label}</div>`;
@@ -2599,7 +2676,7 @@ function renderVisitas(){
   list.innerHTML = dates.map(dt=>{
     const dLabel = new Date(dt+'T00:00:00').toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'2-digit'});
     return `<div class="stage-group">
-      <div class="stage-group-head" style="--sg-color:#3E7C93"><span class="dot"></span><h3>${dLabel}</h3><span class="cnt">${groups[dt].length}</span></div>
+      <div class="stage-group-head" style="--sg-color:#2F5FA8"><span class="dot"></span><h3>${dLabel}</h3><span class="cnt">${groups[dt].length}</span></div>
       ${groups[dt].map(v=>visitaCardHtml(v)).join('')}
     </div>`;
   }).join('');
@@ -2616,13 +2693,13 @@ function renderVisitas(){
 function visitaCardHtml(v){
   const lead = data.compradores.find(c=>c.id===v.leadId);
   const wa = lead && lead.contato ? waLink(lead.contato, `Oi ${(lead.nome||'').split(' ')[0]}, tudo bem? Só confirmando nossa visita${v.hora?' às '+v.hora:''} pro imóvel: ${visitaLabel(v)}.`) : null;
-  return `<div class="owner-card" style="--status-color:${v.status==='agendada'?'#3E7C93':v.status==='realizada'?'#2F8F6E':'#A7B2AB'}">
+  return `<div class="owner-card" style="--status-color:${v.status==='agendada'?'#2F5FA8':v.status==='realizada'?'#2F8F6E':'#A7B2AB'}">
     <div class="owner-top">
       <div>
         <div class="owner-name">${v.hora?v.hora+' · ':''}${escapeHtml(lead?lead.nome:'Lead removido')}</div>
         <div class="owner-imovel">📍 ${escapeHtml(visitaLabel(v))}</div>
       </div>
-      <span class="status-pill" style="background:${v.status==='agendada'?'#3E7C93':v.status==='realizada'?'#2F8F6E':'#A7B2AB'};">${v.status}</span>
+      <span class="status-pill" style="background:${v.status==='agendada'?'#2F5FA8':v.status==='realizada'?'#2F8F6E':'#A7B2AB'};">${v.status}</span>
     </div>
     ${v.notas?`<div class="owner-meta"><b>Obs.:</b> ${escapeHtml(v.notas)}</div>`:''}
     <div class="owner-actions">
@@ -2807,7 +2884,7 @@ function tarefaItemHtml(t, showDate, showLado){
   return `<div class="hoje-item${done?' done':''}">
     <div style="min-width:0;">
       <div class="hi-main">${done?'✓ ':''}${escapeHtml(t.titulo)}${prio}</div>
-      <div class="hi-sub">${showLado?`<span class="chip-lado">${t.lado==='vertice'?'Vértice':'Baru'}</span> · `:''}${TAREFA_TIPO_LABEL[t.tipo]||'• Outro'} · ${quando}${cli?' · '+escapeHtml(cli):''}</div>
+      <div class="hi-sub">${showLado?`<span class="chip-lado ${t.lado==='vertice'?'vertice':'baru'}">${t.lado==='vertice'?'Vértice':'Baru'}</span> · `:''}${TAREFA_TIPO_LABEL[t.tipo]||'• Outro'} · ${quando}${cli?' · '+escapeHtml(cli):''}</div>
       ${t.observacao?`<div class="hi-sub" style="margin-top:3px;">${escapeHtml(t.observacao)}</div>`:''}
     </div>
     <div class="hi-actions">
@@ -2865,6 +2942,7 @@ function renderHoje(){
   elH.innerHTML = hoje.length ? hoje.map(t=>tarefaItemHtml(t,false,mostrarLado)).join('') : `<div class="hoje-empty">Nenhuma tarefa pra hoje.</div>`;
   elC.innerHTML = concluidasHoje.length ? concluidasHoje.map(t=>tarefaItemHtml(t,false,mostrarLado)).join('') : `<div class="hoje-empty">Nada concluído ainda hoje.</div>`;
   setCnt('cntAtrasadas', atrasadas.length); setCnt('cntHoje', hoje.length); setCnt('cntConcluidas', concluidasHoje.length);
+  document.getElementById('kpiAtrasadas').textContent = atrasadas.length; document.getElementById('kpiHoje').textContent = hoje.length; document.getElementById('kpiConcluidas').textContent = concluidasHoje.length;
 
   document.getElementById('hojeVisitasBlock').style.display = hojeFiltro==='vertice' ? 'none' : '';
   const visitasProx = (data.visitas||[]).filter(v=>v.status==='agendada' && (v.data===todayStr || v.data===amanhaStr)).sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
@@ -3003,10 +3081,13 @@ function renderClientes(){
   const ordem = id=>{ const k=CLIENTE_STATUS.findIndex(s=>s.id===(id||'ativo')); return k<0?0:k; };
   const lista = (data.clientes||[]).slice().sort((a,b)=> ordem(a.status)-ordem(b.status) || (a.nome||'').localeCompare(b.nome||'','pt-BR'));
   if(!lista.length){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Nenhum cliente cadastrado ainda. Use "+ Novo cliente".</div></div>`; return; }
-  box.innerHTML = `<div class="hoje-block">` + lista.map(c=>{
+  box.innerHTML = `<div class="cli-grid">` + lista.map(c=>{
     const st = CLIENTE_STATUS.find(s=>s.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
-    return `<div class="hoje-item">
-      <div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'(sem nome)')}<span class="chip-status ${st.id}">${st.label}</span></div></div>
+    const nome = c.nome||'(sem nome)';
+    const ini = nome.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.charAt(0)).join('').toUpperCase() || '?';
+    return `<div class="cli-card">
+      <div class="cli-av" aria-hidden="true">${escapeHtml(ini)}</div>
+      <div style="flex:1;min-width:0;"><div class="cli-name">${escapeHtml(nome)}</div><span class="chip-status ${st.id}" style="margin-left:0;">${st.label}</span></div>
       <div class="hi-actions">
         <button data-cli-editar="${c.id}" title="Editar">✏️</button>
         <button data-cli-excluir="${c.id}" title="Excluir">🗑</button>

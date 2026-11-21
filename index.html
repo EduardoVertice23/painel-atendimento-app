@@ -277,17 +277,15 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
       <button class="lado-btn" data-lado-btn="vertice">Vértice</button>
     </div>
     <div class="tabs">
-      <div class="tab" data-view="tgeral" data-lado="geral">Tarefas geral</div>
-      <div class="tab active" data-view="hoje" data-lado="baru">Hoje</div>
+      <div class="tab active" data-view="hoje" data-lado="geral">Hoje</div>
       <div class="tab" data-view="tarefas" data-lado="baru">Tarefas</div>
+      <div class="tab" data-view="vtarefas" data-lado="vertice" style="display:none;">Tarefas</div>
       <div class="tab" data-view="pendencias" data-lado="baru">Pendências</div>
       <div class="tab" data-view="dash" data-lado="baru">Dashboard</div>
       <div class="tab" data-view="owners" data-lado="baru">Proprietários</div>
       <div class="tab" data-view="buyers" data-lado="baru">Leads</div>
       <div class="tab" data-view="imoveis" data-lado="baru">Imóveis</div>
       <div class="tab" data-view="visitas" data-lado="baru">Visitas</div>
-      <div class="tab" data-view="vhoje" data-lado="vertice" style="display:none;">Hoje</div>
-      <div class="tab" data-view="vtarefas" data-lado="vertice" style="display:none;">Tarefas</div>
       <div class="tab" data-view="clientes" data-lado="vertice" style="display:none;">Clientes</div>
       <div class="tab" data-view="briefings" data-lado="vertice" style="display:none;">Briefings</div>
     </div>
@@ -295,21 +293,19 @@ h1,h2,h3{font-family:'Newsreader',serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="view active" id="view-hoje">
+  <div class="lado-switch" id="hojeFiltro" style="display:inline-flex;margin-bottom:14px;">
+    <button class="lado-btn active" data-hoje-filtro="tudo">Tudo</button>
+    <button class="lado-btn" data-hoje-filtro="baru">Baru</button>
+    <button class="lado-btn" data-hoje-filtro="vertice">Vértice</button>
+  </div>
   <div class="hoje-block"><h3>🔴 Atrasadas <span class="cnt" id="cntAtrasadas"></span></h3><div id="hojeAtrasadas"></div></div>
   <div class="hoje-block"><h3>🟡 Hoje <span class="cnt" id="cntHoje"></span></h3><div id="hojeHoje"></div></div>
-  <div class="hoje-block"><h3>📅 Visitas hoje e amanhã</h3><div id="hojeVisitas"></div></div>
+  <div class="hoje-block" id="hojeVisitasBlock"><h3>📅 Visitas hoje e amanhã</h3><div id="hojeVisitas"></div></div>
   <div class="hoje-block"><h3>🟢 Concluídas hoje <span class="cnt" id="cntConcluidas"></span></h3><div id="hojeConcluidas"></div></div>
-</div>
-
-<div class="view" id="view-vhoje">
-  <div class="hoje-block"><h3>🔴 Atrasadas <span class="cnt" id="vCntAtrasadas"></span></h3><div id="vHojeAtrasadas"></div></div>
-  <div class="hoje-block"><h3>🟡 Hoje <span class="cnt" id="vCntHoje"></span></h3><div id="vHojeHoje"></div></div>
-  <div class="hoje-block"><h3>🟢 Concluídas hoje <span class="cnt" id="vCntConcluidas"></span></h3><div id="vHojeConcluidas"></div></div>
 </div>
 
 <div class="view" id="view-tarefas"></div>
 <div class="view" id="view-vtarefas"></div>
-<div class="view" id="view-tgeral"></div>
 
 <div class="view" id="view-clientes">
   <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="novoClienteBtn">+ Novo cliente</button></div>
@@ -1050,7 +1046,7 @@ document.getElementById('login-senha').addEventListener('keydown', e=>{ if(e.key
 
 /* ---------- TABS ---------- */
 let ladoAtual = 'baru';
-const ultimaAbaPorLado = { baru:'hoje', vertice:'vhoje' };
+const ultimaAbaPorLado = { baru:null, vertice:null };
 document.querySelectorAll('.tab').forEach(t=>{
   t.onclick = ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -1064,7 +1060,9 @@ function setLado(l){
   ladoAtual = l;
   document.querySelectorAll('#ladoSwitch .lado-btn').forEach(b=>b.classList.toggle('active', b.dataset.ladoBtn===l));
   document.querySelectorAll('.tabs .tab').forEach(t=>{ t.style.display = (t.dataset.lado===l || t.dataset.lado==='geral') ? '' : 'none'; });
-  const alvo = document.querySelector('.tabs .tab[data-view="'+ultimaAbaPorLado[l]+'"]');
+  const ativa = document.querySelector('.tabs .tab.active');
+  if(ativa && ativa.dataset.lado==='geral') return;
+  const alvo = document.querySelector('.tabs .tab[data-view="'+(ultimaAbaPorLado[l]||'hoje')+'"]');
   if(alvo) alvo.click();
 }
 document.querySelectorAll('#ladoSwitch .lado-btn').forEach(b=>{ b.onclick = ()=>setLado(b.dataset.ladoBtn); });
@@ -2837,38 +2835,42 @@ function visitaItemHtml(v, mostrarDia){
 }
 function setCnt(id, n){ const el=document.getElementById(id); if(el) el.textContent = n ? `(${n})` : ''; }
 
-const HOJE_VIEWS = [
-  {key:'baru', view:'view-hoje', A:'hojeAtrasadas', H:'hojeHoje', C:'hojeConcluidas', V:'hojeVisitas', cA:'cntAtrasadas', cH:'cntHoje', cC:'cntConcluidas', filtro:t=>(t.lado||'baru')==='baru'},
-  {key:'vertice', view:'view-vhoje', A:'vHojeAtrasadas', H:'vHojeHoje', C:'vHojeConcluidas', V:null, cA:'vCntAtrasadas', cH:'vCntHoje', cC:'vCntConcluidas', filtro:t=>t.lado==='vertice'},
-];
+let hojeFiltro = 'tudo';
+document.querySelectorAll('#hojeFiltro [data-hoje-filtro]').forEach(b=>{
+  b.onclick = ()=>{
+    hojeFiltro = b.dataset.hojeFiltro;
+    document.querySelectorAll('#hojeFiltro [data-hoje-filtro]').forEach(x=>x.classList.toggle('active', x===b));
+    renderHoje();
+  };
+});
 function renderHoje(){
+  const elA = document.getElementById('hojeAtrasadas');
+  if(!elA) return;
+  const elH = document.getElementById('hojeHoje');
+  const elC = document.getElementById('hojeConcluidas');
+  const elV = document.getElementById('hojeVisitas');
   const now = new Date();
   const todayStr = localDateStr(now);
   const amanha = new Date(now); amanha.setDate(amanha.getDate()+1);
   const amanhaStr = localDateStr(amanha);
-  HOJE_VIEWS.forEach(cfg=>{
-    const elA = document.getElementById(cfg.A);
-    if(!elA) return;
-    const elH = document.getElementById(cfg.H);
-    const elC = document.getElementById(cfg.C);
-    const tarefas = (data.tarefas||[]).filter(cfg.filtro);
-    const pendentes = tarefas.filter(t=>t.status!=='concluida' && t.vencimento);
-    const atrasadas = pendentes.filter(t=>t.vencimento.slice(0,10) < todayStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
-    const hoje = pendentes.filter(t=>t.vencimento.slice(0,10) === todayStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
-    const concluidasHoje = tarefas.filter(t=>t.status==='concluida' && t.concluidoEm && localDateStr(new Date(t.concluidoEm))===todayStr);
+  const filtro = hojeFiltro==='baru' ? (t=>(t.lado||'baru')==='baru') : (hojeFiltro==='vertice' ? (t=>t.lado==='vertice') : (()=>true));
+  const mostrarLado = hojeFiltro==='tudo';
+  const tarefas = (data.tarefas||[]).filter(filtro);
+  const pendentes = tarefas.filter(t=>t.status!=='concluida' && t.vencimento);
+  const atrasadas = pendentes.filter(t=>t.vencimento.slice(0,10) < todayStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  const hoje = pendentes.filter(t=>t.vencimento.slice(0,10) === todayStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  const concluidasHoje = tarefas.filter(t=>t.status==='concluida' && t.concluidoEm && localDateStr(new Date(t.concluidoEm))===todayStr);
 
-    elA.innerHTML = atrasadas.length ? atrasadas.map(t=>tarefaItemHtml(t,true)).join('') : `<div class="hoje-empty">Nenhuma tarefa atrasada 🎉</div>`;
-    elH.innerHTML = hoje.length ? hoje.map(t=>tarefaItemHtml(t,false)).join('') : `<div class="hoje-empty">Nenhuma tarefa pra hoje.</div>`;
-    elC.innerHTML = concluidasHoje.length ? concluidasHoje.map(t=>tarefaItemHtml(t,false)).join('') : `<div class="hoje-empty">Nada concluído ainda hoje.</div>`;
-    setCnt(cfg.cA, atrasadas.length); setCnt(cfg.cH, hoje.length); setCnt(cfg.cC, concluidasHoje.length);
+  elA.innerHTML = atrasadas.length ? atrasadas.map(t=>tarefaItemHtml(t,true,mostrarLado)).join('') : `<div class="hoje-empty">Nenhuma tarefa atrasada 🎉</div>`;
+  elH.innerHTML = hoje.length ? hoje.map(t=>tarefaItemHtml(t,false,mostrarLado)).join('') : `<div class="hoje-empty">Nenhuma tarefa pra hoje.</div>`;
+  elC.innerHTML = concluidasHoje.length ? concluidasHoje.map(t=>tarefaItemHtml(t,false,mostrarLado)).join('') : `<div class="hoje-empty">Nada concluído ainda hoje.</div>`;
+  setCnt('cntAtrasadas', atrasadas.length); setCnt('cntHoje', hoje.length); setCnt('cntConcluidas', concluidasHoje.length);
 
-    if(cfg.V){
-      const elV = document.getElementById(cfg.V);
-      const visitasProx = (data.visitas||[]).filter(v=>v.status==='agendada' && (v.data===todayStr || v.data===amanhaStr)).sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
-      elV.innerHTML = visitasProx.length ? visitasProx.map(v=>visitaItemHtml(v, v.data===todayStr?'Hoje':'Amanhã')).join('') : `<div class="hoje-empty">Sem visitas hoje ou amanhã.</div>`;
-    }
-    bindTarefaActions(document.getElementById(cfg.view), cfg.key);
-  });
+  document.getElementById('hojeVisitasBlock').style.display = hojeFiltro==='vertice' ? 'none' : '';
+  const visitasProx = (data.visitas||[]).filter(v=>v.status==='agendada' && (v.data===todayStr || v.data===amanhaStr)).sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
+  elV.innerHTML = visitasProx.length ? visitasProx.map(v=>visitaItemHtml(v, v.data===todayStr?'Hoje':'Amanhã')).join('') : `<div class="hoje-empty">Sem visitas hoje ou amanhã.</div>`;
+
+  bindTarefaActions(document.getElementById('view-hoje'), 'geral');
   renderPendencias();
   renderTarefasView();
 }
@@ -2907,7 +2909,6 @@ function renderPendencias(){
 const TAREFAS_VIEWS = [
   {key:'baru', pfx:'', root:'view-tarefas', visitas:true, filtro:t=>(t.lado||'baru')==='baru'},
   {key:'vertice', pfx:'v', root:'view-vtarefas', visitas:false, filtro:t=>t.lado==='vertice'},
-  {key:'geral', pfx:'g', root:'view-tgeral', visitas:true, filtro:()=>true},
 ];
 function tid(cfg, nome){ return cfg.pfx ? cfg.pfx + nome.charAt(0).toUpperCase() + nome.slice(1) : nome; }
 function tarefasViewHtml(cfg){
@@ -2980,7 +2981,7 @@ function renderTarefasViewUma(cfg){
   if(tsDia.length-pendDia) partes.push(`${tsDia.length-pendDia} concluída${tsDia.length-pendDia===1?'':'s'}`);
   if(vsDia.length) partes.push(`${vsDia.length} visita${vsDia.length===1?'':'s'}`);
   document.getElementById(tid(cfg,'calDaySummary')).textContent = partes.join(' · ');
-  const itens = [...vsDia.map(v=>visitaItemHtml(v,'')), ...tsDia.map(t=>tarefaItemHtml(t,false,cfg.key==='geral'))];
+  const itens = [...vsDia.map(v=>visitaItemHtml(v,'')), ...tsDia.map(t=>tarefaItemHtml(t,false,false))];
   const lista = document.getElementById(tid(cfg,'calDayList'));
   lista.innerHTML = itens.length ? itens.join('') : `<div class="hoje-empty">Nada marcado pra este dia. Use "+ Nova tarefa" pra criar.</div>`;
   bindTarefaActions(lista, cfg.key);

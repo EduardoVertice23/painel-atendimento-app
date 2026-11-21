@@ -71,6 +71,25 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 .cli-card{flex:1 1 320px;max-width:560px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 2px rgba(2,21,53,.04);}
 .cli-av{flex:0 0 48px;width:48px;height:48px;border-radius:14px;background:#021535;color:#E3A33F;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;}
 :root[data-theme="dark"] .cli-av{background:#13285A;}
+.addbtn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line);}
+.kh .n.money{font-size:24px;}
+.cli-topo{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:18px;}
+.cli-card[data-abrir]{cursor:pointer;}
+.cli-card[data-abrir]:hover{border-color:var(--gold);}
+.cli-sub{font-size:12.5px;color:var(--text-dim);font-weight:600;margin-top:6px;}
+.ficha-top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:18px;}
+.ficha-head{display:flex;align-items:center;gap:14px;flex:1 1 280px;min-width:0;}
+.ficha-nome{font-family:'Montserrat',sans-serif;font-weight:700;font-size:20px;color:var(--ink);}
+.dado-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:14px;align-items:center;flex-wrap:wrap;}
+.dado-row .k{flex:0 0 140px;color:var(--text-dim);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+.dado-row .v{flex:1;min-width:0;word-break:break-word;}
+.dado-row .v.vazio{color:var(--text-faint);}
+.chip-pag{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;background:var(--line);color:var(--text-dim);white-space:nowrap;}
+.chip-pag.pago{background:var(--done-bg);color:var(--ok-text);}
+.chip-pag.pendente{background:var(--vis-bg);color:var(--vis-fg);}
+.chip-pag.atrasado{background:var(--urgent-bg);color:var(--urgent);}
+.ficha-aviso{font-size:13px;color:var(--text-dim);padding:10px 12px;background:var(--bg);border:1px dashed var(--line);border-radius:10px;margin-top:8px;}
+.cat-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;}
 .cli-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px;}
 .mobilebar,.sb-backdrop{display:none;}
 .kpi-hoje{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
@@ -354,6 +373,7 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
     <div class="kh" style="--kc:var(--gold)"><div class="n" id="kpiHoje">0</div><div class="l">Para hoje</div></div>
     <div class="kh" style="--kc:var(--ok)"><div class="n" id="kpiConcluidas">0</div><div class="l">Concluídas hoje</div></div>
   </div>
+  <div class="hoje-block" id="hojePagBlock" style="display:none;"><h3>💳 Pagamentos da Vértice <span class="cnt" id="cntPag"></span></h3><div id="hojePagamentos"></div></div>
   <div class="hoje-block"><h3>🔴 Atrasadas <span class="cnt" id="cntAtrasadas"></span></h3><div id="hojeAtrasadas"></div></div>
   <div class="hoje-block"><h3>🟡 Hoje <span class="cnt" id="cntHoje"></span></h3><div id="hojeHoje"></div></div>
   <div class="hoje-block" id="hojeVisitasBlock"><h3>📅 Visitas hoje e amanhã</h3><div id="hojeVisitas"></div></div>
@@ -364,8 +384,17 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 <div class="view" id="view-vtarefas"></div>
 
 <div class="view" id="view-clientes">
-  <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="novoClienteBtn">+ Novo cliente</button></div>
-  <div id="clientesBox"></div>
+  <div id="clientesLista">
+    <div class="cli-topo">
+      <div class="kpi-hoje" style="margin-bottom:0;flex:1 1 380px;">
+        <div class="kh" style="--kc:var(--gold)"><div class="n money" id="kpiReceita">R$ 0,00</div><div class="l">Receita mensal (clientes ativos)</div></div>
+        <div class="kh" style="--kc:var(--ok)"><div class="n" id="kpiAtivos">0</div><div class="l">Clientes ativos</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="addbtn sec" id="servicosBtn">Serviços</button><button class="addbtn" id="novoClienteBtn">+ Novo cliente</button></div>
+    </div>
+    <div id="clientesBox"></div>
+  </div>
+  <div id="clienteFicha" style="display:none;"></div>
 </div>
 
 <div class="view" id="view-pendencias">
@@ -505,13 +534,50 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="overlay" id="overlayCliente">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:460px;">
     <h2 id="clienteModalTitle">Novo cliente</h2>
     <div class="field"><label>Nome da empresa</label><input type="text" id="cli-nome" placeholder="Ex: Borracharia Barra Funda"></div>
-    <div class="field"><label>Status</label><select id="cli-status"></select></div>
+    <div class="field-row">
+      <div class="field" style="flex:1;"><label>Status</label><select id="cli-status"></select></div>
+      <div class="field" style="flex:1;"><label>CNPJ <span>(opcional)</span></label><input type="text" id="cli-cnpj" inputmode="numeric" placeholder="00.000.000/0000-00"></div>
+    </div>
+    <div class="field"><label>Dono <span>(quem responde pela empresa)</span></label><input type="text" id="cli-dono" placeholder="Nome do dono"></div>
+    <div class="field-row">
+      <div class="field" style="flex:1;"><label>Telefone / WhatsApp</label><input type="tel" id="cli-telefone" placeholder="(11) 90000-0000"></div>
+      <div class="field" style="flex:1;"><label>E-mail</label><input type="email" id="cli-email" placeholder="contato@empresa.com"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:1;"><label>Início do contrato</label><input type="date" id="cli-inicio"></div>
+      <div class="field" style="flex:1;"><label>Dia do vencimento <span>(1 a 31)</span></label><input type="number" id="cli-dia" min="1" max="31" placeholder="Ex: 10"></div>
+    </div>
     <div class="modal-actions">
       <button class="cancel" id="clienteCancelBtn">Cancelar</button>
       <button class="save" id="clienteSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayServicosCat">
+  <div class="modal" style="max-width:440px;">
+    <h2>Serviços da Vértice</h2>
+    <div class="hi-sub" style="margin-bottom:10px;">Esta é a lista fixa. Dentro da ficha de cada cliente você escolhe daqui e coloca o valor.</div>
+    <div id="catLista"></div>
+    <div class="field-row" style="margin-top:12px;">
+      <div class="field" style="flex:1;margin-bottom:0;"><input type="text" id="cat-novo" placeholder="Nome do novo serviço"></div>
+      <button class="addbtn" id="catAddBtn">Adicionar</button>
+    </div>
+    <div class="modal-actions"><button class="cancel" id="catFecharBtn" style="flex:1;">Fechar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayClienteServico">
+  <div class="modal" style="max-width:400px;">
+    <h2 id="csTitulo">Adicionar serviço</h2>
+    <div class="field"><label>Serviço</label><select id="cs-servico"></select></div>
+    <div class="field"><label>Valor mensal (R$)</label><input type="text" id="cs-valor" inputmode="decimal" placeholder="Ex: 1500,00"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="csCancelBtn">Cancelar</button>
+      <button class="save" id="csSaveBtn">Salvar</button>
     </div>
   </div>
 </div>
@@ -805,6 +871,7 @@ const visitasCol = collection(db, 'visitas');
 const tarefasCol = collection(db, 'tarefas');
 const briefingsCol = collection(db, 'briefings_clientes_vertice');
 const clientesCol = collection(db, 'clientes_vertice');
+const servicosCol = collection(db, 'servicos_vertice');
 
 const PROPOSTA_SEM_RETORNO_DAYS = 3;
 const TAREFA_TIPOS = [
@@ -887,7 +954,7 @@ const BUYER_STAGE_MSG_ALUGUEL = {
   perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
 };
 
-let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[], briefings:[], clientes:[] };
+let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[], briefings:[], clientes:[], servicos:[] };
 let personaFilter=null, priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
@@ -1062,9 +1129,15 @@ function startListeners(){
     renderBriefings();
   }, err=>{ console.error(err); data.briefings = null; renderBriefings(); });
 
+  onSnapshot(servicosCol, snap=>{
+    data.servicos = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+    renderClientes(); renderCatalogo();
+  }, err=>{ console.error(err); });
+
   onSnapshot(clientesCol, snap=>{
     data.clientes = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    renderClientes();
+    data.clientes.forEach(garantirPagamentos);
+    renderClientes(); renderHoje();
   }, err=>{ console.error(err); const b=document.getElementById('clientesBox'); if(b) b.innerHTML = '<div class="hoje-block"><div class="hoje-empty">Não consegui ler os clientes. Falta publicar a regra do Firestore da coleção clientes_vertice.</div></div>'; });
 
   onSnapshot(tarefasCol, snap=>{
@@ -1113,6 +1186,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     t.classList.add('active');
     document.getElementById('view-'+t.dataset.view).classList.add('active');
     if(t.dataset.lado==='baru' || t.dataset.lado==='vertice') ultimaAbaPorLado[t.dataset.lado] = t.dataset.view;
+    mostrarListaClientes();
     atualizarTitulo(t);
     setMenu(false);
   };
@@ -2944,6 +3018,15 @@ function renderHoje(){
   setCnt('cntAtrasadas', atrasadas.length); setCnt('cntHoje', hoje.length); setCnt('cntConcluidas', concluidasHoje.length);
   document.getElementById('kpiAtrasadas').textContent = atrasadas.length; document.getElementById('kpiHoje').textContent = hoje.length; document.getElementById('kpiConcluidas').textContent = concluidasHoje.length;
 
+  const pagBlock = document.getElementById('hojePagBlock');
+  const avisos = hojeFiltro==='baru' ? [] : pagamentosParaAvisar();
+  pagBlock.style.display = avisos.length ? '' : 'none';
+  document.getElementById('hojePagamentos').innerHTML = avisos.map(({c,mes,p})=>{
+    const t = pagamentoTxt(p);
+    return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'Cliente')} · ${brl(p.valor)}</div><div class="hi-sub">${mesLabel(mes)} · vence em ${dataBR(p.vencimento)} <span class="chip-pag ${t.cls}" style="margin-left:6px;">${t.txt}</span></div></div><div class="hi-actions"><button data-pagar="${c.id}|${mes}">✓ Marcar como pago</button></div></div>`;
+  }).join('');
+  setCnt('cntPag', avisos.length);
+  bindPagamentoActions(document.getElementById('hojePagBlock'));
   document.getElementById('hojeVisitasBlock').style.display = hojeFiltro==='vertice' ? 'none' : '';
   const visitasProx = (data.visitas||[]).filter(v=>v.status==='agendada' && (v.data===todayStr || v.data===amanhaStr)).sort((a,b)=> (a.data+((a.hora)||'')).localeCompare(b.data+((b.hora)||'')));
   elV.innerHTML = visitasProx.length ? visitasProx.map(v=>visitaItemHtml(v, v.data===todayStr?'Hoje':'Amanhã')).join('') : `<div class="hoje-empty">Sem visitas hoje ou amanhã.</div>`;
@@ -3072,42 +3155,223 @@ TAREFAS_VIEWS.forEach(cfg=>{
   document.getElementById(tid(cfg,'novaTarefaBtn')).onclick = ()=>openTarefaModal(null,null,'',null,calSelected,cfg.key);
 });
 
-/* ---------- CLIENTES DA VÉRTICE (Etapa 1: nome + status) ---------- */
+/* ---------- CLIENTES DA VÉRTICE ---------- */
 const CLIENTE_STATUS = [ {id:'ativo', label:'Ativo'}, {id:'pausado', label:'Pausado'}, {id:'encerrado', label:'Encerrado'} ];
+const SERVICOS_SUGERIDOS = ['Tráfego pago (Meta e Google)','Gestão de redes sociais','Site ou página de vendas','Perfil da empresa no Google (GMN)','Consultoria e mentoria','Auditoria de presença digital'];
 let clienteEditId = null;
+let fichaId = null;
+
+function brl(n){ return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function parseBRL(t){
+  const x = String(t||'').trim().replace(/[R$\s]/g,'');
+  if(!x) return NaN;
+  return x.includes(',') ? Number(x.replace(/\./g,'').replace(',','.')) : Number(x);
+}
+function totalMensal(c){ return (c.servicos||[]).reduce((a,sv)=>a+(Number(sv.valor)||0),0); }
+function mesKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function vencimentoDoMes(mes, dia){ const [y,m]=mes.split('-').map(Number); const ult=new Date(y,m,0).getDate(); return mes+'-'+String(Math.min(dia,ult)).padStart(2,'0'); }
+function mesLabel(mes){ const [y,m]=mes.split('-').map(Number); return MESES_PT[m-1]+'/'+y; }
+function diasAte(dataStr){ return Math.round((new Date(dataStr+'T00:00:00') - new Date(localDateStr()+'T00:00:00'))/86400000); }
+function statusPagamento(p){ if(p.status==='pago') return 'pago'; return diasAte(p.vencimento)<0 ? 'atrasado' : 'pendente'; }
+function pagamentoTxt(p){
+  const st = statusPagamento(p);
+  if(st==='pago') return {cls:'pago', txt:'Pago'+(p.pagoEm?' em '+dataBR(localDateStr(new Date(p.pagoEm))):'')};
+  const d = diasAte(p.vencimento);
+  if(d<0) return {cls:'atrasado', txt:`Atrasado há ${-d} dia${d===-1?'':'s'}`};
+  if(d===0) return {cls:'pendente', txt:'Vence hoje'};
+  if(d<=3) return {cls:'pendente', txt:`Vence em ${d} dia${d===1?'':'s'}`};
+  return {cls:'pendente', txt:'Em aberto'};
+}
+function nomeServico(sv){ const cat = (data.servicos||[]).find(x=>x.id===sv.servicoId); return cat ? cat.nome : (sv.nome||'Serviço'); }
+
+/* cria sozinho a cobrança do mês atual e do próximo (só cliente Ativo, com início, dia de vencimento e serviços) */
+const pagGerando = new Set();
+function faltaParaCobrar(c){
+  const f = [];
+  if(c.status!=='ativo') f.push('status Ativo');
+  if(!c.inicio) f.push('data de início do contrato');
+  if(!c.diaVencimento) f.push('dia do vencimento');
+  if(totalMensal(c)<=0) f.push('pelo menos um serviço com valor');
+  return f;
+}
+function garantirPagamentos(c){
+  if(faltaParaCobrar(c).length) return;
+  const hoje = new Date();
+  const meses = [mesKey(hoje), mesKey(new Date(hoje.getFullYear(), hoje.getMonth()+1, 1))];
+  const mesInicio = c.inicio.slice(0,7);
+  const novos = {};
+  meses.forEach(m=>{
+    if(m<mesInicio || (c.pagamentos||{})[m]) return;
+    const k = c.id+'|'+m;
+    if(pagGerando.has(k)) return;
+    pagGerando.add(k);
+    novos[m] = { valor:totalMensal(c), vencimento:vencimentoDoMes(m, Number(c.diaVencimento)), status:'pendente', pagoEm:null, criadoEm:new Date().toISOString() };
+  });
+  if(Object.keys(novos).length){
+    setDoc(doc(db,'clientes_vertice',c.id), {pagamentos:novos}, {merge:true}).catch(e=>{ console.error(e); Object.keys(novos).forEach(m=>pagGerando.delete(c.id+'|'+m)); });
+  }
+}
+/* mudou serviço ou dia: só os meses FUTUROS ainda não pagos acompanham; o que já venceu ou foi pago fica como estava */
+function patchFuturos(c, total, dia){
+  const hojeStr = localDateStr(); const out = {};
+  Object.entries(c.pagamentos||{}).forEach(([m,p])=>{
+    if(p.status==='pago' || p.vencimento<=hojeStr) return;
+    const novo = {};
+    if(total>0 && p.valor!==total) novo.valor = total;
+    if(dia){ const v = vencimentoDoMes(m, dia); if(v!==p.vencimento && v>hojeStr) novo.vencimento = v; }
+    if(Object.keys(novo).length) out[m] = novo;
+  });
+  return out;
+}
+async function marcarPago(clienteId, mes, pago){
+  try{
+    await setDoc(doc(db,'clientes_vertice',clienteId), {pagamentos:{[mes]:{status:pago?'pago':'pendente', pagoEm:pago?new Date().toISOString():null}}}, {merge:true});
+  }catch(e){ console.error(e); alert('Não consegui atualizar o pagamento.'); }
+}
+function bindPagamentoActions(container){
+  if(!container) return;
+  container.querySelectorAll('[data-pagar]').forEach(b=>{ b.onclick = ()=>{ const [id,mes]=b.dataset.pagar.split('|'); marcarPago(id,mes,true); }; });
+  container.querySelectorAll('[data-desfazer]').forEach(b=>{ b.onclick = ()=>{ const [id,mes]=b.dataset.desfazer.split('|'); marcarPago(id,mes,false); }; });
+}
+/* usado no Hoje: atrasados e que vencem em até 3 dias */
+function pagamentosParaAvisar(){
+  const out = [];
+  (data.clientes||[]).forEach(c=>{
+    Object.entries(c.pagamentos||{}).forEach(([m,p])=>{
+      if(p.status==='pago') return;
+      if(diasAte(p.vencimento)<=3) out.push({c, mes:m, p});
+    });
+  });
+  return out.sort((a,b)=>a.p.vencimento.localeCompare(b.p.vencimento));
+}
+
+function iniciais(nome){ return (nome||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.charAt(0)).join('').toUpperCase() || '?'; }
+
 function renderClientes(){
   const box = document.getElementById('clientesBox');
   if(!box) return;
-  const ordem = id=>{ const k=CLIENTE_STATUS.findIndex(s=>s.id===(id||'ativo')); return k<0?0:k; };
+  const ativos = (data.clientes||[]).filter(c=>(c.status||'ativo')==='ativo');
+  document.getElementById('kpiReceita').textContent = brl(ativos.reduce((a,c)=>a+totalMensal(c),0));
+  document.getElementById('kpiAtivos').textContent = ativos.length;
+  const ordem = id=>{ const k=CLIENTE_STATUS.findIndex(x=>x.id===(id||'ativo')); return k<0?0:k; };
   const lista = (data.clientes||[]).slice().sort((a,b)=> ordem(a.status)-ordem(b.status) || (a.nome||'').localeCompare(b.nome||'','pt-BR'));
-  if(!lista.length){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Nenhum cliente cadastrado ainda. Use "+ Novo cliente".</div></div>`; return; }
-  box.innerHTML = `<div class="cli-grid">` + lista.map(c=>{
-    const st = CLIENTE_STATUS.find(s=>s.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
-    const nome = c.nome||'(sem nome)';
-    const ini = nome.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.charAt(0)).join('').toUpperCase() || '?';
-    return `<div class="cli-card">
-      <div class="cli-av" aria-hidden="true">${escapeHtml(ini)}</div>
-      <div style="flex:1;min-width:0;"><div class="cli-name">${escapeHtml(nome)}</div><span class="chip-status ${st.id}" style="margin-left:0;">${st.label}</span></div>
-      <div class="hi-actions">
-        <button data-cli-editar="${c.id}" title="Editar">✏️</button>
-        <button data-cli-excluir="${c.id}" title="Excluir">🗑</button>
-      </div>
-    </div>`;
-  }).join('') + `</div>`;
-  box.querySelectorAll('[data-cli-editar]').forEach(b=>{ b.onclick = ()=>{ const c=data.clientes.find(x=>x.id===b.dataset.cliEditar); if(c) openClienteModal(c); }; });
-  box.querySelectorAll('[data-cli-excluir]').forEach(b=>{ b.onclick = async ()=>{
-    const c=data.clientes.find(x=>x.id===b.dataset.cliExcluir); if(!c) return;
-    if(confirm('Excluir o cliente "'+(c.nome||'')+'"? Não tem como desfazer.')){
-      try{ await deleteDoc(doc(db,'clientes_vertice',c.id)); }catch(e){ console.error(e); alert('Não consegui excluir.'); }
-    }
-  }; });
+  if(!lista.length){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Nenhum cliente cadastrado ainda. Use "+ Novo cliente".</div></div>`; }
+  else{
+    box.innerHTML = `<div class="cli-grid">` + lista.map(c=>{
+      const st = CLIENTE_STATUS.find(x=>x.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
+      const nome = c.nome||'(sem nome)';
+      const tot = totalMensal(c);
+      return `<div class="cli-card" data-abrir="${c.id}">
+        <div class="cli-av" aria-hidden="true">${escapeHtml(iniciais(nome))}</div>
+        <div style="flex:1;min-width:0;"><div class="cli-name">${escapeHtml(nome)}</div><span class="chip-status ${st.id}" style="margin-left:0;">${st.label}</span>${tot>0?`<div class="cli-sub">${brl(tot)}/mês</div>`:''}</div>
+        <div class="hi-actions">
+          <button data-cli-editar="${c.id}" title="Editar dados">✏️</button>
+          <button data-cli-excluir="${c.id}" title="Excluir">🗑</button>
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+    box.querySelectorAll('[data-abrir]').forEach(el=>{ el.onclick = ()=>abrirFicha(el.dataset.abrir); });
+    box.querySelectorAll('[data-cli-editar]').forEach(b=>{ b.onclick = e=>{ e.stopPropagation(); const c=data.clientes.find(x=>x.id===b.dataset.cliEditar); if(c) openClienteModal(c); }; });
+    box.querySelectorAll('[data-cli-excluir]').forEach(b=>{ b.onclick = async e=>{
+      e.stopPropagation();
+      const c=data.clientes.find(x=>x.id===b.dataset.cliExcluir); if(!c) return;
+      if(confirm('Excluir o cliente "'+(c.nome||'')+'" junto com serviços e pagamentos dele? Não tem como desfazer.')){
+        try{ await deleteDoc(doc(db,'clientes_vertice',c.id)); }catch(err){ console.error(err); alert('Não consegui excluir.'); }
+      }
+    }; });
+  }
+  if(fichaId) renderFicha();
 }
+
+/* ---------- Ficha do cliente (tela própria dentro da aba Clientes) ---------- */
+function abrirFicha(id){
+  fichaId = id;
+  document.getElementById('clientesLista').style.display = 'none';
+  document.getElementById('clienteFicha').style.display = '';
+  renderFicha();
+  window.scrollTo(0,0);
+}
+function mostrarListaClientes(){
+  fichaId = null;
+  const l = document.getElementById('clientesLista'), f = document.getElementById('clienteFicha');
+  if(l) l.style.display = ''; if(f) f.style.display = 'none';
+}
+function dadoRow(k, v, extra){
+  const vazio = !v;
+  return `<div class="dado-row"><div class="k">${k}</div><div class="v${vazio?' vazio':''}">${vazio?'—':v}</div>${extra||''}</div>`;
+}
+function renderFicha(){
+  const box = document.getElementById('clienteFicha');
+  const c = (data.clientes||[]).find(x=>x.id===fichaId);
+  if(!c){ mostrarListaClientes(); if(document.getElementById('view-clientes').classList.contains('active')) atualizarTitulo(document.querySelector('.tabs .tab.active')); return; }
+  const nome = c.nome||'(sem nome)';
+  const st = CLIENTE_STATUS.find(x=>x.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
+  if(document.getElementById('view-clientes').classList.contains('active')){
+    document.getElementById('pageTitle').textContent = nome;
+    document.getElementById('pageSub').textContent = 'Ficha do cliente';
+  }
+  const wa = c.telefone ? waLink(c.telefone,'') : null;
+  const dados = [
+    dadoRow('Dono', escapeHtml(c.dono||'')),
+    dadoRow('Telefone', escapeHtml(c.telefone||''), wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button class="addbtn sec" style="padding:6px 12px;font-size:12.5px;">💬 Abrir WhatsApp</button></a>`:''),
+    dadoRow('E-mail', c.email?`<a href="mailto:${escapeHtml(c.email)}" style="color:var(--text);">${escapeHtml(c.email)}</a>`:''),
+    dadoRow('CNPJ', escapeHtml(c.cnpj||'')),
+    dadoRow('Início do contrato', c.inicio?dataBR(c.inicio):''),
+    dadoRow('Vencimento', c.diaVencimento?`Todo dia ${escapeHtml(String(c.diaVencimento))}`:''),
+  ].join('');
+  const servs = c.servicos||[];
+  const tot = totalMensal(c);
+  const servHtml = servs.length ? servs.map((sv,i)=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(nomeServico(sv))}</div><div class="hi-sub">${brl(sv.valor)}/mês</div></div><div class="hi-actions"><button data-sv-editar="${i}" title="Editar">✏️</button><button data-sv-excluir="${i}" title="Remover">🗑</button></div></div>`).join('')
+    + `<div class="dado-row"><div class="k">Total mensal</div><div class="v" style="font-weight:700;font-family:'Montserrat',sans-serif;">${brl(tot)}</div></div>`
+    : `<div class="hoje-empty">Nenhum serviço ainda. Use "+ Adicionar serviço".</div>`;
+  const pags = Object.entries(c.pagamentos||{}).sort((a,b)=>b[0].localeCompare(a[0]));
+  const pagHtml = pags.length ? pags.map(([m,p])=>{
+    const t = pagamentoTxt(p);
+    const acao = p.status==='pago' ? `<button data-desfazer="${c.id}|${m}">↩ Desfazer</button>` : `<button data-pagar="${c.id}|${m}">✓ Marcar como pago</button>`;
+    return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${mesLabel(m)} · ${brl(p.valor)}</div><div class="hi-sub">Vence em ${dataBR(p.vencimento)} <span class="chip-pag ${t.cls}" style="margin-left:6px;">${t.txt}</span></div></div><div class="hi-actions">${acao}</div></div>`;
+  }).join('') : `<div class="hoje-empty">Nenhuma cobrança criada ainda.</div>`;
+  const falta = faltaParaCobrar(c);
+  const aviso = falta.length ? `<div class="ficha-aviso">Para o painel criar as cobranças sozinho, falta: ${falta.join(', ')}.</div>` : `<div class="ficha-aviso">O painel cria sozinho a cobrança do mês atual e do próximo enquanto o cliente estiver Ativo.</div>`;
+  box.innerHTML = `
+    <div class="ficha-top">
+      <button class="addbtn sec" id="fichaVoltar">← Clientes</button>
+      <div class="ficha-head"><div class="cli-av" aria-hidden="true">${escapeHtml(iniciais(nome))}</div><span class="chip-status ${st.id}" style="margin-left:0;font-size:12px;padding:4px 12px;">${st.label}</span></div>
+      <button class="addbtn sec" id="fichaEditar">✏️ Editar dados</button>
+    </div>
+    <div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div>
+    <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">+ Adicionar serviço</button></div>${servHtml}</div>
+    <div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div>`;
+  document.getElementById('fichaVoltar').onclick = ()=>{ mostrarListaClientes(); atualizarTitulo(document.querySelector('.tabs .tab.active')); };
+  document.getElementById('fichaEditar').onclick = ()=>openClienteModal(c);
+  document.getElementById('fichaAddServico').onclick = ()=>openClienteServicoModal(c, null);
+  box.querySelectorAll('[data-sv-editar]').forEach(b=>{ b.onclick = ()=>openClienteServicoModal(c, Number(b.dataset.svEditar)); });
+  box.querySelectorAll('[data-sv-excluir]').forEach(b=>{ b.onclick = async ()=>{
+    const i = Number(b.dataset.svExcluir); const sv = (c.servicos||[])[i]; if(!sv) return;
+    if(!confirm('Remover "'+nomeServico(sv)+'" desta ficha?')) return;
+    const novo = (c.servicos||[]).filter((_,k)=>k!==i);
+    await salvarServicosCliente(c, novo);
+  }; });
+  bindPagamentoActions(box);
+}
+async function salvarServicosCliente(c, novo){
+  const tot = novo.reduce((a,sv)=>a+(Number(sv.valor)||0),0);
+  try{ await setDoc(doc(db,'clientes_vertice',c.id), {servicos:novo, pagamentos:patchFuturos(c, tot, null)}, {merge:true}); return true; }
+  catch(e){ console.error(e); alert('Não consegui salvar os serviços.'); return false; }
+}
+
+/* ---------- Modal: dados do cliente ---------- */
 function openClienteModal(c){
   clienteEditId = c ? c.id : null;
-  document.getElementById('clienteModalTitle').textContent = c ? 'Editar cliente' : 'Novo cliente';
-  document.getElementById('cli-status').innerHTML = CLIENTE_STATUS.map(s=>`<option value="${s.id}">${s.label}</option>`).join('');
+  document.getElementById('clienteModalTitle').textContent = c ? 'Editar dados do cliente' : 'Novo cliente';
+  document.getElementById('cli-status').innerHTML = CLIENTE_STATUS.map(x=>`<option value="${x.id}">${x.label}</option>`).join('');
   document.getElementById('cli-nome').value = c ? (c.nome||'') : '';
   document.getElementById('cli-status').value = c ? (c.status||'ativo') : 'ativo';
+  document.getElementById('cli-cnpj').value = c ? (c.cnpj||'') : '';
+  document.getElementById('cli-dono').value = c ? (c.dono||'') : '';
+  document.getElementById('cli-telefone').value = c ? (c.telefone||'') : '';
+  document.getElementById('cli-email').value = c ? (c.email||'') : '';
+  document.getElementById('cli-inicio').value = c ? (c.inicio||'') : '';
+  document.getElementById('cli-dia').value = c && c.diaVencimento ? c.diaVencimento : '';
   document.getElementById('overlayCliente').classList.add('open');
 }
 document.getElementById('novoClienteBtn').onclick = ()=>openClienteModal(null);
@@ -3116,16 +3380,92 @@ document.getElementById('overlayCliente').onclick = e=>{ if(e.target.id==='overl
 document.getElementById('clienteSaveBtn').onclick = async ()=>{
   const nome = document.getElementById('cli-nome').value.trim();
   if(!nome){ alert('Escreve o nome da empresa.'); return; }
-  const status = document.getElementById('cli-status').value;
+  const diaTxt = document.getElementById('cli-dia').value.trim();
+  let dia = null;
+  if(diaTxt){ dia = parseInt(diaTxt,10); if(!(dia>=1 && dia<=31)){ alert('O dia do vencimento tem que ser de 1 a 31.'); return; } }
+  const campos = {
+    nome,
+    status: document.getElementById('cli-status').value,
+    cnpj: document.getElementById('cli-cnpj').value.trim(),
+    dono: document.getElementById('cli-dono').value.trim(),
+    telefone: document.getElementById('cli-telefone').value.trim(),
+    email: document.getElementById('cli-email').value.trim(),
+    inicio: document.getElementById('cli-inicio').value || null,
+    diaVencimento: dia,
+  };
   try{
     if(clienteEditId){
-      await setDoc(doc(db,'clientes_vertice',clienteEditId), {nome, status}, {merge:true});
+      const atual = data.clientes.find(x=>x.id===clienteEditId);
+      const patch = atual ? patchFuturos(atual, totalMensal(atual), dia) : {};
+      await setDoc(doc(db,'clientes_vertice',clienteEditId), {...campos, pagamentos:patch}, {merge:true});
+      document.getElementById('overlayCliente').classList.remove('open');
     }else{
       const id = doc(clientesCol).id;
-      await setDoc(doc(db,'clientes_vertice',id), {nome, status, criadoEm:new Date().toISOString()});
+      await setDoc(doc(db,'clientes_vertice',id), {...campos, servicos:[], criadoEm:new Date().toISOString()});
+      document.getElementById('overlayCliente').classList.remove('open');
+      abrirFicha(id);
     }
-    document.getElementById('overlayCliente').classList.remove('open');
   }catch(e){ console.error(e); alert('Não consegui salvar o cliente. Confere se a regra do Firestore da coleção clientes_vertice está publicada.'); }
+};
+
+/* ---------- Modal: serviço dentro da ficha ---------- */
+let csCliente = null, csIdx = null;
+function openClienteServicoModal(c, idx){
+  if(!(data.servicos||[]).length){ alert('Primeiro cadastre os serviços da Vértice no botão "Serviços" da tela Clientes.'); return; }
+  csCliente = c; csIdx = idx;
+  const atual = idx!==null ? (c.servicos||[])[idx] : null;
+  document.getElementById('csTitulo').textContent = atual ? 'Editar serviço' : 'Adicionar serviço';
+  document.getElementById('cs-servico').innerHTML = data.servicos.map(x=>`<option value="${x.id}">${escapeHtml(x.nome)}</option>`).join('');
+  document.getElementById('cs-servico').value = atual ? atual.servicoId : data.servicos[0].id;
+  document.getElementById('cs-valor').value = atual && atual.valor!=null ? String(atual.valor).replace('.',',') : '';
+  document.getElementById('overlayClienteServico').classList.add('open');
+}
+document.getElementById('csCancelBtn').onclick = ()=>document.getElementById('overlayClienteServico').classList.remove('open');
+document.getElementById('overlayClienteServico').onclick = e=>{ if(e.target.id==='overlayClienteServico') e.target.classList.remove('open'); };
+document.getElementById('csSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(csCliente&&csCliente.id)); if(!c) return;
+  const servicoId = document.getElementById('cs-servico').value;
+  const cat = data.servicos.find(x=>x.id===servicoId); if(!cat) return;
+  const valor = parseBRL(document.getElementById('cs-valor').value);
+  if(!(valor>=0)){ alert('Escreve o valor mensal. Ex: 1500,00'); return; }
+  const lista = (c.servicos||[]).slice();
+  if(lista.some((sv,i)=>sv.servicoId===servicoId && i!==csIdx)){ alert('Esse serviço já está na ficha. Edite o valor dele.'); return; }
+  const item = {servicoId, nome:cat.nome, valor};
+  if(csIdx!==null) lista[csIdx] = item; else lista.push(item);
+  if(await salvarServicosCliente(c, lista)) document.getElementById('overlayClienteServico').classList.remove('open');
+};
+
+/* ---------- Modal: lista fixa de serviços da Vértice ---------- */
+function renderCatalogo(){
+  const el = document.getElementById('catLista'); if(!el) return;
+  const lista = data.servicos||[];
+  el.innerHTML = lista.length ? lista.map(x=>`<div class="cat-row"><div style="flex:1;min-width:0;">${escapeHtml(x.nome)}</div><button class="addbtn sec" style="padding:5px 10px;" data-cat-ren="${x.id}" title="Renomear">✏️</button><button class="addbtn sec" style="padding:5px 10px;" data-cat-del="${x.id}" title="Excluir">🗑</button></div>`).join('')
+    : `<div class="hoje-empty">Nenhum serviço cadastrado.</div><div style="margin-top:10px;"><button class="addbtn" id="catSeedBtn">Adicionar os ${SERVICOS_SUGERIDOS.length} serviços que você listou</button></div>`;
+  el.querySelectorAll('[data-cat-ren]').forEach(b=>{ b.onclick = async ()=>{
+    const x = data.servicos.find(v=>v.id===b.dataset.catRen); if(!x) return;
+    const novo = prompt('Novo nome do serviço:', x.nome); if(novo===null || !novo.trim()) return;
+    try{ await setDoc(doc(db,'servicos_vertice',x.id), {nome:novo.trim()}, {merge:true}); }catch(e){ console.error(e); alert('Não consegui renomear.'); }
+  }; });
+  el.querySelectorAll('[data-cat-del]').forEach(b=>{ b.onclick = async ()=>{
+    const x = data.servicos.find(v=>v.id===b.dataset.catDel); if(!x) return;
+    if(!confirm('Excluir "'+x.nome+'" da lista? Clientes que já usam esse serviço continuam com ele na ficha.')) return;
+    try{ await deleteDoc(doc(db,'servicos_vertice',x.id)); }catch(e){ console.error(e); alert('Não consegui excluir.'); }
+  }; });
+  const seed = document.getElementById('catSeedBtn');
+  if(seed) seed.onclick = async ()=>{
+    seed.disabled = true;
+    try{ for(const nome of SERVICOS_SUGERIDOS){ const id = doc(servicosCol).id; await setDoc(doc(db,'servicos_vertice',id), {nome, criadoEm:new Date().toISOString()}); } }
+    catch(e){ console.error(e); alert('Não consegui criar a lista. Confere se a regra do Firestore da coleção servicos_vertice está publicada.'); seed.disabled=false; }
+  };
+}
+document.getElementById('servicosBtn').onclick = ()=>{ renderCatalogo(); document.getElementById('overlayServicosCat').classList.add('open'); };
+document.getElementById('catFecharBtn').onclick = ()=>document.getElementById('overlayServicosCat').classList.remove('open');
+document.getElementById('overlayServicosCat').onclick = e=>{ if(e.target.id==='overlayServicosCat') e.target.classList.remove('open'); };
+document.getElementById('catAddBtn').onclick = async ()=>{
+  const inp = document.getElementById('cat-novo'); const nome = inp.value.trim();
+  if(!nome){ alert('Escreve o nome do serviço.'); return; }
+  try{ const id = doc(servicosCol).id; await setDoc(doc(db,'servicos_vertice',id), {nome, criadoEm:new Date().toISOString()}); inp.value=''; }
+  catch(e){ console.error(e); alert('Não consegui adicionar. Confere se a regra do Firestore da coleção servicos_vertice está publicada.'); }
 };
 
 document.getElementById('zerarPendenciasBtn').onclick = async ()=>{

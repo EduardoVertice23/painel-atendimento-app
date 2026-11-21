@@ -73,6 +73,20 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 :root[data-theme="dark"] .cli-av{background:#13285A;}
 .addbtn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line);}
 .kh .n.money{font-size:24px;}
+.vd-chart{display:flex;align-items:flex-end;gap:10px;height:190px;padding-top:8px;}
+.vd-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;height:100%;}
+.vd-bars{flex:1;display:flex;align-items:flex-end;gap:4px;width:100%;justify-content:center;}
+.vd-bar{width:34%;max-width:34px;border-radius:6px 6px 0 0;min-height:2px;}
+.vd-sec{font-size:12.5px;}
+.vd-bar.prev{background:var(--pend-bg);border:1px solid var(--line);border-bottom:none;}
+.vd-bar.rec{background:var(--gold);}
+.vd-lbl{font-size:11.5px;color:var(--text-dim);}
+.vd-val{font-size:11px;color:var(--text-dim);min-height:14px;white-space:nowrap;}
+.vd-legend{display:flex;gap:16px;font-size:12px;color:var(--text-dim);margin-top:10px;flex-wrap:wrap;}
+.vd-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+.kh .s{font-size:11.5px;color:var(--text-dim);margin-top:4px;}
+.kh .s b.red{color:var(--urgent);}
+@media (max-width:900px){.vd-chart{gap:6px;}.vd-val{display:none;}}
 .cli-topo{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:18px;}
 .cli-card[data-abrir]{cursor:pointer;}
 .cli-card[data-abrir]:hover{border-color:var(--gold);}
@@ -343,6 +357,7 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
       <div class="tab active" data-view="hoje" data-lado="geral"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 15l2 2 4-4"/></svg>Hoje</div>
       <div class="tab" data-view="tarefas" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></svg>Tarefas</div>
       <div class="tab" data-view="vtarefas" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></svg>Tarefas</div>
+      <div class="tab" data-view="vdash" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Dashboard</div>
       <div class="tab" data-view="pendencias" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Pendências</div>
       <div class="tab" data-view="dash" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Dashboard</div>
       <div class="tab" data-view="owners" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12M9 21v-6h6v6"/></svg>Proprietários</div>
@@ -395,6 +410,12 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
     <div id="clientesBox"></div>
   </div>
   <div id="clienteFicha" style="display:none;"></div>
+</div>
+
+<div class="view" id="view-vdash">
+  <div class="kpi-hoje" id="vdKpis"></div>
+  <div class="hoje-block"><h3>Receita mês a mês <span class="cnt">últimos 6 meses</span></h3><div id="vdChart"></div></div>
+  <div class="hoje-block" id="vdAtencao"></div>
 </div>
 
 <div class="view" id="view-pendencias">
@@ -3034,6 +3055,7 @@ function renderHoje(){
   bindTarefaActions(document.getElementById('view-hoje'), 'geral');
   renderPendencias();
   renderTarefasView();
+  renderDashVertice();
 }
 
 function renderPendencias(){
@@ -3243,6 +3265,55 @@ function pagamentosParaAvisar(){
     });
   });
   return out.sort((a,b)=>a.p.vencimento.localeCompare(b.p.vencimento));
+}
+
+/* ===== DASHBOARD DA VÉRTICE (etapa 5, parte com dados da etapa 2) ===== */
+function renderDashVertice(){
+  const kp = document.getElementById('vdKpis');
+  if(!kp) return;
+  const clientes = data.clientes||[];
+  const agora = new Date();
+  const mesAtual = mesKey(agora);
+  let recebido=0, falta=0, atrasado=0;
+  clientes.forEach(c=>{ const p=(c.pagamentos||{})[mesAtual]; if(!p) return; const v=Number(p.valor)||0; const st=statusPagamento(p); if(st==='pago') recebido+=v; else { falta+=v; if(st==='atrasado') atrasado+=v; } });
+  const ativos = clientes.filter(c=>c.status==='ativo').length;
+  const pausados = clientes.filter(c=>c.status==='pausado').length;
+  const encerrados = clientes.filter(c=>c.status==='encerrado').length;
+  const proximos = [];
+  clientes.forEach(c=>Object.entries(c.pagamentos||{}).forEach(([m,p])=>{ if(p.status==='pago') return; const d=diasAte(p.vencimento); if(d>=0 && d<=7) proximos.push({c,mes:m,p,d}); }));
+  const somaProx = proximos.reduce((a,x)=>a+(Number(x.p.valor)||0),0);
+  kp.innerHTML = `
+    <div class="kh" style="--kc:var(--gold)"><div class="n money">${brl(recebido+falta)}</div><div class="l">Receita de ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Recebido ${brl(recebido)} · Falta ${brl(falta)}${atrasado>0?` · <b class="red">${brl(atrasado)} atrasado</b>`:''}</div></div>
+    <div class="kh" style="--kc:var(--ok)"><div class="n">${ativos}</div><div class="l">Clientes ativos</div>${(pausados||encerrados)?`<div class="s">${pausados} pausado${pausados===1?'':'s'} · ${encerrados} encerrado${encerrados===1?'':'s'}</div>`:''}</div>
+    <div class="kh" style="--kc:var(--ink)"><div class="n">${proximos.length}</div><div class="l">Vencem nos próximos 7 dias</div><div class="s">${proximos.length?brl(somaProx):'Nenhum por enquanto'}</div></div>`;
+
+  // gráfico: últimos 6 meses, previsto x recebido
+  const meses = [];
+  for(let i=5;i>=0;i--){ const d=new Date(agora.getFullYear(), agora.getMonth()-i, 1); meses.push(mesKey(d)); }
+  const dados = meses.map(m=>{ let prev=0, rec=0; clientes.forEach(c=>{ const p=(c.pagamentos||{})[m]; if(!p) return; const v=Number(p.valor)||0; prev+=v; if(p.status==='pago') rec+=v; }); return {m, prev, rec}; });
+  const max = Math.max(...dados.map(x=>x.prev), 0);
+  const ch = document.getElementById('vdChart');
+  if(max<=0){ ch.innerHTML = '<div class="hoje-empty">Ainda não há cobranças. O gráfico aparece quando houver cliente ativo com serviço, início e dia de vencimento.</div>'; }
+  else{
+    ch.innerHTML = '<div class="vd-chart">'+dados.map(x=>`<div class="vd-col"><div class="vd-val">${x.prev>0?brl(x.prev):''}</div><div class="vd-bars"><div class="vd-bar prev" style="height:${Math.round(x.prev/max*100)}%" title="Previsto: ${brl(x.prev)}"></div><div class="vd-bar rec" style="height:${Math.round(x.rec/max*100)}%" title="Recebido: ${brl(x.rec)}"></div></div><div class="vd-lbl">${MESES_PT[Number(x.m.slice(5))-1].slice(0,3)}</div></div>`).join('')+'</div>'
+      +'<div class="vd-legend"><span><i style="background:var(--pend-bg);border:1px solid var(--line)"></i>Previsto</span><span><i style="background:var(--gold)"></i>Recebido</span></div>';
+  }
+
+  // lista: precisa de atenção
+  const hojeStr = localDateStr();
+  const pagAtras = [];
+  clientes.forEach(c=>Object.entries(c.pagamentos||{}).forEach(([m,p])=>{ if(p.status!=='pago' && diasAte(p.vencimento)<0) pagAtras.push({c,mes:m,p}); }));
+  pagAtras.sort((a,b)=>a.p.vencimento.localeCompare(b.p.vencimento));
+  const tarAtras = (data.tarefas||[]).filter(t=>t.lado==='vertice' && t.status!=='concluida' && t.vencimento && t.vencimento.slice(0,10)<hojeStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  const total = pagAtras.length + tarAtras.length;
+  const el = document.getElementById('vdAtencao');
+  const pagHtml = pagAtras.map(({c,mes,p})=>{ const t=pagamentoTxt(p); return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'Cliente')} · ${brl(p.valor)}</div><div class="hi-sub">${mesLabel(mes)} · venceu em ${dataBR(p.vencimento)} <span class="chip-pag ${t.cls}" style="margin-left:6px;">${t.txt}</span></div></div><div class="hi-actions"><button data-pagar="${c.id}|${mes}">✓ Marcar como pago</button></div></div>`; }).join('');
+  const tarHtml = tarAtras.map(t=>tarefaItemHtml(t,true,false)).join('');
+  el.innerHTML = `<h3>Precisa de atenção <span class="cnt">${total||''}</span></h3>`
+    + (total ? (pagHtml?`<div class="hi-sub" style="margin:6px 0 2px;font-weight:700;font-size:12.5px;">Pagamentos atrasados</div>${pagHtml}`:'') + (tarHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Tarefas da Vértice atrasadas</div>${tarHtml}`:'')
+      : '<div class="hoje-empty">Tudo em dia 🎉</div>');
+  bindPagamentoActions(el);
+  bindTarefaActions(el, 'vertice');
 }
 
 function iniciais(nome){ return (nome||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.charAt(0)).join('').toUpperCase() || '?'; }

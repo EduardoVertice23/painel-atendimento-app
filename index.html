@@ -592,10 +592,11 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 </div>
 
 <div class="overlay" id="overlayClienteServico">
-  <div class="modal" style="max-width:400px;">
-    <h2 id="csTitulo">Adicionar serviço</h2>
-    <div class="field"><label>Serviço</label><select id="cs-servico"></select></div>
-    <div class="field"><label>Valor mensal (R$)</label><input type="text" id="cs-valor" inputmode="decimal" placeholder="Ex: 1500,00"></div>
+  <div class="modal" style="max-width:460px;">
+    <h2 id="csTitulo">Serviços do cliente</h2>
+    <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Marque os serviços que este cliente contrata e escreva o valor mensal ao lado.</div>
+    <div id="csLista"></div>
+    <div id="csTotal" style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;padding:12px 0 2px;border-top:1px solid var(--line);margin-top:4px;"></div>
     <div class="modal-actions">
       <button class="cancel" id="csCancelBtn">Cancelar</button>
       <button class="save" id="csSaveBtn">Salvar</button>
@@ -3410,12 +3411,12 @@ function renderFicha(){
       <button class="addbtn sec" id="fichaEditar">✏️ Editar dados</button>
     </div>
     <div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div>
-    <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">+ Adicionar serviço</button></div>${servHtml}</div>
+    <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">Escolher serviços</button></div>${servHtml}</div>
     <div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div>`;
   document.getElementById('fichaVoltar').onclick = ()=>{ mostrarListaClientes(); atualizarTitulo(document.querySelector('.tabs .tab.active')); };
   document.getElementById('fichaEditar').onclick = ()=>openClienteModal(c);
-  document.getElementById('fichaAddServico').onclick = ()=>openClienteServicoModal(c, null);
-  box.querySelectorAll('[data-sv-editar]').forEach(b=>{ b.onclick = ()=>openClienteServicoModal(c, Number(b.dataset.svEditar)); });
+  document.getElementById('fichaAddServico').onclick = ()=>openClienteServicoModal(c);
+  box.querySelectorAll('[data-sv-editar]').forEach(b=>{ b.onclick = ()=>openClienteServicoModal(c); });
   box.querySelectorAll('[data-sv-excluir]').forEach(b=>{ b.onclick = async ()=>{
     const i = Number(b.dataset.svExcluir); const sv = (c.servicos||[])[i]; if(!sv) return;
     if(!confirm('Remover "'+nomeServico(sv)+'" desta ficha?')) return;
@@ -3481,28 +3482,42 @@ document.getElementById('clienteSaveBtn').onclick = async ()=>{
 
 /* ---------- Modal: serviço dentro da ficha ---------- */
 let csCliente = null, csIdx = null;
-function openClienteServicoModal(c, idx){
+function csAtualizarTotal(){
+  let t=0; document.querySelectorAll('#csLista .cs-row').forEach(r=>{ if(r.querySelector('input[type=checkbox]').checked){ const v=parseBRL(r.querySelector('.cs-val').value); if(v>=0) t+=v; } });
+  document.getElementById('csTotal').innerHTML = '<span>Total por mês</span><span>'+brl(t)+'</span>';
+}
+function openClienteServicoModal(c){
   if(!(data.servicos||[]).length){ alert('Primeiro cadastre os serviços da Vértice no botão "Serviços" da tela Clientes.'); return; }
-  csCliente = c; csIdx = idx;
-  const atual = idx!==null ? (c.servicos||[])[idx] : null;
-  document.getElementById('csTitulo').textContent = atual ? 'Editar serviço' : 'Adicionar serviço';
-  document.getElementById('cs-servico').innerHTML = data.servicos.map(x=>`<option value="${x.id}">${escapeHtml(x.nome)}</option>`).join('');
-  document.getElementById('cs-servico').value = atual ? atual.servicoId : data.servicos[0].id;
-  document.getElementById('cs-valor').value = atual && atual.valor!=null ? String(atual.valor).replace('.',',') : '';
+  csCliente = c;
+  const atuais = c.servicos||[];
+  const linhas = data.servicos.map(x=>({id:x.id, nome:x.nome}));
+  atuais.forEach(sv=>{ if(!linhas.some(l=>l.id===sv.servicoId)) linhas.push({id:sv.servicoId, nome:sv.nome||'Serviço'}); });
+  document.getElementById('csLista').innerHTML = linhas.map(l=>{
+    const at = atuais.find(sv=>sv.servicoId===l.id);
+    return `<div class="cs-row" data-id="${escapeHtml(l.id)}" data-nome="${escapeHtml(l.nome)}" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);">
+      <label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;font-size:14px;"><input type="checkbox" ${at?'checked':''} style="width:20px;height:20px;flex:none;accent-color:var(--gold);"><span>${escapeHtml(l.nome)}</span></label>
+      <input type="text" class="cs-val" inputmode="decimal" placeholder="R$ 0,00" ${at?'':'disabled'} value="${at&&at.valor!=null?String(at.valor).replace('.',','):''}" style="width:110px;flex:none;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:inherit;font-size:13.5px;background:var(--bg);color:var(--text);${at?'':'opacity:.45;'}">
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#csLista .cs-row').forEach(r=>{
+    const cb=r.querySelector('input[type=checkbox]'), v=r.querySelector('.cs-val');
+    cb.onchange = ()=>{ v.disabled=!cb.checked; v.style.opacity=cb.checked?'':'.45'; if(cb.checked) v.focus(); csAtualizarTotal(); };
+    v.oninput = csAtualizarTotal;
+  });
+  csAtualizarTotal();
   document.getElementById('overlayClienteServico').classList.add('open');
 }
 document.getElementById('csCancelBtn').onclick = ()=>document.getElementById('overlayClienteServico').classList.remove('open');
 document.getElementById('overlayClienteServico').onclick = e=>{ if(e.target.id==='overlayClienteServico') e.target.classList.remove('open'); };
 document.getElementById('csSaveBtn').onclick = async ()=>{
   const c = data.clientes.find(x=>x.id===(csCliente&&csCliente.id)); if(!c) return;
-  const servicoId = document.getElementById('cs-servico').value;
-  const cat = data.servicos.find(x=>x.id===servicoId); if(!cat) return;
-  const valor = parseBRL(document.getElementById('cs-valor').value);
-  if(!(valor>=0)){ alert('Escreve o valor mensal. Ex: 1500,00'); return; }
-  const lista = (c.servicos||[]).slice();
-  if(lista.some((sv,i)=>sv.servicoId===servicoId && i!==csIdx)){ alert('Esse serviço já está na ficha. Edite o valor dele.'); return; }
-  const item = {servicoId, nome:cat.nome, valor};
-  if(csIdx!==null) lista[csIdx] = item; else lista.push(item);
+  const lista = [];
+  for(const r of document.querySelectorAll('#csLista .cs-row')){
+    if(!r.querySelector('input[type=checkbox]').checked) continue;
+    const valor = parseBRL(r.querySelector('.cs-val').value);
+    if(!(valor>=0)){ alert('Escreva o valor de "'+r.dataset.nome+'". Ex: 1500,00'); return; }
+    lista.push({servicoId:r.dataset.id, nome:r.dataset.nome, valor});
+  }
   if(await salvarServicosCliente(c, lista)) document.getElementById('overlayClienteServico').classList.remove('open');
 };
 

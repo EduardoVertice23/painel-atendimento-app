@@ -100,6 +100,14 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 .camp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
 .camp-nome{font-weight:700;font-size:14.5px;}
 .camp-top .hi-sub{font-size:12px;color:var(--text-dim);margin-top:4px;}
+.conj-box{margin-top:10px;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;}
+.conj-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:4px;}
+.conj-head button,.conj-row button{font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;color:var(--text);}
+.conj-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);}
+.conj-row .nm{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;}
+.conj-row input{width:112px;flex:none;border:1px solid var(--line);border-radius:9px;padding:8px 9px;font-family:inherit;font-size:13.5px;background:var(--bg);color:var(--text);text-align:right;}
+@media (max-width:600px){.conj-row{flex-wrap:wrap;}.conj-row .nm{flex:1 1 100%;white-space:normal;}.conj-row input{flex:1;}}
+.conj-tot{display:flex;justify-content:space-between;font-weight:700;font-size:13.5px;padding:8px 0 0;border-top:1px solid var(--line);margin-top:4px;}
 .camp-met{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-top:10px;}
 .camp-met>div{background:var(--bg);border-radius:10px;padding:8px 10px;}
 .camp-met .l{font-size:11px;color:var(--text-dim);}
@@ -649,6 +657,14 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
     </div>
     <div class="field"><label>Data em que subiu</label><input type="date" id="camp-subiu"></div>
     <div class="modal-actions"><button class="cancel" id="campCancelBtn">Cancelar</button><button class="save" id="campSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayConjunto">
+  <div class="modal" style="max-width:400px;">
+    <h2 id="conjTitulo">Novo conjunto de anúncios</h2>
+    <div class="field"><label>Nome do conjunto de anúncios</label><input type="text" id="conj-nome" placeholder="Ex: Público frio - homens 25 a 40"></div>
+    <div class="modal-actions"><button class="cancel" id="conjCancelBtn">Cancelar</button><button class="save" id="conjSaveBtn">Salvar</button></div>
   </div>
 </div>
 
@@ -3469,10 +3485,22 @@ function verbaDoMes(c, mes){
   return ant ? {valor:Number(v[ant])||0, herdada:true} : null;
 }
 function campDados(k, mes){ return (k.meses||{})[mes] || {}; }
-function gastoDoMes(c, mes){ return (c.campanhas||[]).reduce((a,k)=>a+(Number(campDados(k,mes).gasto)||0),0); }
+function campGasto(k, mes){
+  const cj = k.conjuntos||[];
+  if(cj.length) return cj.reduce((a,j)=>a+(Number((j.gastos||{})[mes])||0),0);
+  return numOuNull(campDados(k,mes).gasto);
+}
+function gastoDoMes(c, mes){ return (c.campanhas||[]).reduce((a,k)=>a+(Number(campGasto(k,mes))||0),0); }
 function campId(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function fmtInt(x){ const n=numOuNull(x); return n===null ? '—' : n.toLocaleString('pt-BR'); }
 function fmtBrlOuTraco(x){ const n=numOuNull(x); return n===null ? '—' : brl(n); }
+function conjuntosHtml(k, mes){
+  const cj = k.conjuntos||[];
+  const mnome = MESES_PT[Number(mes.slice(5))-1].toLowerCase();
+  const linhas = cj.map(j=>{ const g=(j.gastos||{})[mes]; return `<div class="conj-row"><span class="nm" title="${escapeHtml(j.nome||'')}">${escapeHtml(j.nome||'Conjunto')}</span><input type="text" inputmode="decimal" placeholder="R$ 0,00" data-conj-gasto="${k.id}|${j.id}" value="${g!=null?String(g).replace('.',','):''}" aria-label="Gasto de ${mnome}"><button data-conj-edit="${k.id}|${j.id}" title="Renomear">✏️</button><button data-conj-del="${k.id}|${j.id}" title="Excluir">🗑</button></div>`; }).join('');
+  const tot = cj.reduce((a,j)=>a+(Number((j.gastos||{})[mes])||0),0);
+  return `<div class="conj-box"><div class="conj-head"><span>Conjuntos de anúncios · gasto de ${mnome}</span><button data-conj-novo="${k.id}">+ Conjunto de anúncios</button></div>${linhas||'<div class="hi-sub" style="margin:6px 0 2px;">Nenhum conjunto ainda. Adicione e digite o gasto de cada um; o total da campanha soma sozinho.</div>'}${cj.length?`<div class="conj-tot"><span>Total da campanha</span><span>${brl(tot)}</span></div>`:''}</div>`;
+}
 function campanhasHtml(c){
   const mes = campMesSel;
   const vb = verbaDoMes(c, mes);
@@ -3487,7 +3515,7 @@ function campanhasHtml(c){
     </div>${vb&&vb.valor>0?`<div class="verba-bar"><i style="width:${pct}%"></i></div>`:''}`;
   const cards = camps.length ? camps.map(k=>{
     const d = campDados(k, mes);
-    const gk = numOuNull(d.gasto), lk = numOuNull(d.leads), vv = numOuNull(d.valorVendido);
+    const gasK = campGasto(k, mes), gk = numOuNull(gasK), lk = numOuNull(d.leads), vv = numOuNull(d.valorVendido);
     const cpl = (gk>0 && lk>0) ? brl(gk/lk) : '—';
     const roas = (gk>0 && vv>0) ? (vv/gk).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'×' : '—';
     return `<div class="camp-card">
@@ -3496,8 +3524,9 @@ function campanhasHtml(c){
           <div class="hi-sub"><span class="chip-status" style="margin-left:0;">${CAMP_PLAT[k.plataforma]||'—'}</span> <span class="chip-status ${CAMP_STATUS_CLS[k.status]||''}">${CAMP_STATUS_TXT[k.status]||'Ativa'}</span>${k.subiuEm?' · Subiu em '+dataBR(k.subiuEm):''}</div></div>
         <div class="hi-actions"><button data-camp-res="${k.id}">📊 Resultados de ${MESES_PT[Number(mes.slice(5))-1].toLowerCase()}</button><button data-camp-edit="${k.id}" title="Editar">✏️</button><button data-camp-del="${k.id}" title="Excluir">🗑</button></div>
       </div>
+      ${conjuntosHtml(k, mes)}
       <div class="camp-met">
-        <div><div class="l">Gasto</div><div class="v">${fmtBrlOuTraco(d.gasto)}</div></div>
+        <div><div class="l">${(k.conjuntos||[]).length?'Gasto (soma dos conjuntos)':'Gasto'}</div><div class="v">${fmtBrlOuTraco(gasK)}</div></div>
         <div><div class="l">Leads (contatos)</div><div class="v">${fmtInt(d.leads)}</div></div>
         <div><div class="l">CPL (custo por lead)</div><div class="v">${cpl}</div></div>
         <div><div class="l">Vendas</div><div class="v">${fmtInt(d.vendas)}</div></div>
@@ -3522,6 +3551,22 @@ function bindCampanhas(c, box){
     if(!confirm('Excluir a campanha "'+(k.nome||'')+'" e todos os números dela?')) return;
     await salvarCampanhas(c, (c.campanhas||[]).filter(x=>x.id!==k.id));
   }; });
+  box.querySelectorAll('[data-conj-novo]').forEach(b=>{ b.onclick = ()=>openConjuntoModal(c, b.dataset.conjNovo, null); });
+  box.querySelectorAll('[data-conj-edit]').forEach(b=>{ b.onclick = ()=>{ const [kid,cid]=b.dataset.conjEdit.split('|'); openConjuntoModal(c, kid, cid); }; });
+  box.querySelectorAll('[data-conj-del]').forEach(b=>{ b.onclick = async ()=>{
+    const [kid,cid]=b.dataset.conjDel.split('|');
+    const k=(c.campanhas||[]).find(x=>x.id===kid); const j=k&&(k.conjuntos||[]).find(x=>x.id===cid); if(!j) return;
+    if(!confirm('Excluir o conjunto "'+(j.nome||'')+'" e os gastos dele?')) return;
+    await salvarCampanhas(c, (c.campanhas||[]).map(x=>x.id!==kid?x:{...x, conjuntos:(x.conjuntos||[]).filter(y=>y.id!==cid)}));
+  }; });
+  box.querySelectorAll('[data-conj-gasto]').forEach(inp=>{
+    inp.onkeydown = e=>{ if(e.key==='Enter') inp.blur(); };
+    inp.onchange = async ()=>{
+      const [kid,cid]=inp.dataset.conjGasto.split('|'); const txt=inp.value.trim(); let n=null;
+      if(txt){ n=parseBRL(txt); if(!(n>=0)){ alert('Valor inválido. Ex: 250,00'); renderFicha(); return; } }
+      await salvarCampanhas(c, (c.campanhas||[]).map(x=>x.id!==kid?x:{...x, conjuntos:(x.conjuntos||[]).map(j=>{ if(j.id!==cid) return j; const g={...(j.gastos||{})}; if(n===null) delete g[campMesSel]; else g[campMesSel]=n; return {...j, gastos:g}; })}));
+    };
+  });
 }
 async function salvarCampanhas(c, lista){
   try{ await setDoc(doc(db,'clientes_vertice',c.id), {campanhas:lista}, {merge:true}); return true; }
@@ -3566,13 +3611,39 @@ document.getElementById('campSaveBtn').onclick = async ()=>{
   if(i>=0) lista[i] = {...lista[i], ...base}; else lista.push({id:campId(), ...base, meses:{}});
   if(await salvarCampanhas(c, lista)) document.getElementById('overlayCampanha').classList.remove('open');
 };
+let conjCliente = null, conjCampId = null, conjEditId = null;
+function openConjuntoModal(c, kid, cid){
+  conjCliente = c; conjCampId = kid; conjEditId = cid;
+  const k = (c.campanhas||[]).find(x=>x.id===kid); const j = cid && k ? (k.conjuntos||[]).find(x=>x.id===cid) : null;
+  document.getElementById('conjTitulo').textContent = j ? 'Renomear conjunto de anúncios' : 'Novo conjunto de anúncios';
+  document.getElementById('conj-nome').value = j ? (j.nome||'') : '';
+  document.getElementById('overlayConjunto').classList.add('open');
+  document.getElementById('conj-nome').focus();
+}
+document.getElementById('conjCancelBtn').onclick = ()=>document.getElementById('overlayConjunto').classList.remove('open');
+document.getElementById('overlayConjunto').onclick = e=>{ if(e.target.id==='overlayConjunto') e.target.classList.remove('open'); };
+document.getElementById('conjSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(conjCliente&&conjCliente.id)); if(!c) return;
+  const nome = document.getElementById('conj-nome').value.trim();
+  if(!nome){ alert('Dê um nome para o conjunto de anúncios.'); return; }
+  const lista = (c.campanhas||[]).map(k=>{
+    if(k.id!==conjCampId) return k;
+    const cj = (k.conjuntos||[]).slice();
+    const i = conjEditId ? cj.findIndex(x=>x.id===conjEditId) : -1;
+    if(i>=0) cj[i] = {...cj[i], nome}; else cj.push({id:campId(), nome, gastos:{}});
+    return {...k, conjuntos:cj};
+  });
+  if(await salvarCampanhas(c, lista)) document.getElementById('overlayConjunto').classList.remove('open');
+};
 function openCampResModal(c, id){
   crCliente = c; crCampId = id;
   const k = (c.campanhas||[]).find(x=>x.id===id); if(!k) return;
   const d = campDados(k, campMesSel);
   document.getElementById('campResTitulo').textContent = (k.nome||'Campanha')+' · '+mesLabel(campMesSel);
   const set = (el,v,money)=>{ document.getElementById(el).value = (v===undefined||v===null||v==='') ? '' : String(v).replace('.',','); };
-  set('cr-gasto',d.gasto); set('cr-leads',d.leads); set('cr-vendas',d.vendas); set('cr-vendido',d.valorVendido); set('cr-cliques',d.cliques); set('cr-alcance',d.alcance);
+  const temConj = (k.conjuntos||[]).length>0;
+  const gEl = document.getElementById('cr-gasto'); gEl.disabled = temConj; gEl.placeholder = temConj ? 'soma dos conjuntos' : '0,00';
+  set('cr-gasto', temConj ? '' : d.gasto); set('cr-leads',d.leads); set('cr-vendas',d.vendas); set('cr-vendido',d.valorVendido); set('cr-cliques',d.cliques); set('cr-alcance',d.alcance);
   document.getElementById('overlayCampRes').classList.add('open');
 }
 document.getElementById('crCancelBtn').onclick = ()=>document.getElementById('overlayCampRes').classList.remove('open');
@@ -3583,6 +3654,7 @@ document.getElementById('crSaveBtn').onclick = async ()=>{
   const out = {};
   const campos = [['cr-gasto','gasto',true],['cr-leads','leads',false],['cr-vendas','vendas',false],['cr-vendido','valorVendido',true],['cr-cliques','cliques',false],['cr-alcance','alcance',false]];
   for(const [el,key,money] of campos){
+    if(document.getElementById(el).disabled) continue;
     const txt = document.getElementById(el).value.trim();
     if(!txt) continue;
     const n = money ? parseBRL(txt) : Number(txt.replace(/\./g,'').replace(',','.'));
@@ -3598,6 +3670,7 @@ function renderFicha(){
   const c = (data.clientes||[]).find(x=>x.id===fichaId);
   if(!c){ mostrarListaClientes(); if(document.getElementById('view-clientes').classList.contains('active')) atualizarTitulo(document.querySelector('.tabs .tab.active')); return; }
   if(campFichaId!==c.id || !campMesSel){ campFichaId = c.id; campMesSel = mesKey(new Date()); }
+  const af = document.activeElement; const afKey = af && af.dataset ? af.dataset.conjGasto : null; const afVal = afKey ? af.value : null;
   const nome = c.nome||'(sem nome)';
   const st = CLIENTE_STATUS.find(x=>x.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
   if(document.getElementById('view-clientes').classList.contains('active')){
@@ -3648,6 +3721,7 @@ function renderFicha(){
   }; });
   bindPagamentoActions(box);
   bindCampanhas(c, box);
+  if(afKey){ const novo = box.querySelector('[data-conj-gasto="'+afKey+'"]'); if(novo){ novo.value = afVal; novo.focus(); } }
 }
 async function salvarServicosCliente(c, novo){
   const tot = novo.reduce((a,sv)=>a+(Number(sv.valor)||0),0);

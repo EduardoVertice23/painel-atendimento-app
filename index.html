@@ -685,6 +685,15 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
   </div>
 </div>
 
+<div class="overlay" id="overlayMeta">
+  <div class="modal" style="max-width:520px;">
+    <h2>Colar dados da Meta</h2>
+    <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Cole aqui o bloco que o Claude gerou com os dados do Gerenciador de Anúncios. O painel cria as campanhas novas e atualiza as que já existem (gasto, leads, cliques e alcance). Vendas e valor vendido que você digitou não são mexidos. Só entram campanhas criadas a partir do início do contrato.</div>
+    <div class="field"><label>Bloco de dados</label><textarea id="meta-texto" rows="8" placeholder="Cole aqui..." style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:monospace;font-size:12px;background:var(--bg);color:var(--text);"></textarea></div>
+    <div class="modal-actions"><button class="cancel" id="metaCancelBtn">Cancelar</button><button class="save" id="metaSaveBtn">Importar</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="overlayConjunto">
   <div class="modal" style="max-width:400px;">
     <h2 id="conjTitulo">Novo conjunto de anúncios</h2>
@@ -3652,7 +3661,7 @@ function campanhasHtml(c){
         <div><div class="l">Alcance</div><div class="v">${fmtInt(d.alcance)}</div></div>
       </div></div>`;
   }).join('') : `<div class="hoje-empty">Nenhuma campanha ainda. Use "+ Nova campanha".</div>`;
-  return `<div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><h3 style="margin:0;">Campanhas e verba</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="addbtn sec" id="verbaEditar">Editar verba</button><button class="addbtn sec" id="campNova">+ Nova campanha</button></div></div>
+  return `<div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><h3 style="margin:0;">Campanhas e verba</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="addbtn sec" id="verbaEditar">Editar verba</button><button class="addbtn sec" id="metaColar">📥 Colar dados da Meta</button><button class="addbtn sec" id="campNova">+ Nova campanha</button></div></div>
     <div class="mes-nav"><button data-cmes="-1" aria-label="Mês anterior">‹</button><span>${mesLabel(mes)}</span><button data-cmes="1" aria-label="Próximo mês">›</button></div>
     ${verba}${cards}</div>`;
 }
@@ -3660,6 +3669,7 @@ function bindCampanhas(c, box){
   box.querySelectorAll('[data-cmes]').forEach(b=>{ b.onclick = ()=>{ campMesSel = mesDelta(campMesSel, Number(b.dataset.cmes)); renderFicha(); }; });
   const v = box.querySelector('#verbaEditar'); if(v) v.onclick = ()=>openVerbaModal(c);
   const n = box.querySelector('#campNova'); if(n) n.onclick = ()=>openCampanhaModal(c, null);
+  const mc = box.querySelector('#metaColar'); if(mc) mc.onclick = ()=>openMetaModal(c);
   box.querySelectorAll('[data-camp-res]').forEach(b=>{ b.onclick = ()=>openCampResModal(c, b.dataset.campRes); });
   box.querySelectorAll('[data-camp-edit]').forEach(b=>{ b.onclick = ()=>openCampanhaModal(c, b.dataset.campEdit); });
   box.querySelectorAll('[data-camp-del]').forEach(b=>{ b.onclick = async ()=>{
@@ -3730,6 +3740,66 @@ document.getElementById('campSaveBtn').onclick = async ()=>{
   const i = campEditId ? lista.findIndex(x=>x.id===campEditId) : -1;
   if(i>=0) lista[i] = {...lista[i], ...base}; else lista.push({id:campId(), ...base, meses:{}});
   if(await salvarCampanhas(c, lista)) document.getElementById('overlayCampanha').classList.remove('open');
+};
+/* ---------- Colar dados da Meta (importação) ---------- */
+let metaCliente = null;
+function openMetaModal(c){ metaCliente = c; document.getElementById('meta-texto').value=''; document.getElementById('overlayMeta').classList.add('open'); document.getElementById('meta-texto').focus(); }
+document.getElementById('metaCancelBtn').onclick = ()=>document.getElementById('overlayMeta').classList.remove('open');
+document.getElementById('overlayMeta').onclick = e=>{ if(e.target.id==='overlayMeta') e.target.classList.remove('open'); };
+function normNome(t){ return String(t||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+function statusDaMeta(st){
+  const x = String(st||'').toUpperCase();
+  if(x.indexOf('PAUSED')>=0) return 'pausada';
+  if(x==='ARCHIVED' || x==='DELETED') return 'encerrada';
+  return 'ativa';
+}
+function numMeta(v){ if(v===undefined||v===null||v==='') return undefined; const n=Number(v); return isNaN(n)?undefined:n; }
+/* junta o bloco da Meta com o que já existe na ficha. Não grava: devolve a lista nova e o resumo. */
+function mesclarMeta(c, payload){
+  const inicio = c.inicio || '';
+  const inicioMes = inicio ? inicio.slice(0,7) : '';
+  const lista = (c.campanhas||[]).map(k=>({...k, meses:{...(k.meses||{})}, conjuntos:(k.conjuntos||[]).map(j=>({...j, gastos:{...(j.gastos||{})}}))}));
+  const res = {novas:0, atualizadas:0, ignoradas:0, conjuntos:0};
+  (payload.campanhas||[]).forEach(pc=>{
+    const criada = String(pc.criadaEm||'').slice(0,10);
+    if(inicio && criada && criada < inicio){ res.ignoradas++; return; }
+    let k = lista.find(x=>pc.metaId && x.metaId===String(pc.metaId)) || lista.find(x=>normNome(x.nome)===normNome(pc.nome));
+    const novo = !k;
+    if(novo){ k = {id:campId(), nome:pc.nome||'Campanha', plataforma:'meta', status:'ativa', subiuEm:criada, meses:{}, conjuntos:[]}; lista.push(k); }
+    if(pc.metaId) k.metaId = String(pc.metaId);
+    k.plataforma = 'meta';
+    if(pc.status) k.status = statusDaMeta(pc.status);
+    if(criada && !k.subiuEm) k.subiuEm = criada;
+    Object.entries(pc.meses||{}).forEach(([mes,d])=>{
+      if(inicioMes && mes < inicioMes) return;
+      const campos = {};
+      ['gasto','leads','cliques','alcance'].forEach(f=>{ const n=numMeta(d[f]); if(n!==undefined) campos[f]=n; });
+      k.meses[mes] = {...(k.meses[mes]||{}), ...campos};
+    });
+    (pc.conjuntos||[]).forEach(pj=>{
+      let j = (k.conjuntos||[]).find(x=>pj.metaId && x.metaId===String(pj.metaId)) || (k.conjuntos||[]).find(x=>normNome(x.nome)===normNome(pj.nome));
+      if(!j){ j = {id:campId(), nome:pj.nome||'Conjunto', gastos:{}}; k.conjuntos = (k.conjuntos||[]).concat([j]); k.conjuntos = k.conjuntos; }
+      if(pj.metaId) j.metaId = String(pj.metaId);
+      Object.entries(pj.gastos||{}).forEach(([mes,g])=>{ if(inicioMes && mes < inicioMes) return; const n=numMeta(g); if(n!==undefined) j.gastos[mes]=n; });
+      res.conjuntos++;
+    });
+    if(novo) res.novas++; else res.atualizadas++;
+  });
+  return {lista, res};
+}
+document.getElementById('metaSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(metaCliente&&metaCliente.id)); if(!c) return;
+  let txt = document.getElementById('meta-texto').value.trim();
+  const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+  if(a<0 || b<=a){ alert('Não achei o bloco de dados. Cole tudo que o Claude mandou, do começo ao fim.'); return; }
+  let payload;
+  try{ payload = JSON.parse(txt.slice(a,b+1)); }catch(e){ alert('O texto colado está incompleto ou cortado. Copie o bloco inteiro de novo.'); return; }
+  if(!payload || payload.fonte!=='meta' || !Array.isArray(payload.campanhas)){ alert('Esse bloco não parece ser da Meta (faltou "fonte" ou "campanhas").'); return; }
+  const {lista, res} = mesclarMeta(c, payload);
+  if(!res.novas && !res.atualizadas){ alert('Nenhuma campanha para importar.'+(res.ignoradas?' '+res.ignoradas+' foram ignoradas por terem sido criadas antes do início do contrato.':'')); return; }
+  const msg = 'Importar para "'+(c.nome||'cliente')+'"?\n\n'+res.novas+' campanha(s) nova(s)\n'+res.atualizadas+' campanha(s) a atualizar\n'+res.conjuntos+' conjunto(s) de anúncios'+(res.ignoradas?'\n'+res.ignoradas+' ignorada(s) (criadas antes do início do contrato)':'');
+  if(!confirm(msg)) return;
+  if(await salvarCampanhas(c, lista)){ document.getElementById('overlayMeta').classList.remove('open'); }
 };
 let conjCliente = null, conjCampId = null, conjEditId = null;
 function openConjuntoModal(c, kid, cid){

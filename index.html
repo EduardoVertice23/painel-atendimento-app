@@ -117,6 +117,21 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 .vd-hrow .tr{flex:1;background:var(--bg);border-radius:99px;height:14px;overflow:hidden;}
 .vd-hrow .tr i{display:block;height:100%;background:var(--gold);border-radius:99px;}
 .vd-hrow .vl{width:96px;flex:none;text-align:right;font-weight:600;font-size:12.5px;}
+.tl{position:relative;margin-top:6px;}
+.tl-item{display:flex;gap:12px;padding:8px 0;position:relative;}
+.tl-item::before{content:"";position:absolute;left:5px;top:22px;bottom:-8px;width:2px;background:var(--line);}
+.tl-item:last-child::before{display:none;}
+.tl-dot{width:12px;height:12px;border-radius:50%;background:var(--gold);flex:none;margin-top:4px;}
+.tl-dot.n{background:var(--ink);}
+.tl-dot.pg{background:var(--ok);}
+.tl-body{flex:1;min-width:0;font-size:13.5px;}
+.tl-data{font-size:11.5px;color:var(--text-dim);}
+.tl-add{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px;}
+.tl-add input{border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:inherit;font-size:13.5px;background:var(--bg);color:var(--text);}
+.tl-add input[type=text]{flex:1;min-width:180px;}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.sec-head h3{margin:0;}
+textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:13.5px;background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box;}
 .cli-topo{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:18px;}
 .cli-card[data-abrir]{cursor:pointer;}
 .cli-card[data-abrir]:hover{border-color:var(--gold);}
@@ -693,6 +708,42 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
   </div>
 </div>
 
+<div class="overlay" id="overlayRelatorio">
+  <div class="modal" style="max-width:480px;">
+    <h2 id="relTitulo">Novo relatório</h2>
+    <div class="field-row">
+      <div class="field"><label>Período (mês)</label><input type="month" id="rel-mes"></div>
+      <div class="field"><label>Enviado em <span>(vazio = ainda não enviado)</span></label><input type="date" id="rel-enviado"></div>
+    </div>
+    <div class="field"><label>Link do relatório no Drive</label><input type="text" id="rel-link" placeholder="https://drive.google.com/..."></div>
+    <div class="field"><label>Observação curta</label><input type="text" id="rel-obs" placeholder="Ex: enviado por WhatsApp"></div>
+    <div class="field"><label>Texto de análise (sai no PDF)</label><textarea class="rel-ta" id="rel-analise" placeholder="Escreva 3 ou 4 frases sobre os resultados do mês. Dica: use o botão abaixo pra copiar os dados e pedir pra IA escrever."></textarea></div>
+    <div style="margin:-4px 0 10px;"><button class="addbtn sec" id="relCopiarIA" type="button">Copiar dados do mês (pra IA)</button></div>
+    <div class="modal-actions"><button class="cancel" id="relCancelBtn">Cancelar</button><button class="save" id="relSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayContrato">
+  <div class="modal" style="max-width:440px;">
+    <h2>Contrato</h2>
+    <div class="field"><label>Link do contrato no Drive</label><input type="text" id="ct-link" placeholder="https://drive.google.com/..."></div>
+    <div class="field-row">
+      <div class="field"><label>Início</label><input type="date" id="ct-inicio"></div>
+      <div class="field"><label>Término</label><input type="date" id="ct-fim"></div>
+    </div>
+    <div class="field"><label>Renovação</label><select id="ct-renova"><option value="">Não informado</option><option value="sim">Renova automaticamente</option><option value="nao">Precisa renovar</option></select></div>
+    <div class="modal-actions"><button class="cancel" id="ctCancelBtn">Cancelar</button><button class="save" id="ctSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayBrfLink">
+  <div class="modal" style="max-width:420px;">
+    <h2>Link do formulário de briefing</h2>
+    <div class="field"><label>Endereço do formulário deste cliente</label><input type="text" id="bl-link" placeholder="https://..."></div>
+    <div class="modal-actions"><button class="cancel" id="blCancelBtn">Cancelar</button><button class="save" id="blSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="overlayBuyerView">
   <div class="modal" style="max-width:420px;">
     <div id="buyerViewContent"></div>
@@ -1237,6 +1288,7 @@ function startListeners(){
 
   onSnapshot(briefingsCol, snap=>{
     data.briefings = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    if(typeof fichaId!=='undefined' && fichaId && typeof renderFicha==='function') renderFicha();
     renderBriefings();
   }, err=>{ console.error(err); data.briefings = null; renderBriefings(); });
 
@@ -3410,13 +3462,24 @@ function renderDashVertice(){
   const tarAtras = (data.tarefas||[]).filter(t=>t.lado==='vertice' && t.status!=='concluida' && t.vencimento && t.vencimento.slice(0,10)<hojeStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
   const campPaus = [];
   clientes.filter(c=>c.status==='ativo').forEach(c=>(c.campanhas||[]).forEach(k=>{ if(k.status==='pausada') campPaus.push({c,k}); }));
-  const total = pagAtras.length + tarAtras.length + campPaus.length;
+  const relAtras = [], ctFim = [];
+  clientes.filter(c=>c.status==='ativo').forEach(c=>{
+    const datas = (c.relatorios||[]).map(r=>r.enviadoEm).filter(Boolean).sort();
+    const ref = datas.length ? datas[datas.length-1] : (c.inicio||'');
+    if(ref){ const dias = -diasAte(ref); if(dias>30) relAtras.push({c, dias, nunca:!datas.length, ref}); }
+    const ct = c.contrato||{};
+    if(ct.fim && ct.renova!=='sim'){ const d = diasAte(ct.fim); if(d<=30) ctFim.push({c, d, fim:ct.fim}); }
+  });
+  const total = pagAtras.length + tarAtras.length + campPaus.length + relAtras.length + ctFim.length;
   const el = document.getElementById('vdAtencao');
   const pagHtml = pagAtras.map(({c,mes,p})=>{ const t=pagamentoTxt(p); return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'Cliente')} · ${brl(p.valor)}</div><div class="hi-sub">${mesLabel(mes)} · venceu em ${dataBR(p.vencimento)} <span class="chip-pag ${t.cls}" style="margin-left:6px;">${t.txt}</span></div></div><div class="hi-actions"><button data-pagar="${c.id}|${mes}">✓ Marcar como pago</button></div></div>`; }).join('');
   const tarHtml = tarAtras.map(t=>tarefaItemHtml(t,true,false)).join('');
+  const abrirBtn = id => `<div class="hi-actions"><button data-abrir-cli="${id}">Abrir ficha</button></div>`;
+  const relHtml = relAtras.map(({c,dias,nunca,ref})=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'Cliente')}</div><div class="hi-sub">${nunca?'Nenhum relatório enviado · cliente desde '+dataBR(ref):'Sem enviar relatório há '+dias+' dias (último em '+dataBR(ref)+')'}</div></div>${abrirBtn(c.id)}</div>`).join('');
+  const ctHtml = ctFim.sort((a,b)=>a.d-b.d).map(({c,d,fim})=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'Cliente')}</div><div class="hi-sub">${d<0?'Contrato venceu há '+(-d)+' dia'+(-d===1?'':'s'):'Contrato termina em '+d+' dia'+(d===1?'':'s')} (${dataBR(fim)})</div></div>${abrirBtn(c.id)}</div>`).join('');
   const campHtml = campPaus.map(({c,k})=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(k.nome||'Campanha')} · ${escapeHtml(c.nome||'Cliente')}</div><div class="hi-sub">${CAMP_PLAT[k.plataforma]||''} · está pausada</div></div><div class="hi-actions"><button data-abrir-cli="${c.id}">Abrir ficha</button></div></div>`).join('');
   el.innerHTML = `<h3>Precisa de atenção <span class="cnt">${total||''}</span></h3>`
-    + (total ? (pagHtml?`<div class="hi-sub" style="margin:6px 0 2px;font-weight:700;font-size:12.5px;">Pagamentos atrasados</div>${pagHtml}`:'') + (tarHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Tarefas da Vértice atrasadas</div>${tarHtml}`:'') + (campHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Campanhas pausadas</div>${campHtml}`:'')
+    + (total ? (pagHtml?`<div class="hi-sub" style="margin:6px 0 2px;font-weight:700;font-size:12.5px;">Pagamentos atrasados</div>${pagHtml}`:'') + (tarHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Tarefas da Vértice atrasadas</div>${tarHtml}`:'') + (campHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Campanhas pausadas</div>${campHtml}`:'') + (relHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Relatórios atrasados</div>${relHtml}`:'') + (ctHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Contratos perto do fim</div>${ctHtml}`:'')
       : '<div class="hoje-empty">Tudo em dia 🎉</div>');
   bindPagamentoActions(el);
   bindTarefaActions(el, 'vertice');
@@ -3505,9 +3568,9 @@ function metaCalc(c, mes){
   return {modo, t, gMeta, midia, impVerba, impGasto};
 }
 function campDados(k, mes){ return (k.meses||{})[mes] || {}; }
+function temConjMes(k, mes){ return (k.conjuntos||[]).some(j=>(j.gastos||{})[mes]!=null); }
 function campGasto(k, mes){
-  const cj = k.conjuntos||[];
-  if(cj.length) return cj.reduce((a,j)=>a+(Number((j.gastos||{})[mes])||0),0);
+  if(temConjMes(k, mes)) return (k.conjuntos||[]).reduce((a,j)=>a+(Number((j.gastos||{})[mes])||0),0);
   return numOuNull(campDados(k,mes).gasto);
 }
 function gastoDoMes(c, mes){ return (c.campanhas||[]).reduce((a,k)=>a+(Number(campGasto(k,mes))||0),0); }
@@ -3552,7 +3615,7 @@ function campanhasHtml(c){
       </div>
       ${conjuntosHtml(k, mes)}
       <div class="camp-met">
-        <div><div class="l">${(k.conjuntos||[]).length?'Gasto (soma dos conjuntos)':'Gasto'}</div><div class="v">${fmtBrlOuTraco(gasK)}</div></div>
+        <div><div class="l">${temConjMes(k,mes)?'Gasto (soma dos conjuntos)':'Gasto'}</div><div class="v">${fmtBrlOuTraco(gasK)}</div></div>
         <div><div class="l">Leads (contatos)</div><div class="v">${fmtInt(d.leads)}</div></div>
         <div><div class="l">CPL (custo por lead)</div><div class="v">${cpl}</div></div>
         <div><div class="l">Vendas</div><div class="v">${fmtInt(d.vendas)}</div></div>
@@ -3671,7 +3734,7 @@ function openCampResModal(c, id){
   const d = campDados(k, campMesSel);
   document.getElementById('campResTitulo').textContent = (k.nome||'Campanha')+' · '+mesLabel(campMesSel);
   const set = (el,v,money)=>{ document.getElementById(el).value = (v===undefined||v===null||v==='') ? '' : String(v).replace('.',','); };
-  const temConj = (k.conjuntos||[]).length>0;
+  const temConj = temConjMes(k, campMesSel);
   const gEl = document.getElementById('cr-gasto'); gEl.disabled = temConj; gEl.placeholder = temConj ? 'soma dos conjuntos' : '0,00';
   set('cr-gasto', temConj ? '' : d.gasto); set('cr-leads',d.leads); set('cr-vendas',d.vendas); set('cr-vendido',d.valorVendido); set('cr-cliques',d.cliques); set('cr-alcance',d.alcance);
   document.getElementById('overlayCampRes').classList.add('open');
@@ -3693,6 +3756,264 @@ document.getElementById('crSaveBtn').onclick = async ()=>{
   }
   lista[i] = {...lista[i], meses:{...(lista[i].meses||{}), [campMesSel]: out}};
   if(await salvarCampanhas(c, lista)) document.getElementById('overlayCampRes').classList.remove('open');
+};
+
+/* ===== ETAPA 4: relatórios, contrato, briefing e linha do tempo ===== */
+let tlTudo = false;
+function ehUrl(u){ return /^https?:\/\//i.test(String(u||'').trim()); }
+function linkHtml(u, txt){ return ehUrl(u) ? `<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer" style="color:var(--ink);font-weight:600;">${escapeHtml(txt)}</a>` : ''; }
+function dataLocalDeIso(iso){ const d = new Date(iso); return isNaN(d) ? '' : localDateStr(d); }
+function normNome(t){ return String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim(); }
+
+/* resumo do mês (soma das campanhas) */
+function somaCampo(c, mes, campo){
+  let t=0, tem=false;
+  (c.campanhas||[]).forEach(k=>{ const v=numOuNull(campDados(k,mes)[campo]); if(v!==null){ t+=v; tem=true; } });
+  return tem ? t : null;
+}
+function resumoMes(c, mes){
+  const gasto = gastoDoMes(c, mes);
+  const leads = somaCampo(c,mes,'leads'), vendas = somaCampo(c,mes,'vendas'), vendido = somaCampo(c,mes,'valorVendido');
+  const cliques = somaCampo(c,mes,'cliques'), alcance = somaCampo(c,mes,'alcance');
+  const vb = verbaDoMes(c, mes); const mc = metaCalc(c, mes);
+  return { gasto, leads, vendas, vendido, cliques, alcance,
+    cpl:(gasto>0 && leads>0) ? gasto/leads : null,
+    roas:(gasto>0 && vendido>0) ? vendido/gasto : null,
+    verba: vb ? vb.valor : null,
+    midia: mc.modo && vb ? mc.midia : null,
+    imposto: mc.modo && vb ? mc.impVerba : null,
+    modo: mc.modo };
+}
+const fN = x => x===null||x===undefined ? '—' : Number(x).toLocaleString('pt-BR');
+const fR = x => x===null||x===undefined ? '—' : brl(x);
+const fX = x => x===null||x===undefined ? '—' : x.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'x';
+function linhasResumo(r){
+  return [`Verba do mês: ${fR(r.verba)}`, r.modo?`Foi pra anúncios: ${fR(r.midia)} | Imposto da Meta: ${fR(r.imposto)}`:null, `Gasto em anúncios: ${fR(r.gasto)}`, `Leads (contatos gerados): ${fN(r.leads)}`, `CPL (custo por lead): ${fR(r.cpl)}`, `Vendas: ${fN(r.vendas)}`, `Valor vendido: ${fR(r.vendido)}`, `ROAS (retorno sobre o gasto): ${fX(r.roas)}`, `Cliques: ${fN(r.cliques)}`, `Alcance: ${fN(r.alcance)}`].filter(Boolean);
+}
+function textoParaIA(c, mes){
+  const ant = mesDelta(mes,-1);
+  return `Escreva uma análise curta (3 a 4 frases, em português, tom profissional e direto, sem exageros) dos resultados dos anúncios do cliente ${c.nome||''} em ${mesLabel(mes)}. O texto será enviado ao cliente por WhatsApp. Use somente os números abaixo e compare com o mês anterior quando houver dados.\n\n${mesLabel(mes).toUpperCase()}\n${linhasResumo(resumoMes(c,mes)).join('\n')}\n\n${mesLabel(ant).toUpperCase()} (mês anterior)\n${linhasResumo(resumoMes(c,ant)).join('\n')}`;
+}
+
+/* PDF */
+let jsPdfProm = null;
+function carregarJsPdf(){
+  if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if(jsPdfProm) return jsPdfProm;
+  jsPdfProm = new Promise((res, rej)=>{
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+    sc.onload = ()=> window.jspdf && window.jspdf.jsPDF ? res(window.jspdf.jsPDF) : rej(new Error('jsPDF'));
+    sc.onerror = ()=>{ jsPdfProm = null; rej(new Error('jsPDF')); };
+    document.head.appendChild(sc);
+  });
+  return jsPdfProm;
+}
+async function montarPdf(c, rel){
+  const JsPDF = await carregarJsPdf();
+  const pdf = new JsPDF({unit:'mm', format:'a4'});
+  const r = resumoMes(c, rel.mes);
+  const W = 210, M = 16;
+  pdf.setFillColor(2,21,53); pdf.rect(0,0,W,36,'F');
+  pdf.setFillColor(216,136,32); pdf.rect(0,36,W,1.6,'F');
+  pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(22); pdf.text('VÉRTICE', M, 18);
+  pdf.setTextColor(216,136,32); pdf.setFontSize(9); pdf.text('MARKETING DIGITAL', M, 25);
+  pdf.setTextColor(255,255,255); pdf.setFont('helvetica','normal'); pdf.setFontSize(11); pdf.text('Relatório de resultados', W-M, 20, {align:'right'});
+  pdf.setTextColor(2,21,53); pdf.setFont('helvetica','bold'); pdf.setFontSize(20); pdf.text(c.nome||'Cliente', M, 54);
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(12); pdf.setTextColor(90,100,120); pdf.text('Período: '+mesLabel(rel.mes), M, 62);
+  let y = 76;
+  const secao = (t)=>{ pdf.setTextColor(2,21,53); pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.text(t, M, y); pdf.setDrawColor(216,136,32); pdf.setLineWidth(0.8); pdf.line(M, y+2, M+22, y+2); y += 10; };
+  const caixas = (itens)=>{
+    const cols = 4, gap = 4, bw = (W-2*M-gap*(cols-1))/cols, bh = 22;
+    itens.forEach((it,i)=>{
+      const col = i%cols, lin = Math.floor(i/cols);
+      const x = M + col*(bw+gap), yy = y + lin*(bh+gap);
+      pdf.setFillColor(244,246,250); pdf.setDrawColor(222,227,238); pdf.setLineWidth(0.3); pdf.roundedRect(x, yy, bw, bh, 2, 2, 'FD');
+      pdf.setTextColor(90,100,120); pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.text(it[0], x+3, yy+7);
+      pdf.setTextColor(2,21,53); pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.text(String(it[1]), x+3, yy+16);
+    });
+    y += Math.ceil(itens.length/cols)*(bh+gap) + 4;
+  };
+  secao('Investimento em anúncios');
+  const inv = [['Verba do mês', fR(r.verba)]];
+  if(r.modo){ inv.push(['Foi pra anúncios', fR(r.midia)], ['Imposto da Meta', fR(r.imposto)]); }
+  inv.push(['Gasto em anúncios', fR(r.gasto)]);
+  caixas(inv);
+  secao('Resultados');
+  caixas([['Leads (contatos)', fN(r.leads)], ['CPL (custo por lead)', fR(r.cpl)], ['Vendas', fN(r.vendas)], ['Valor vendido', fR(r.vendido)], ['ROAS (retorno)', fX(r.roas)], ['Cliques', fN(r.cliques)], ['Alcance', fN(r.alcance)]]);
+  if((rel.analise||'').trim()){
+    secao('Análise do mês');
+    pdf.setTextColor(40,48,66); pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+    const linhas = pdf.splitTextToSize(rel.analise.trim(), W-2*M);
+    linhas.forEach(l=>{ if(y>270){ pdf.addPage(); y=20; } pdf.text(l, M, y); y += 6; });
+  }
+  pdf.setFontSize(8); pdf.setTextColor(140,148,165); pdf.text('Gerado em '+dataBR(localDateStr())+' · Vértice Marketing Digital', M, 288);
+  return pdf;
+}
+function nomeArquivoPdf(c, rel){ return ('relatorio-'+normNome(c.nome||'cliente').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+rel.mes+'.pdf'); }
+async function gerarPdfRelatorio(c, rel, compartilhar, btn){
+  const old = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Gerando...'; }
+  try{
+    const pdf = await montarPdf(c, rel);
+    const blob = pdf.output('blob'); const nome = nomeArquivoPdf(c, rel);
+    if(compartilhar){
+      const file = new File([blob], nome, {type:'application/pdf'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{ await navigator.share({files:[file], title:'Relatório '+mesLabel(rel.mes)}); return; }
+        catch(e){ if(e && e.name==='AbortError') return; }
+      }
+    }
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    if(compartilhar) alert('Este aparelho não abre o compartilhamento direto. O PDF foi baixado: anexe ele no WhatsApp.');
+  }catch(e){ console.error(e); alert('Não consegui gerar o PDF. Confira a internet e tente de novo.'); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = old; } }
+}
+
+/* seções da ficha */
+function secHead(titulo, botoes){ return `<div class="sec-head"><h3>${titulo}</h3><div style="display:flex;gap:8px;flex-wrap:wrap;">${botoes||''}</div></div>`; }
+function relatoriosHtml(c){
+  const lista = (c.relatorios||[]).slice().sort((a,b)=>b.mes.localeCompare(a.mes));
+  const itens = lista.length ? lista.map(r=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${mesLabel(r.mes)} <span class="chip-status ${r.enviadoEm?'ativo':'pausado'}">${r.enviadoEm?'Enviado em '+dataBR(r.enviadoEm):'Não enviado'}</span></div><div class="hi-sub">${linkHtml(r.link,'Abrir no Drive')}${r.link&&r.obs?' · ':''}${escapeHtml(r.obs||'')}</div></div><div class="hi-actions"><button data-rel-pdf="${r.id}">📄 PDF</button><button data-rel-share="${r.id}">📤 Compartilhar</button><button data-rel-edit="${r.id}" title="Editar">✏️</button><button data-rel-del="${r.id}" title="Excluir">🗑</button></div></div>`).join('') : '<div class="hoje-empty">Nenhum relatório ainda. Use "+ Novo relatório".</div>';
+  return `<div class="hoje-block">${secHead('Relatórios','<button class="addbtn sec" id="relNovo">+ Novo relatório</button>')}${itens}</div>`;
+}
+function contratoHtml(c){
+  const ct = c.contrato||{};
+  let fimTxt = '';
+  if(ct.fim){ const d = diasAte(ct.fim); fimTxt = d<0 ? ` <span class="chip-status" style="background:var(--urgent-bg,#fde4e4);color:var(--urgent);">venceu há ${-d} dia${-d===1?'':'s'}</span>` : (d<=30 ? ` <span class="chip-status pausado">termina em ${d} dia${d===1?'':'s'}</span>` : ''); }
+  const rows = [
+    dadoRow('Contrato no Drive', linkHtml(ct.link,'Abrir contrato')),
+    dadoRow('Início', ct.inicio?dataBR(ct.inicio):''),
+    dadoRow('Término', ct.fim?dataBR(ct.fim)+fimTxt:''),
+    dadoRow('Renovação', ct.renova==='sim'?'Renova automaticamente':(ct.renova==='nao'?'Precisa renovar':''))
+  ].join('');
+  return `<div class="hoje-block">${secHead('Contrato','<button class="addbtn sec" id="ctEditar">Editar contrato</button>')}${rows}</div>`;
+}
+function briefingLinkDe(c){
+  if(c.briefingLink) return c.briefingLink;
+  return normNome(c.nome).includes('goma') ? siteBaseUrl()+'formulario-goma.html' : '';
+}
+function briefingDoCliente(c){
+  if(!Array.isArray(data.briefings)) return null;
+  const n = normNome(c.nome); if(!n) return [];
+  return data.briefings.filter(b=>{ const bn = normNome(b.cliente); return bn && (bn===n || bn.includes(n) || n.includes(bn)); }).sort((a,b)=>brfMs(b)-brfMs(a));
+}
+function briefingHtml(c){
+  const link = briefingLinkDe(c);
+  const bs = briefingDoCliente(c);
+  let status;
+  if(bs===null) status = '<span class="chip-status pausado">Não consigo ler ainda</span> <span class="hi-sub">(falta o seu UID nas regras do Firebase)</span>';
+  else if(!bs.length) status = '<span class="chip-status pausado">Ainda não respondeu</span>';
+  else status = `<span class="chip-status ativo">Respondeu em ${brfDataTxt(bs[0])}</span> <span class="hi-sub">versão ${bs[0].versao||1}</span>`;
+  const rows = [
+    dadoRow('Formulário', link?escapeHtml(link):'', link?`<button class="addbtn sec" id="brfCopiarLink" style="padding:6px 12px;font-size:12.5px;">Copiar link</button>`:''),
+    dadoRow('Status', status)
+  ].join('');
+  return `<div class="hoje-block">${secHead('Briefing',`<button class="addbtn sec" id="brfEditarLink">${link?'Editar link':'Definir link'}</button><button class="addbtn sec" id="brfVerRespostas">Ver respostas</button>`)}${rows}</div>`;
+}
+function eventosTimeline(c){
+  const ev = [];
+  if(c.inicio) ev.push({d:c.inicio, t:'Início do contrato', k:''});
+  Object.entries(c.pagamentos||{}).forEach(([m,p])=>{ if(p.status==='pago' && p.pagoEm){ const d = dataLocalDeIso(p.pagoEm); if(d) ev.push({d, t:`Pagamento de ${mesLabel(m)} recebido (${brl(p.valor)})`, k:'pg'}); } });
+  (c.campanhas||[]).forEach(k=>{ if(k.subiuEm) ev.push({d:k.subiuEm, t:`Campanha "${k.nome||''}" subiu (${CAMP_PLAT[k.plataforma]||'—'})`, k:''}); });
+  (c.relatorios||[]).forEach(r=>{ if(r.enviadoEm) ev.push({d:r.enviadoEm, t:`Relatório de ${mesLabel(r.mes)} enviado`, k:''}); });
+  const bs = briefingDoCliente(c); if(bs && bs.length){ const ms = brfMs(bs[0]); if(ms) ev.push({d:localDateStr(new Date(ms)), t:`Briefing respondido (versão ${bs[0].versao||1})`, k:''}); }
+  (c.notas||[]).forEach(n=>ev.push({d:n.data, t:n.texto, k:'n', id:n.id}));
+  return ev.filter(e=>e.d).sort((a,b)=>b.d.localeCompare(a.d));
+}
+function timelineHtml(c){
+  const ev = eventosTimeline(c);
+  const mostrar = tlTudo ? ev : ev.slice(0,12);
+  const itens = mostrar.length ? '<div class="tl">'+mostrar.map(e=>`<div class="tl-item"><div class="tl-dot ${e.k}"></div><div class="tl-body"><div class="tl-data">${dataBR(e.d)}${e.k==='n'?' · nota':''}</div>${escapeHtml(e.t)}${e.k==='n'?` <button data-nota-del="${e.id}" title="Excluir nota" style="border:none;background:none;cursor:pointer;">🗑</button>`:''}</div></div>`).join('')+'</div>' : '<div class="hoje-empty">Ainda não há nada. Os pagamentos, campanhas e relatórios entram sozinhos.</div>';
+  return `<div class="hoje-block">${secHead('Linha do tempo')}
+    <div class="tl-add"><input type="date" id="notaData" value="${localDateStr()}"><input type="text" id="notaTexto" placeholder="Anotar algo (ex: reunião de alinhamento)"><button class="addbtn sec" id="notaAdd">Adicionar nota</button></div>
+    ${itens}${ev.length>12?`<div style="margin-top:8px;"><button class="addbtn sec" id="tlToggle">${tlTudo?'Ver menos':'Ver tudo ('+ev.length+')'}</button></div>`:''}</div>`;
+}
+async function salvarCampoCliente(c, obj){
+  try{ await setDoc(doc(db,'clientes_vertice',c.id), obj, {merge:true}); return true; }
+  catch(e){ console.error(e); alert('Não consegui salvar.'); return false; }
+}
+let relCliente = null, relEditId = null, ctCliente = null, blCliente = null;
+function bindEtapa4(c, box){
+  carregarJsPdf().catch(()=>{});
+  const q = id => box.querySelector('#'+id);
+  if(q('relNovo')) q('relNovo').onclick = ()=>openRelatorioModal(c, null);
+  box.querySelectorAll('[data-rel-edit]').forEach(b=>{ b.onclick = ()=>openRelatorioModal(c, b.dataset.relEdit); });
+  box.querySelectorAll('[data-rel-pdf]').forEach(b=>{ b.onclick = ()=>{ const r=(c.relatorios||[]).find(x=>x.id===b.dataset.relPdf); if(r) gerarPdfRelatorio(c, r, false, b); }; });
+  box.querySelectorAll('[data-rel-share]').forEach(b=>{ b.onclick = ()=>{ const r=(c.relatorios||[]).find(x=>x.id===b.dataset.relShare); if(r) gerarPdfRelatorio(c, r, true, b); }; });
+  box.querySelectorAll('[data-rel-del]').forEach(b=>{ b.onclick = async ()=>{
+    const r=(c.relatorios||[]).find(x=>x.id===b.dataset.relDel); if(!r) return;
+    if(!confirm('Excluir o relatório de '+mesLabel(r.mes)+'?')) return;
+    await salvarCampoCliente(c, {relatorios:(c.relatorios||[]).filter(x=>x.id!==r.id)});
+  }; });
+  if(q('ctEditar')) q('ctEditar').onclick = ()=>openContratoModal(c);
+  if(q('brfCopiarLink')) q('brfCopiarLink').onclick = e=>copyText(briefingLinkDe(c), e.target);
+  if(q('brfEditarLink')) q('brfEditarLink').onclick = ()=>{ blCliente=c; document.getElementById('bl-link').value = briefingLinkDe(c); document.getElementById('overlayBrfLink').classList.add('open'); };
+  if(q('brfVerRespostas')) q('brfVerRespostas').onclick = ()=>{ document.querySelector('.tabs .tab[data-view="briefings"]').click(); };
+  if(q('notaAdd')) q('notaAdd').onclick = async ()=>{
+    const texto = q('notaTexto').value.trim(), dt = q('notaData').value;
+    if(!texto){ alert('Escreva a nota.'); return; }
+    if(!dt){ alert('Escolha a data.'); return; }
+    await salvarCampoCliente(c, {notas:[...(c.notas||[]), {id:campId(), data:dt, texto}]});
+  };
+  if(q('notaTexto')) q('notaTexto').onkeydown = e=>{ if(e.key==='Enter') q('notaAdd').click(); };
+  box.querySelectorAll('[data-nota-del]').forEach(b=>{ b.onclick = async ()=>{ if(!confirm('Excluir esta nota?')) return; await salvarCampoCliente(c, {notas:(c.notas||[]).filter(n=>n.id!==b.dataset.notaDel)}); }; });
+  if(q('tlToggle')) q('tlToggle').onclick = ()=>{ tlTudo = !tlTudo; renderFicha(); };
+}
+function openRelatorioModal(c, id){
+  relCliente = c; relEditId = id;
+  const r = id ? (c.relatorios||[]).find(x=>x.id===id) : null;
+  document.getElementById('relTitulo').textContent = r ? 'Editar relatório' : 'Novo relatório';
+  document.getElementById('rel-mes').value = r ? r.mes : (campMesSel || mesKey(new Date()));
+  document.getElementById('rel-enviado').value = r ? (r.enviadoEm||'') : '';
+  document.getElementById('rel-link').value = r ? (r.link||'') : '';
+  document.getElementById('rel-obs').value = r ? (r.obs||'') : '';
+  document.getElementById('rel-analise').value = r ? (r.analise||'') : '';
+  document.getElementById('overlayRelatorio').classList.add('open');
+}
+document.getElementById('relCancelBtn').onclick = ()=>document.getElementById('overlayRelatorio').classList.remove('open');
+document.getElementById('overlayRelatorio').onclick = e=>{ if(e.target.id==='overlayRelatorio') e.target.classList.remove('open'); };
+document.getElementById('relCopiarIA').onclick = e=>{
+  const c = data.clientes.find(x=>x.id===(relCliente&&relCliente.id)); const mes = document.getElementById('rel-mes').value;
+  if(!c || !mes){ alert('Escolha o período primeiro.'); return; }
+  copyText(textoParaIA(c, mes), e.target);
+};
+document.getElementById('relSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(relCliente&&relCliente.id)); if(!c) return;
+  const mes = document.getElementById('rel-mes').value;
+  if(!/^\d{4}-\d{2}$/.test(mes)){ alert('Escolha o período (mês).'); return; }
+  const link = document.getElementById('rel-link').value.trim();
+  if(link && !ehUrl(link)){ alert('O link precisa começar com https://'); return; }
+  const novo = {mes, enviadoEm:document.getElementById('rel-enviado').value||'', link, obs:document.getElementById('rel-obs').value.trim(), analise:document.getElementById('rel-analise').value.trim()};
+  const lista = (c.relatorios||[]).slice(); const i = relEditId ? lista.findIndex(x=>x.id===relEditId) : -1;
+  if(i>=0) lista[i] = {...lista[i], ...novo}; else lista.push({id:campId(), ...novo});
+  if(await salvarCampoCliente(c, {relatorios:lista})) document.getElementById('overlayRelatorio').classList.remove('open');
+};
+function openContratoModal(c){
+  ctCliente = c; const ct = c.contrato||{};
+  document.getElementById('ct-link').value = ct.link||'';
+  document.getElementById('ct-inicio').value = ct.inicio || c.inicio || '';
+  document.getElementById('ct-fim').value = ct.fim||'';
+  document.getElementById('ct-renova').value = ct.renova||'';
+  document.getElementById('overlayContrato').classList.add('open');
+}
+document.getElementById('ctCancelBtn').onclick = ()=>document.getElementById('overlayContrato').classList.remove('open');
+document.getElementById('overlayContrato').onclick = e=>{ if(e.target.id==='overlayContrato') e.target.classList.remove('open'); };
+document.getElementById('ctSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(ctCliente&&ctCliente.id)); if(!c) return;
+  const link = document.getElementById('ct-link').value.trim();
+  if(link && !ehUrl(link)){ alert('O link precisa começar com https://'); return; }
+  const inicio = document.getElementById('ct-inicio').value, fim = document.getElementById('ct-fim').value;
+  if(inicio && fim && fim<inicio){ alert('O término não pode ser antes do início.'); return; }
+  if(await salvarCampoCliente(c, {contrato:{link, inicio, fim, renova:document.getElementById('ct-renova').value}})) document.getElementById('overlayContrato').classList.remove('open');
+};
+document.getElementById('blCancelBtn').onclick = ()=>document.getElementById('overlayBrfLink').classList.remove('open');
+document.getElementById('overlayBrfLink').onclick = e=>{ if(e.target.id==='overlayBrfLink') e.target.classList.remove('open'); };
+document.getElementById('blSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(blCliente&&blCliente.id)); if(!c) return;
+  const link = document.getElementById('bl-link').value.trim();
+  if(link && !ehUrl(link)){ alert('O link precisa começar com https://'); return; }
+  if(await salvarCampoCliente(c, {briefingLink:link})) document.getElementById('overlayBrfLink').classList.remove('open');
 };
 
 function renderFicha(){
@@ -3738,7 +4059,11 @@ function renderFicha(){
     <div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div>
     <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">Escolher serviços</button></div>${servHtml}</div>
     ${campanhasHtml(c)}
-    <div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div>`;
+    ${relatoriosHtml(c)}
+    ${contratoHtml(c)}
+    ${briefingHtml(c)}
+    <div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div>
+    ${timelineHtml(c)}`;
   document.getElementById('fichaVoltar').onclick = ()=>{ mostrarListaClientes(); atualizarTitulo(document.querySelector('.tabs .tab.active')); };
   document.getElementById('fichaEditar').onclick = ()=>openClienteModal(c);
   document.getElementById('fichaAddServico').onclick = ()=>openClienteServicoModal(c);
@@ -3751,6 +4076,7 @@ function renderFicha(){
   }; });
   bindPagamentoActions(box);
   bindCampanhas(c, box);
+  bindEtapa4(c, box);
   if(afKey){ const novo = box.querySelector('[data-conj-gasto="'+afKey+'"]'); if(novo){ novo.value = afVal; novo.focus(); } }
 }
 async function salvarServicosCliente(c, novo){

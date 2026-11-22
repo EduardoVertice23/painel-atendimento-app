@@ -87,6 +87,28 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 .kh .s{font-size:11.5px;color:var(--text-dim);margin-top:4px;}
 .kh .s b.red{color:var(--urgent);}
 @media (max-width:900px){.vd-chart{gap:6px;}.vd-val{display:none;}}
+.verba-box{display:flex;gap:12px;flex-wrap:wrap;}
+.verba-n{flex:1 1 150px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;}
+.verba-n .l{font-size:11.5px;color:var(--text-dim);}
+.verba-n .n{font-family:'Montserrat',sans-serif;font-weight:700;font-size:19px;color:var(--ink);margin-top:2px;}
+.verba-n .s{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.verba-bar{height:8px;background:var(--line);border-radius:99px;margin:10px 0 4px;overflow:hidden;}
+.verba-bar i{display:block;height:100%;background:var(--gold);border-radius:99px;}
+.mes-nav{display:flex;align-items:center;gap:10px;margin:2px 0 12px;font-weight:700;font-size:14px;}
+.mes-nav button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:16px;cursor:pointer;}
+.camp-card{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px;}
+.camp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+.camp-nome{font-weight:700;font-size:14.5px;}
+.camp-top .hi-sub{font-size:12px;color:var(--text-dim);margin-top:4px;}
+.camp-met{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-top:10px;}
+.camp-met>div{background:var(--bg);border-radius:10px;padding:8px 10px;}
+.camp-met .l{font-size:11px;color:var(--text-dim);}
+.camp-met .v{font-weight:700;font-size:14px;margin-top:1px;}
+.vd-hrow{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px;}
+.vd-hrow .nm{width:120px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vd-hrow .tr{flex:1;background:var(--bg);border-radius:99px;height:14px;overflow:hidden;}
+.vd-hrow .tr i{display:block;height:100%;background:var(--gold);border-radius:99px;}
+.vd-hrow .vl{width:96px;flex:none;text-align:right;font-weight:600;font-size:12.5px;}
 .cli-topo{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:18px;}
 .cli-card[data-abrir]{cursor:pointer;}
 .cli-card[data-abrir]:hover{border-color:var(--gold);}
@@ -415,6 +437,10 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
 <div class="view" id="view-vdash">
   <div class="kpi-hoje" id="vdKpis"></div>
   <div class="hoje-block"><h3>Receita mês a mês <span class="cnt">últimos 6 meses</span></h3><div id="vdChart"></div></div>
+  <div class="panel-row">
+    <div class="panel"><h3>Verba de anúncios por cliente <span style="font-size:12px;font-weight:500;color:var(--text-dim);">· neste mês</span></h3><div id="vdVerba"></div></div>
+    <div class="panel"><h3>Receita mensal por cliente</h3><div id="vdPorCliente"></div></div>
+  </div>
   <div class="hoje-block" id="vdAtencao"></div>
 </div>
 
@@ -601,6 +627,48 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
       <button class="cancel" id="csCancelBtn">Cancelar</button>
       <button class="save" id="csSaveBtn">Salvar</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayVerba">
+  <div class="modal" style="max-width:400px;">
+    <h2 id="verbaTitulo">Verba do mês</h2>
+    <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Quanto o cliente vai investir em anúncios neste mês (dinheiro dos anúncios, separado do que ele paga pra Vértice). Os meses seguintes repetem este valor até você mudar.</div>
+    <div class="field"><label>Verba do mês (R$)</label><input type="text" id="verba-valor" inputmode="decimal" placeholder="Ex: 3000,00"></div>
+    <div class="modal-actions"><button class="cancel" id="verbaCancelBtn">Cancelar</button><button class="save" id="verbaSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayCampanha">
+  <div class="modal" style="max-width:420px;">
+    <h2 id="campTitulo">Nova campanha</h2>
+    <div class="field"><label>Nome da campanha</label><input type="text" id="camp-nome" placeholder="Ex: Vendas Meta - Camisas"></div>
+    <div class="field-row">
+      <div class="field"><label>Plataforma</label><select id="camp-plat"><option value="meta">Meta (Facebook e Instagram)</option><option value="google">Google</option></select></div>
+      <div class="field"><label>Status</label><select id="camp-status"><option value="ativa">Ativa</option><option value="pausada">Pausada</option><option value="encerrada">Encerrada</option></select></div>
+    </div>
+    <div class="field"><label>Data em que subiu</label><input type="date" id="camp-subiu"></div>
+    <div class="modal-actions"><button class="cancel" id="campCancelBtn">Cancelar</button><button class="save" id="campSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayCampRes">
+  <div class="modal" style="max-width:440px;">
+    <h2 id="campResTitulo">Resultados do mês</h2>
+    <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Preencha o que tiver. O que ficar vazio aparece como traço.</div>
+    <div class="field-row">
+      <div class="field"><label>Gasto no mês (R$)</label><input type="text" id="cr-gasto" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field"><label>Leads (contatos gerados)</label><input type="text" id="cr-leads" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Vendas (quantidade)</label><input type="text" id="cr-vendas" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>Valor vendido (R$)</label><input type="text" id="cr-vendido" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Cliques</label><input type="text" id="cr-cliques" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>Alcance (pessoas que viram)</label><input type="text" id="cr-alcance" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <div class="modal-actions"><button class="cancel" id="crCancelBtn">Cancelar</button><button class="save" id="crSaveBtn">Salvar</button></div>
   </div>
 </div>
 
@@ -3283,10 +3351,21 @@ function renderDashVertice(){
   const proximos = [];
   clientes.forEach(c=>Object.entries(c.pagamentos||{}).forEach(([m,p])=>{ if(p.status==='pago') return; const d=diasAte(p.vencimento); if(d>=0 && d<=7) proximos.push({c,mes:m,p,d}); }));
   const somaProx = proximos.reduce((a,x)=>a+(Number(x.p.valor)||0),0);
+  const ativosL = clientes.filter(c=>c.status==='ativo');
+  const verbaTotal = ativosL.reduce((a,c)=>a+((verbaDoMes(c,mesAtual)||{valor:0}).valor),0);
+  const gastoTotal = ativosL.reduce((a,c)=>a+gastoDoMes(c,mesAtual),0);
   kp.innerHTML = `
     <div class="kh" style="--kc:var(--gold)"><div class="n money">${brl(recebido+falta)}</div><div class="l">Receita de ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Recebido ${brl(recebido)} · Falta ${brl(falta)}${atrasado>0?` · <b class="red">${brl(atrasado)} atrasado</b>`:''}</div></div>
     <div class="kh" style="--kc:var(--ok)"><div class="n">${ativos}</div><div class="l">Clientes ativos</div>${(pausados||encerrados)?`<div class="s">${pausados} pausado${pausados===1?'':'s'} · ${encerrados} encerrado${encerrados===1?'':'s'}</div>`:''}</div>
-    <div class="kh" style="--kc:var(--ink)"><div class="n">${proximos.length}</div><div class="l">Vencem nos próximos 7 dias</div><div class="s">${proximos.length?brl(somaProx):'Nenhum por enquanto'}</div></div>`;
+    <div class="kh" style="--kc:var(--ink)"><div class="n">${proximos.length}</div><div class="l">Vencem nos próximos 7 dias</div><div class="s">${proximos.length?brl(somaProx):'Nenhum por enquanto'}</div></div>
+    <div class="kh" style="--kc:var(--pend-fg)"><div class="n money">${brl(verbaTotal)}</div><div class="l">Verba de anúncios em ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Gasto ${brl(gastoTotal)} · dos clientes, não é receita</div></div>`;
+  // verba e receita por cliente
+  const vbLinhas = clientes.map(c=>({nome:c.nome||'Cliente', inv:(verbaDoMes(c,mesAtual)||{valor:0}).valor, gas:gastoDoMes(c,mesAtual)})).filter(x=>x.inv>0||x.gas>0);
+  const vbMax = Math.max(...vbLinhas.map(x=>Math.max(x.inv,x.gas)),0);
+  document.getElementById('vdVerba').innerHTML = vbMax>0 ? vbLinhas.map(x=>`<div class="vd-hrow"><div class="nm" title="${escapeHtml(x.nome)}">${escapeHtml(x.nome)}</div><div style="flex:1;"><div class="tr" style="margin-bottom:4px;"><i style="width:${Math.round(x.inv/vbMax*100)}%;background:var(--pend-fg);"></i></div><div class="tr"><i style="width:${Math.round(x.gas/vbMax*100)}%"></i></div></div><div class="vl">${brl(x.inv)}<br><span style="color:var(--text-dim);font-weight:500;">gasto ${brl(x.gas)}</span></div></div>`).join('')+'<div class="vd-legend"><span><i style="background:var(--pend-fg)"></i>Verba (investe)</span><span><i style="background:var(--gold)"></i>Gasto</span></div>' : '<div class="hoje-empty">Cadastre a verba na ficha do cliente (seção Campanhas e verba).</div>';
+  const rcLinhas = clientes.filter(c=>c.status==='ativo' && totalMensal(c)>0).map(c=>({nome:c.nome||'Cliente', v:totalMensal(c)})).sort((a,b)=>b.v-a.v);
+  const rcMax = Math.max(...rcLinhas.map(x=>x.v),0);
+  document.getElementById('vdPorCliente').innerHTML = rcMax>0 ? rcLinhas.map(x=>`<div class="vd-hrow"><div class="nm" title="${escapeHtml(x.nome)}">${escapeHtml(x.nome)}</div><div class="tr"><i style="width:${Math.round(x.v/rcMax*100)}%"></i></div><div class="vl">${brl(x.v)}</div></div>`).join('') : '<div class="hoje-empty">Aparece quando houver cliente ativo com serviços.</div>';
 
   // gráfico: últimos 6 meses, previsto x recebido
   const meses = [];
@@ -3306,15 +3385,19 @@ function renderDashVertice(){
   clientes.forEach(c=>Object.entries(c.pagamentos||{}).forEach(([m,p])=>{ if(p.status!=='pago' && diasAte(p.vencimento)<0) pagAtras.push({c,mes:m,p}); }));
   pagAtras.sort((a,b)=>a.p.vencimento.localeCompare(b.p.vencimento));
   const tarAtras = (data.tarefas||[]).filter(t=>t.lado==='vertice' && t.status!=='concluida' && t.vencimento && t.vencimento.slice(0,10)<hojeStr).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
-  const total = pagAtras.length + tarAtras.length;
+  const campPaus = [];
+  clientes.filter(c=>c.status==='ativo').forEach(c=>(c.campanhas||[]).forEach(k=>{ if(k.status==='pausada') campPaus.push({c,k}); }));
+  const total = pagAtras.length + tarAtras.length + campPaus.length;
   const el = document.getElementById('vdAtencao');
   const pagHtml = pagAtras.map(({c,mes,p})=>{ const t=pagamentoTxt(p); return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(c.nome||'Cliente')} · ${brl(p.valor)}</div><div class="hi-sub">${mesLabel(mes)} · venceu em ${dataBR(p.vencimento)} <span class="chip-pag ${t.cls}" style="margin-left:6px;">${t.txt}</span></div></div><div class="hi-actions"><button data-pagar="${c.id}|${mes}">✓ Marcar como pago</button></div></div>`; }).join('');
   const tarHtml = tarAtras.map(t=>tarefaItemHtml(t,true,false)).join('');
+  const campHtml = campPaus.map(({c,k})=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(k.nome||'Campanha')} · ${escapeHtml(c.nome||'Cliente')}</div><div class="hi-sub">${CAMP_PLAT[k.plataforma]||''} · está pausada</div></div><div class="hi-actions"><button data-abrir-cli="${c.id}">Abrir ficha</button></div></div>`).join('');
   el.innerHTML = `<h3>Precisa de atenção <span class="cnt">${total||''}</span></h3>`
-    + (total ? (pagHtml?`<div class="hi-sub" style="margin:6px 0 2px;font-weight:700;font-size:12.5px;">Pagamentos atrasados</div>${pagHtml}`:'') + (tarHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Tarefas da Vértice atrasadas</div>${tarHtml}`:'')
+    + (total ? (pagHtml?`<div class="hi-sub" style="margin:6px 0 2px;font-weight:700;font-size:12.5px;">Pagamentos atrasados</div>${pagHtml}`:'') + (tarHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Tarefas da Vértice atrasadas</div>${tarHtml}`:'') + (campHtml?`<div class="hi-sub" style="margin:10px 0 2px;font-weight:700;font-size:12.5px;">Campanhas pausadas</div>${campHtml}`:'')
       : '<div class="hoje-empty">Tudo em dia 🎉</div>');
   bindPagamentoActions(el);
   bindTarefaActions(el, 'vertice');
+  el.querySelectorAll('[data-abrir-cli]').forEach(b=>{ b.onclick = ()=>{ document.querySelector('.tabs .tab[data-view="clientes"]').click(); abrirFicha(b.dataset.abrirCli); }; });
 }
 
 function iniciais(nome){ return (nome||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.charAt(0)).join('').toUpperCase() || '?'; }
@@ -3372,10 +3455,149 @@ function dadoRow(k, v, extra){
   const vazio = !v;
   return `<div class="dado-row"><div class="k">${k}</div><div class="v${vazio?' vazio':''}">${vazio?'—':v}</div>${extra||''}</div>`;
 }
+/* ===== CAMPANHAS E VERBA (etapa 3) ===== */
+let campMesSel = null, campFichaId = null;
+const CAMP_PLAT = {meta:'Meta', google:'Google'};
+const CAMP_STATUS_CLS = {ativa:'ativo', pausada:'pausado', encerrada:''};
+const CAMP_STATUS_TXT = {ativa:'Ativa', pausada:'Pausada', encerrada:'Encerrada'};
+function mesDelta(mes, d){ const [y,m]=mes.split('-').map(Number); return mesKey(new Date(y, m-1+d, 1)); }
+function numOuNull(x){ return (x===undefined||x===null||x==='') ? null : Number(x); }
+function verbaDoMes(c, mes){
+  const v = c.verbas||{};
+  if(v[mes]!=null) return {valor:Number(v[mes])||0, herdada:false};
+  const ant = Object.keys(v).filter(k=>k<mes).sort().pop();
+  return ant ? {valor:Number(v[ant])||0, herdada:true} : null;
+}
+function campDados(k, mes){ return (k.meses||{})[mes] || {}; }
+function gastoDoMes(c, mes){ return (c.campanhas||[]).reduce((a,k)=>a+(Number(campDados(k,mes).gasto)||0),0); }
+function campId(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmtInt(x){ const n=numOuNull(x); return n===null ? '—' : n.toLocaleString('pt-BR'); }
+function fmtBrlOuTraco(x){ const n=numOuNull(x); return n===null ? '—' : brl(n); }
+function campanhasHtml(c){
+  const mes = campMesSel;
+  const vb = verbaDoMes(c, mes);
+  const gasto = gastoDoMes(c, mes);
+  const camps = c.campanhas||[];
+  const resta = vb ? vb.valor-gasto : null;
+  const pct = vb && vb.valor>0 ? Math.min(100, Math.round(gasto/vb.valor*100)) : 0;
+  const verba = `<div class="verba-box">
+      <div class="verba-n"><div class="l">Verba do mês (o cliente investe)</div><div class="n">${vb?brl(vb.valor):'—'}</div>${vb&&vb.herdada?'<div class="s">repetida do mês anterior</div>':''}</div>
+      <div class="verba-n"><div class="l">Gasto (soma das campanhas)</div><div class="n">${brl(gasto)}</div></div>
+      <div class="verba-n"><div class="l">${resta!==null&&resta<0?'Passou da verba':'Ainda resta'}</div><div class="n" style="${resta!==null&&resta<0?'color:var(--urgent);':''}">${resta!==null?brl(Math.abs(resta)):'—'}</div></div>
+    </div>${vb&&vb.valor>0?`<div class="verba-bar"><i style="width:${pct}%"></i></div>`:''}`;
+  const cards = camps.length ? camps.map(k=>{
+    const d = campDados(k, mes);
+    const gk = numOuNull(d.gasto), lk = numOuNull(d.leads), vv = numOuNull(d.valorVendido);
+    const cpl = (gk>0 && lk>0) ? brl(gk/lk) : '—';
+    const roas = (gk>0 && vv>0) ? (vv/gk).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'×' : '—';
+    return `<div class="camp-card">
+      <div class="camp-top">
+        <div style="min-width:0;"><div class="camp-nome">${escapeHtml(k.nome||'Campanha')}</div>
+          <div class="hi-sub"><span class="chip-status" style="margin-left:0;">${CAMP_PLAT[k.plataforma]||'—'}</span> <span class="chip-status ${CAMP_STATUS_CLS[k.status]||''}">${CAMP_STATUS_TXT[k.status]||'Ativa'}</span>${k.subiuEm?' · Subiu em '+dataBR(k.subiuEm):''}</div></div>
+        <div class="hi-actions"><button data-camp-res="${k.id}">📊 Resultados de ${MESES_PT[Number(mes.slice(5))-1].toLowerCase()}</button><button data-camp-edit="${k.id}" title="Editar">✏️</button><button data-camp-del="${k.id}" title="Excluir">🗑</button></div>
+      </div>
+      <div class="camp-met">
+        <div><div class="l">Gasto</div><div class="v">${fmtBrlOuTraco(d.gasto)}</div></div>
+        <div><div class="l">Leads (contatos)</div><div class="v">${fmtInt(d.leads)}</div></div>
+        <div><div class="l">CPL (custo por lead)</div><div class="v">${cpl}</div></div>
+        <div><div class="l">Vendas</div><div class="v">${fmtInt(d.vendas)}</div></div>
+        <div><div class="l">Valor vendido</div><div class="v">${fmtBrlOuTraco(d.valorVendido)}</div></div>
+        <div><div class="l">ROAS (retorno sobre o gasto)</div><div class="v">${roas}</div></div>
+        <div><div class="l">Cliques</div><div class="v">${fmtInt(d.cliques)}</div></div>
+        <div><div class="l">Alcance</div><div class="v">${fmtInt(d.alcance)}</div></div>
+      </div></div>`;
+  }).join('') : `<div class="hoje-empty">Nenhuma campanha ainda. Use "+ Nova campanha".</div>`;
+  return `<div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><h3 style="margin:0;">Campanhas e verba</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="addbtn sec" id="verbaEditar">Editar verba</button><button class="addbtn sec" id="campNova">+ Nova campanha</button></div></div>
+    <div class="mes-nav"><button data-cmes="-1" aria-label="Mês anterior">‹</button><span>${mesLabel(mes)}</span><button data-cmes="1" aria-label="Próximo mês">›</button></div>
+    ${verba}${cards}</div>`;
+}
+function bindCampanhas(c, box){
+  box.querySelectorAll('[data-cmes]').forEach(b=>{ b.onclick = ()=>{ campMesSel = mesDelta(campMesSel, Number(b.dataset.cmes)); renderFicha(); }; });
+  const v = box.querySelector('#verbaEditar'); if(v) v.onclick = ()=>openVerbaModal(c);
+  const n = box.querySelector('#campNova'); if(n) n.onclick = ()=>openCampanhaModal(c, null);
+  box.querySelectorAll('[data-camp-res]').forEach(b=>{ b.onclick = ()=>openCampResModal(c, b.dataset.campRes); });
+  box.querySelectorAll('[data-camp-edit]').forEach(b=>{ b.onclick = ()=>openCampanhaModal(c, b.dataset.campEdit); });
+  box.querySelectorAll('[data-camp-del]').forEach(b=>{ b.onclick = async ()=>{
+    const k = (c.campanhas||[]).find(x=>x.id===b.dataset.campDel); if(!k) return;
+    if(!confirm('Excluir a campanha "'+(k.nome||'')+'" e todos os números dela?')) return;
+    await salvarCampanhas(c, (c.campanhas||[]).filter(x=>x.id!==k.id));
+  }; });
+}
+async function salvarCampanhas(c, lista){
+  try{ await setDoc(doc(db,'clientes_vertice',c.id), {campanhas:lista}, {merge:true}); return true; }
+  catch(e){ console.error(e); alert('Não consegui salvar as campanhas.'); return false; }
+}
+let verbaCliente = null, campCliente = null, campEditId = null, crCliente = null, crCampId = null;
+function openVerbaModal(c){
+  verbaCliente = c;
+  const vb = verbaDoMes(c, campMesSel);
+  document.getElementById('verbaTitulo').textContent = 'Verba de '+mesLabel(campMesSel);
+  document.getElementById('verba-valor').value = vb ? String(vb.valor).replace('.',',') : '';
+  document.getElementById('overlayVerba').classList.add('open');
+}
+document.getElementById('verbaCancelBtn').onclick = ()=>document.getElementById('overlayVerba').classList.remove('open');
+document.getElementById('overlayVerba').onclick = e=>{ if(e.target.id==='overlayVerba') e.target.classList.remove('open'); };
+document.getElementById('verbaSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(verbaCliente&&verbaCliente.id)); if(!c) return;
+  const valor = parseBRL(document.getElementById('verba-valor').value);
+  if(!(valor>=0)){ alert('Escreva a verba do mês. Ex: 3000,00'); return; }
+  try{ await setDoc(doc(db,'clientes_vertice',c.id), {verbas:{[campMesSel]:valor}}, {merge:true}); document.getElementById('overlayVerba').classList.remove('open'); }
+  catch(e){ console.error(e); alert('Não consegui salvar a verba.'); }
+};
+function openCampanhaModal(c, id){
+  campCliente = c; campEditId = id;
+  const k = id ? (c.campanhas||[]).find(x=>x.id===id) : null;
+  document.getElementById('campTitulo').textContent = k ? 'Editar campanha' : 'Nova campanha';
+  document.getElementById('camp-nome').value = k ? (k.nome||'') : '';
+  document.getElementById('camp-plat').value = k ? (k.plataforma||'meta') : 'meta';
+  document.getElementById('camp-status').value = k ? (k.status||'ativa') : 'ativa';
+  document.getElementById('camp-subiu').value = k ? (k.subiuEm||'') : '';
+  document.getElementById('overlayCampanha').classList.add('open');
+}
+document.getElementById('campCancelBtn').onclick = ()=>document.getElementById('overlayCampanha').classList.remove('open');
+document.getElementById('overlayCampanha').onclick = e=>{ if(e.target.id==='overlayCampanha') e.target.classList.remove('open'); };
+document.getElementById('campSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(campCliente&&campCliente.id)); if(!c) return;
+  const nome = document.getElementById('camp-nome').value.trim();
+  if(!nome){ alert('Dê um nome para a campanha.'); return; }
+  const lista = (c.campanhas||[]).slice();
+  const base = {nome, plataforma:document.getElementById('camp-plat').value, status:document.getElementById('camp-status').value, subiuEm:document.getElementById('camp-subiu').value||''};
+  const i = campEditId ? lista.findIndex(x=>x.id===campEditId) : -1;
+  if(i>=0) lista[i] = {...lista[i], ...base}; else lista.push({id:campId(), ...base, meses:{}});
+  if(await salvarCampanhas(c, lista)) document.getElementById('overlayCampanha').classList.remove('open');
+};
+function openCampResModal(c, id){
+  crCliente = c; crCampId = id;
+  const k = (c.campanhas||[]).find(x=>x.id===id); if(!k) return;
+  const d = campDados(k, campMesSel);
+  document.getElementById('campResTitulo').textContent = (k.nome||'Campanha')+' · '+mesLabel(campMesSel);
+  const set = (el,v,money)=>{ document.getElementById(el).value = (v===undefined||v===null||v==='') ? '' : String(v).replace('.',','); };
+  set('cr-gasto',d.gasto); set('cr-leads',d.leads); set('cr-vendas',d.vendas); set('cr-vendido',d.valorVendido); set('cr-cliques',d.cliques); set('cr-alcance',d.alcance);
+  document.getElementById('overlayCampRes').classList.add('open');
+}
+document.getElementById('crCancelBtn').onclick = ()=>document.getElementById('overlayCampRes').classList.remove('open');
+document.getElementById('overlayCampRes').onclick = e=>{ if(e.target.id==='overlayCampRes') e.target.classList.remove('open'); };
+document.getElementById('crSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(crCliente&&crCliente.id)); if(!c) return;
+  const lista = (c.campanhas||[]).slice(); const i = lista.findIndex(x=>x.id===crCampId); if(i<0) return;
+  const out = {};
+  const campos = [['cr-gasto','gasto',true],['cr-leads','leads',false],['cr-vendas','vendas',false],['cr-vendido','valorVendido',true],['cr-cliques','cliques',false],['cr-alcance','alcance',false]];
+  for(const [el,key,money] of campos){
+    const txt = document.getElementById(el).value.trim();
+    if(!txt) continue;
+    const n = money ? parseBRL(txt) : Number(txt.replace(/\./g,'').replace(',','.'));
+    if(!(n>=0)){ alert('Número inválido em "'+key+'". Use só números.'); return; }
+    out[key] = n;
+  }
+  lista[i] = {...lista[i], meses:{...(lista[i].meses||{}), [campMesSel]: out}};
+  if(await salvarCampanhas(c, lista)) document.getElementById('overlayCampRes').classList.remove('open');
+};
+
 function renderFicha(){
   const box = document.getElementById('clienteFicha');
   const c = (data.clientes||[]).find(x=>x.id===fichaId);
   if(!c){ mostrarListaClientes(); if(document.getElementById('view-clientes').classList.contains('active')) atualizarTitulo(document.querySelector('.tabs .tab.active')); return; }
+  if(campFichaId!==c.id || !campMesSel){ campFichaId = c.id; campMesSel = mesKey(new Date()); }
   const nome = c.nome||'(sem nome)';
   const st = CLIENTE_STATUS.find(x=>x.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
   if(document.getElementById('view-clientes').classList.contains('active')){
@@ -3395,7 +3617,7 @@ function renderFicha(){
   const tot = totalMensal(c);
   const servHtml = servs.length ? servs.map((sv,i)=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(nomeServico(sv))}</div><div class="hi-sub">${brl(sv.valor)}/mês</div></div><div class="hi-actions"><button data-sv-editar="${i}" title="Editar">✏️</button><button data-sv-excluir="${i}" title="Remover">🗑</button></div></div>`).join('')
     + `<div class="dado-row"><div class="k">Total mensal</div><div class="v" style="font-weight:700;font-family:'Montserrat',sans-serif;">${brl(tot)}</div></div>`
-    : `<div class="hoje-empty">Nenhum serviço ainda. Use "+ Adicionar serviço".</div>`;
+    : `<div class="hoje-empty">Nenhum serviço ainda. Use "Escolher serviços".</div>`;
   const pags = Object.entries(c.pagamentos||{}).sort((a,b)=>b[0].localeCompare(a[0]));
   const pagHtml = pags.length ? pags.map(([m,p])=>{
     const t = pagamentoTxt(p);
@@ -3412,6 +3634,7 @@ function renderFicha(){
     </div>
     <div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div>
     <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">Escolher serviços</button></div>${servHtml}</div>
+    ${campanhasHtml(c)}
     <div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div>`;
   document.getElementById('fichaVoltar').onclick = ()=>{ mostrarListaClientes(); atualizarTitulo(document.querySelector('.tabs .tab.active')); };
   document.getElementById('fichaEditar').onclick = ()=>openClienteModal(c);
@@ -3424,6 +3647,7 @@ function renderFicha(){
     await salvarServicosCliente(c, novo);
   }; });
   bindPagamentoActions(box);
+  bindCampanhas(c, box);
 }
 async function salvarServicosCliente(c, novo){
   const tot = novo.reduce((a,sv)=>a+(Number(sv.valor)||0),0);

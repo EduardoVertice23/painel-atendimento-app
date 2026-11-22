@@ -643,6 +643,11 @@ h1,h2,h3{font-family:'Montserrat',sans-serif;color:var(--ink);margin:0;}
     <h2 id="verbaTitulo">Verba do mês</h2>
     <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Quanto o cliente vai investir em anúncios neste mês (dinheiro dos anúncios, separado do que ele paga pra Vértice). Os meses seguintes repetem este valor até você mudar.</div>
     <div class="field"><label>Verba do mês (R$)</label><input type="text" id="verba-valor" inputmode="decimal" placeholder="Ex: 3000,00"></div>
+    <div class="field-row">
+      <div class="field"><label>Como o cliente paga a Meta</label><select id="verba-modo"><option value="">Escolher...</option><option value="pre">Pix/boleto (pré-pago)</option><option value="cartao">Cartão (pós-pago)</option></select></div>
+      <div class="field"><label>Imposto da Meta (%)</label><input type="text" id="verba-taxa" inputmode="decimal" placeholder="12,15"></div>
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);margin:-4px 0 6px;">O imposto (PIS/Cofins + ISS) que a Meta cobra em cima dos anúncios é de 12,15% desde jan/2026. A forma de pagamento e o percentual valem para todos os meses deste cliente.</div>
     <div class="modal-actions"><button class="cancel" id="verbaCancelBtn">Cancelar</button><button class="save" id="verbaSaveBtn">Salvar</button></div>
   </div>
 </div>
@@ -3370,11 +3375,13 @@ function renderDashVertice(){
   const ativosL = clientes.filter(c=>c.status==='ativo');
   const verbaTotal = ativosL.reduce((a,c)=>a+((verbaDoMes(c,mesAtual)||{valor:0}).valor),0);
   const gastoTotal = ativosL.reduce((a,c)=>a+gastoDoMes(c,mesAtual),0);
+  let midiaTot=0, impTot=0, semModo=0;
+  ativosL.forEach(c=>{ const vb=verbaDoMes(c,mesAtual); if(!vb) return; const mc=metaCalc(c,mesAtual); if(mc.modo){ midiaTot+=mc.midia; impTot+=mc.impVerba; } else { midiaTot+=vb.valor; if(vb.valor>0) semModo++; } });
   kp.innerHTML = `
     <div class="kh" style="--kc:var(--gold)"><div class="n money">${brl(recebido+falta)}</div><div class="l">Receita de ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Recebido ${brl(recebido)} · Falta ${brl(falta)}${atrasado>0?` · <b class="red">${brl(atrasado)} atrasado</b>`:''}</div></div>
     <div class="kh" style="--kc:var(--ok)"><div class="n">${ativos}</div><div class="l">Clientes ativos</div>${(pausados||encerrados)?`<div class="s">${pausados} pausado${pausados===1?'':'s'} · ${encerrados} encerrado${encerrados===1?'':'s'}</div>`:''}</div>
     <div class="kh" style="--kc:var(--ink)"><div class="n">${proximos.length}</div><div class="l">Vencem nos próximos 7 dias</div><div class="s">${proximos.length?brl(somaProx):'Nenhum por enquanto'}</div></div>
-    <div class="kh" style="--kc:var(--pend-fg)"><div class="n money">${brl(verbaTotal)}</div><div class="l">Verba de anúncios em ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Gasto ${brl(gastoTotal)} · dos clientes, não é receita</div></div>`;
+    <div class="kh" style="--kc:var(--pend-fg)"><div class="n money">${brl(verbaTotal)}</div><div class="l">Verba de anúncios em ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Anúncios ${brl(midiaTot)} · Imposto Meta ${brl(impTot)}${semModo?` <span title="Escolha a forma de pagamento da Meta em Editar verba">(${semModo} cliente${semModo===1?'':'s'} sem forma de pagamento)</span>`:''}<br>Gasto ${brl(gastoTotal)} · dos clientes, não é receita</div></div>`;
   // verba e receita por cliente
   const vbLinhas = clientes.map(c=>({nome:c.nome||'Cliente', inv:(verbaDoMes(c,mesAtual)||{valor:0}).valor, gas:gastoDoMes(c,mesAtual)})).filter(x=>x.inv>0||x.gas>0);
   const vbMax = Math.max(...vbLinhas.map(x=>Math.max(x.inv,x.gas)),0);
@@ -3484,6 +3491,19 @@ function verbaDoMes(c, mes){
   const ant = Object.keys(v).filter(k=>k<mes).sort().pop();
   return ant ? {valor:Number(v[ant])||0, herdada:true} : null;
 }
+function metaTaxa(c){ const t = numOuNull(c.metaImposto); return (t!==null && t>=0 ? t : 12.15)/100; }
+/* imposto da Meta: pre = Pix/boleto (o imposto sai do depósito); cartao = imposto vem por cima do gasto */
+function metaCalc(c, mes){
+  const modo = c.metaPagamento==='pre' || c.metaPagamento==='cartao' ? c.metaPagamento : null;
+  const t = metaTaxa(c);
+  const vb = verbaDoMes(c, mes);
+  const gMeta = (c.campanhas||[]).filter(k=>k.plataforma==='meta').reduce((a,k)=>a+(Number(campGasto(k,mes))||0),0);
+  if(!modo) return {modo:null, t, gMeta, midia:vb?vb.valor:null, impVerba:null, impGasto:null};
+  const midia = vb ? (modo==='pre' ? vb.valor*(1-t) : vb.valor/(1+t)) : null;
+  const impVerba = vb ? vb.valor-midia : null;
+  const impGasto = modo==='pre' ? gMeta*t/(1-t) : gMeta*t;
+  return {modo, t, gMeta, midia, impVerba, impGasto};
+}
 function campDados(k, mes){ return (k.meses||{})[mes] || {}; }
 function campGasto(k, mes){
   const cj = k.conjuntos||[];
@@ -3506,13 +3526,19 @@ function campanhasHtml(c){
   const vb = verbaDoMes(c, mes);
   const gasto = gastoDoMes(c, mes);
   const camps = c.campanhas||[];
-  const resta = vb ? vb.valor-gasto : null;
-  const pct = vb && vb.valor>0 ? Math.min(100, Math.round(gasto/vb.valor*100)) : 0;
+  const mc = metaCalc(c, mes);
+  const baseResta = mc.midia!==null ? mc.midia : (vb ? vb.valor : null);
+  const resta = baseResta!==null ? baseResta-gasto : null;
+  const pct = baseResta>0 ? Math.min(100, Math.round(gasto/baseResta*100)) : 0;
+  const pctTxt = (mc.t*100).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const modoTxt = mc.modo==='pre' ? 'Pix/boleto (pré-pago)' : (mc.modo==='cartao' ? 'cartão (pós-pago)' : '');
   const verba = `<div class="verba-box">
       <div class="verba-n"><div class="l">Verba do mês (o cliente investe)</div><div class="n">${vb?brl(vb.valor):'—'}</div>${vb&&vb.herdada?'<div class="s">repetida do mês anterior</div>':''}</div>
+      ${mc.modo&&vb?`<div class="verba-n"><div class="l">Vai pra anúncios</div><div class="n">${brl(mc.midia)}</div></div><div class="verba-n"><div class="l">Imposto da Meta (${pctTxt}%)</div><div class="n">${brl(mc.impVerba)}</div></div>`:''}
       <div class="verba-n"><div class="l">Gasto (soma das campanhas)</div><div class="n">${brl(gasto)}</div></div>
-      <div class="verba-n"><div class="l">${resta!==null&&resta<0?'Passou da verba':'Ainda resta'}</div><div class="n" style="${resta!==null&&resta<0?'color:var(--urgent);':''}">${resta!==null?brl(Math.abs(resta)):'—'}</div></div>
-    </div>${vb&&vb.valor>0?`<div class="verba-bar"><i style="width:${pct}%"></i></div>`:''}`;
+      <div class="verba-n"><div class="l">${resta!==null&&resta<0?'Passou da verba':'Ainda resta (em anúncios)'}</div><div class="n" style="${resta!==null&&resta<0?'color:var(--urgent);':''}">${resta!==null?brl(Math.abs(resta)):'—'}</div></div>
+    </div>${baseResta>0?`<div class="verba-bar"><i style="width:${pct}%"></i></div>`:''}
+    ${mc.modo ? (mc.gMeta>0?`<div class="hi-sub" style="margin-top:6px;">Gasto na Meta ${brl(mc.gMeta)} + imposto ${brl(mc.impGasto)} = custo real <b>${brl(mc.gMeta+mc.impGasto)}</b> (${modoTxt}).</div>`:`<div class="hi-sub" style="margin-top:6px;">Pagamento da Meta: ${modoTxt}.</div>`) : `<div class="ficha-aviso">Para ver quanto da verba vai pra anúncios e quanto vai pra imposto da Meta, escolha como o cliente paga a Meta em "Editar verba".</div>`}`;
   const cards = camps.length ? camps.map(k=>{
     const d = campDados(k, mes);
     const gasK = campGasto(k, mes), gk = numOuNull(gasK), lk = numOuNull(d.leads), vv = numOuNull(d.valorVendido);
@@ -3578,6 +3604,8 @@ function openVerbaModal(c){
   const vb = verbaDoMes(c, campMesSel);
   document.getElementById('verbaTitulo').textContent = 'Verba de '+mesLabel(campMesSel);
   document.getElementById('verba-valor').value = vb ? String(vb.valor).replace('.',',') : '';
+  document.getElementById('verba-modo').value = c.metaPagamento||'';
+  document.getElementById('verba-taxa').value = String(Math.round(metaTaxa(c)*10000)/100).replace('.',',');
   document.getElementById('overlayVerba').classList.add('open');
 }
 document.getElementById('verbaCancelBtn').onclick = ()=>document.getElementById('overlayVerba').classList.remove('open');
@@ -3586,7 +3614,9 @@ document.getElementById('verbaSaveBtn').onclick = async ()=>{
   const c = data.clientes.find(x=>x.id===(verbaCliente&&verbaCliente.id)); if(!c) return;
   const valor = parseBRL(document.getElementById('verba-valor').value);
   if(!(valor>=0)){ alert('Escreva a verba do mês. Ex: 3000,00'); return; }
-  try{ await setDoc(doc(db,'clientes_vertice',c.id), {verbas:{[campMesSel]:valor}}, {merge:true}); document.getElementById('overlayVerba').classList.remove('open'); }
+  const taxa = parseBRL(document.getElementById('verba-taxa').value);
+  if(!(taxa>=0 && taxa<100)){ alert('Escreva o percentual do imposto. Ex: 12,15'); return; }
+  try{ await setDoc(doc(db,'clientes_vertice',c.id), {verbas:{[campMesSel]:valor}, metaPagamento:document.getElementById('verba-modo').value, metaImposto:taxa}, {merge:true}); document.getElementById('overlayVerba').classList.remove('open'); }
   catch(e){ console.error(e); alert('Não consegui salvar a verba.'); }
 };
 function openCampanhaModal(c, id){

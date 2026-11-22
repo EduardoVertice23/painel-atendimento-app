@@ -147,6 +147,10 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .chip-pag.pago{background:var(--done-bg);color:var(--ok-text);}
 .chip-pag.pendente{background:var(--vis-bg);color:var(--vis-fg);}
 .chip-pag.atrasado{background:var(--urgent-bg);color:var(--urgent);}
+.ficha-abas{display:flex;gap:6px;overflow-x:auto;margin:0 0 16px;padding-bottom:4px;-webkit-overflow-scrolling:touch;border-bottom:1px solid var(--line);}
+.ficha-abas button{flex:none;border:0;background:transparent;color:var(--text-dim);font-family:inherit;font-weight:600;font-size:13.5px;padding:10px 14px;border-radius:10px 10px 0 0;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;}
+.ficha-abas button.on{color:var(--ink);border-bottom-color:var(--gold);background:var(--bg);}
+.ficha-pane{display:none;}.ficha-pane.on{display:block;}
 .ficha-aviso{font-size:13px;color:var(--text-dim);padding:10px 12px;background:var(--bg);border:1px dashed var(--line);border-radius:10px;margin-top:8px;}
 .cat-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;}
 .cli-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px;}
@@ -459,6 +463,7 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 
 <div class="view" id="view-vdash">
   <div class="kpi-hoje" id="vdKpis"></div>
+  <div class="hoje-block"><h3>Tráfego pago administrado <span class="cnt">gasto real, sem imposto</span></h3><div class="kpi-hoje" id="vdTrafego" style="margin-bottom:0;"></div></div>
   <div class="hoje-block"><h3>Receita mês a mês <span class="cnt">últimos 6 meses</span></h3><div id="vdChart"></div></div>
   <div class="panel-row">
     <div class="panel"><h3>Verba de anúncios por cliente <span style="font-size:12px;font-weight:500;color:var(--text-dim);">· neste mês</span></h3><div id="vdVerba"></div></div>
@@ -3434,6 +3439,20 @@ function renderDashVertice(){
     <div class="kh" style="--kc:var(--ok)"><div class="n">${ativos}</div><div class="l">Clientes ativos</div>${(pausados||encerrados)?`<div class="s">${pausados} pausado${pausados===1?'':'s'} · ${encerrados} encerrado${encerrados===1?'':'s'}</div>`:''}</div>
     <div class="kh" style="--kc:var(--ink)"><div class="n">${proximos.length}</div><div class="l">Vencem nos próximos 7 dias</div><div class="s">${proximos.length?brl(somaProx):'Nenhum por enquanto'}</div></div>
     <div class="kh" style="--kc:var(--pend-fg)"><div class="n money">${brl(verbaTotal)}</div><div class="l">Verba de anúncios em ${MESES_PT[agora.getMonth()].toLowerCase()}</div><div class="s">Anúncios ${brl(midiaTot)} · Imposto Meta ${brl(impTot)}${semModo?` <span title="Escolha a forma de pagamento da Meta em Editar verba">(${semModo} cliente${semModo===1?'':'s'} sem forma de pagamento)</span>`:''}<br>Gasto ${brl(gastoTotal)} · dos clientes, não é receita</div></div>`;
+  // tráfego pago administrado (gasto dos anúncios, sem imposto)
+  {
+    const mesN = MESES_PT[agora.getMonth()].toLowerCase();
+    let mM=0, mG=0, aM=0, aG=0, nTot=0, nMes=0, nAtiv=0;
+    clientes.forEach(c=>{
+      mM += gastoPlat(c,mesAtual,'meta'); mG += gastoPlat(c,mesAtual,'google');
+      aM += gastoAntesDe(c,mesAtual,'meta'); aG += gastoAntesDe(c,mesAtual,'google');
+      (c.campanhas||[]).forEach(k=>{ nTot++; if(k.status==='ativa') nAtiv++; if((k.subiuEm||'').slice(0,7)===mesAtual) nMes++; });
+    });
+    document.getElementById('vdTrafego').innerHTML = `
+      <div class="kh" style="--kc:var(--gold)"><div class="n money">${brl(mM+mG)}</div><div class="l">Administrado em ${mesN}</div><div class="s">Meta ${brl(mM)} · Google ${brl(mG)}</div></div>
+      <div class="kh" style="--kc:var(--ink)"><div class="n money">${brl(aM+aG)}</div><div class="l">Meses anteriores</div><div class="s">Meta ${brl(aM)} · Google ${brl(aG)}</div></div>
+      <div class="kh" style="--kc:var(--ok)"><div class="n">${nTot}</div><div class="l">Campanhas criadas</div><div class="s">${nMes} subiram em ${mesN} · ${nAtiv} ativa${nAtiv===1?'':'s'} agora</div></div>`;
+  }
   // verba e receita por cliente
   const vbLinhas = clientes.map(c=>({nome:c.nome||'Cliente', inv:(verbaDoMes(c,mesAtual)||{valor:0}).valor, gas:gastoDoMes(c,mesAtual)})).filter(x=>x.inv>0||x.gas>0);
   const vbMax = Math.max(...vbLinhas.map(x=>Math.max(x.inv,x.gas)),0);
@@ -3542,7 +3561,8 @@ function dadoRow(k, v, extra){
   return `<div class="dado-row"><div class="k">${k}</div><div class="v${vazio?' vazio':''}">${vazio?'—':v}</div>${extra||''}</div>`;
 }
 /* ===== CAMPANHAS E VERBA (etapa 3) ===== */
-let campMesSel = null, campFichaId = null;
+let campMesSel = null, campFichaId = null, fichaAba = 'campanhas';
+const FICHA_ABAS = [['dados','Dados'],['servicos','Serviços'],['campanhas','Campanhas e verba'],['relatorios','Relatórios'],['contrato','Contrato'],['briefing','Briefing'],['pagamentos','Pagamentos'],['timeline','Linha do tempo']];
 const CAMP_PLAT = {meta:'Meta', google:'Google'};
 const CAMP_STATUS_CLS = {ativa:'ativo', pausada:'pausado', encerrada:''};
 const CAMP_STATUS_TXT = {ativa:'Ativa', pausada:'Pausada', encerrada:'Encerrada'};
@@ -3572,6 +3592,13 @@ function temConjMes(k, mes){ return (k.conjuntos||[]).some(j=>(j.gastos||{})[mes
 function campGasto(k, mes){
   if(temConjMes(k, mes)) return (k.conjuntos||[]).reduce((a,j)=>a+(Number((j.gastos||{})[mes])||0),0);
   return numOuNull(campDados(k,mes).gasto);
+}
+function gastoPlat(c, mes, plat){ return (c.campanhas||[]).filter(k=>(k.plataforma||'meta')===plat).reduce((a,k)=>a+(Number(campGasto(k,mes))||0),0); }
+function mesesDaCampanha(k){ const ms=new Set(Object.keys(k.meses||{})); (k.conjuntos||[]).forEach(j=>Object.keys(j.gastos||{}).forEach(m=>ms.add(m))); return [...ms]; }
+function gastoAntesDe(c, mesLimite, plat){
+  let t=0;
+  (c.campanhas||[]).filter(k=>(k.plataforma||'meta')===plat).forEach(k=>mesesDaCampanha(k).forEach(m=>{ if(m<mesLimite) t+=Number(campGasto(k,m))||0; }));
+  return t;
 }
 function gastoDoMes(c, mes){ return (c.campanhas||[]).reduce((a,k)=>a+(Number(campGasto(k,mes))||0),0); }
 function campId(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -4020,7 +4047,7 @@ function renderFicha(){
   const box = document.getElementById('clienteFicha');
   const c = (data.clientes||[]).find(x=>x.id===fichaId);
   if(!c){ mostrarListaClientes(); if(document.getElementById('view-clientes').classList.contains('active')) atualizarTitulo(document.querySelector('.tabs .tab.active')); return; }
-  if(campFichaId!==c.id || !campMesSel){ campFichaId = c.id; campMesSel = mesKey(new Date()); }
+  if(campFichaId!==c.id || !campMesSel){ if(campFichaId!==c.id) fichaAba = 'campanhas'; campFichaId = c.id; campMesSel = mesKey(new Date()); }
   const af = document.activeElement; const afKey = af && af.dataset ? af.dataset.conjGasto : null; const afVal = afKey ? af.value : null;
   const nome = c.nome||'(sem nome)';
   const st = CLIENTE_STATUS.find(x=>x.id===(c.status||'ativo')) || CLIENTE_STATUS[0];
@@ -4056,14 +4083,21 @@ function renderFicha(){
       <div class="ficha-head"><div class="cli-av" aria-hidden="true">${escapeHtml(iniciais(nome))}</div><span class="chip-status ${st.id}" style="margin-left:0;font-size:12px;padding:4px 12px;">${st.label}</span></div>
       <button class="addbtn sec" id="fichaEditar">✏️ Editar dados</button>
     </div>
-    <div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div>
-    <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">Escolher serviços</button></div>${servHtml}</div>
-    ${campanhasHtml(c)}
-    ${relatoriosHtml(c)}
-    ${contratoHtml(c)}
-    ${briefingHtml(c)}
-    <div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div>
-    ${timelineHtml(c)}`;
+    <div class="ficha-abas" role="tablist">${FICHA_ABAS.map(([id,nm])=>`<button type="button" role="tab" data-ficha-aba="${id}" class="${id===fichaAba?'on':''}">${nm}</button>`).join('')}</div>
+    <div class="ficha-pane${fichaAba==='dados'?' on':''}" data-pane="dados"><div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div></div>
+    <div class="ficha-pane${fichaAba==='servicos'?' on':''}" data-pane="servicos"><div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">Escolher serviços</button></div>${servHtml}</div></div>
+    <div class="ficha-pane${fichaAba==='campanhas'?' on':''}" data-pane="campanhas">${campanhasHtml(c)}</div>
+    <div class="ficha-pane${fichaAba==='relatorios'?' on':''}" data-pane="relatorios">${relatoriosHtml(c)}</div>
+    <div class="ficha-pane${fichaAba==='contrato'?' on':''}" data-pane="contrato">${contratoHtml(c)}</div>
+    <div class="ficha-pane${fichaAba==='briefing'?' on':''}" data-pane="briefing">${briefingHtml(c)}</div>
+    <div class="ficha-pane${fichaAba==='pagamentos'?' on':''}" data-pane="pagamentos"><div class="hoje-block"><h3>Pagamentos</h3>${pagHtml}${aviso}</div></div>
+    <div class="ficha-pane${fichaAba==='timeline'?' on':''}" data-pane="timeline">${timelineHtml(c)}</div>`;
+  box.querySelectorAll('[data-ficha-aba]').forEach(b=>{ b.onclick = ()=>{
+    fichaAba = b.dataset.fichaAba;
+    box.querySelectorAll('[data-ficha-aba]').forEach(x=>x.classList.toggle('on', x===b));
+    box.querySelectorAll('.ficha-pane').forEach(pn=>pn.classList.toggle('on', pn.dataset.pane===fichaAba));
+    if(b.scrollIntoView) b.scrollIntoView({block:'nearest', inline:'center'});
+  }; });
   document.getElementById('fichaVoltar').onclick = ()=>{ mostrarListaClientes(); atualizarTitulo(document.querySelector('.tabs .tab.active')); };
   document.getElementById('fichaEditar').onclick = ()=>openClienteModal(c);
   document.getElementById('fichaAddServico').onclick = ()=>openClienteServicoModal(c);

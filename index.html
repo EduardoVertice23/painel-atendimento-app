@@ -2055,6 +2055,7 @@ const BUYER_MSG_TYPES = [
   {id:'posvisita', label:'Pós-visita'},
   {id:'proposta', label:'Proposta'},
   {id:'reengajar', label:'Reengajar'},
+  {id:'indisponivel', label:'Imóvel indisponível'},
 ];
 function buildBuyerMessage(c, typeId, toneId){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
@@ -2101,6 +2102,11 @@ function buildBuyerMessage(c, typeId, toneId){
       gentil: `Oi ${first}, tudo bem? Sumimos um pouco no papo :) Só queria saber se ainda faz sentido eu te ajudar, sem compromisso nenhum.`,
       direta: `Oi ${first}, tudo bem? Faz um tempo que não conversamos — ainda tem interesse em encontrar um imóvel?`,
       urgencia: `Oi ${first}! Antes de encerrar por aqui, queria confirmar: ainda tem interesse? Tenho opções novas que podem combinar com você.`,
+    },
+    indisponivel: {
+      gentil: `Oi ${first}, tudo bem? Infelizmente o imóvel que você viu não está mais disponível. Já vou procurar outras opções parecidas e te aviso assim que tiver novidade 🙂`,
+      direta: `Oi ${first}! O imóvel não está mais disponível. Vou procurar outras opções parecidas e te mando em breve.`,
+      urgencia: `Oi ${first}, o imóvel que você viu acabou de sair do mercado. Já estou buscando outras opções parecidas e te mando assim que aparecer algo, as boas saem rápido.`,
     },
   };
   return T[typeId][toneId];

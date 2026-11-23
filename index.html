@@ -1122,6 +1122,9 @@ const imoveisCol = collection(db, 'imoveis');
 const visitasCol = collection(db, 'visitas');
 const tarefasCol = collection(db, 'tarefas');
 const briefingsCol = collection(db, 'briefings_clientes_vertice');
+const briefingsGmnCol = collection(db, 'briefings_perfil_google');
+let brfListaA = [], brfListaB = [];
+function juntaBriefings(){ data.briefings = brfListaA.concat(brfListaB); }
 const clientesCol = collection(db, 'clientes_vertice');
 const servicosCol = collection(db, 'servicos_vertice');
 
@@ -1377,10 +1380,15 @@ function startListeners(){
   }, err=>{ console.error(err); });
 
   onSnapshot(briefingsCol, snap=>{
-    data.briefings = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    brfListaA = snap.docs.map(d=>({id:d.id, _col:'briefings_clientes_vertice', ...d.data()}));
+    juntaBriefings();
     if(typeof fichaId!=='undefined' && fichaId && typeof renderFicha==='function') renderFicha();
     renderBriefings();
   }, err=>{ console.error(err); data.briefings = null; renderBriefings(); });
+  onSnapshot(briefingsGmnCol, snap=>{
+    brfListaB = snap.docs.map(d=>({id:d.id, _col:'briefings_perfil_google', ...d.data()}));
+    if(Array.isArray(data.briefings)){ juntaBriefings(); if(typeof fichaId!=='undefined' && fichaId && typeof renderFicha==='function') renderFicha(); renderBriefings(); }
+  }, err=>{ console.error('briefings do Perfil no Google: sem permissão ainda', err); brfListaB = []; });
 
   onSnapshot(servicosCol, snap=>{
     data.servicos = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
@@ -4950,7 +4958,7 @@ function renderBriefings(){
     ev.preventDefault(); ev.stopPropagation();
     const b = data.briefings.find(x=>x.id===btn.dataset.brfDel); if(!b) return;
     if(!confirm(`Excluir o briefing de ${b.cliente||'cliente'} enviado em ${brfDataTxt(b)} (versão ${b.versao||1})? Não dá pra desfazer.`)) return;
-    try{ await deleteDoc(doc(db,'briefings_clientes_vertice',b.id)); }
+    try{ await deleteDoc(doc(db,b._col||'briefings_clientes_vertice',b.id)); }
     catch(e){ console.error(e); alert('Não consegui excluir. Confira se as regras do Firestore já têm o seu UID.'); }
   }; });
 }

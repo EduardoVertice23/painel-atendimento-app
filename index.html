@@ -739,6 +739,27 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
   </div>
 </div>
 
+<div class="overlay" id="overlayGoogle">
+  <div class="modal" style="max-width:520px;">
+    <h2>Colar resumo do Google</h2>
+    <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Cole aqui o bloco que o Claude gerou com os dados do Perfil da Empresa no Google. O painel atualiza os números do mês, a ficha, as pendências, os posts e as avaliações que esperam resposta. Nada é apagado: pendências e posts novos entram, os que já existem não duplicam.</div>
+    <div class="field"><label>Bloco de dados</label><textarea id="google-texto" rows="8" placeholder="Cole aqui..." style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:monospace;font-size:12px;background:var(--bg);color:var(--text);"></textarea></div>
+    <div class="modal-actions"><button class="cancel" id="googleCancelBtn">Cancelar</button><button class="save" id="googleSaveBtn">Importar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayGPend">
+  <div class="modal" style="max-width:420px;">
+    <h2>Nova pendência do perfil</h2>
+    <div class="field"><label>O que precisa ser feito</label><input type="text" id="gp-texto" placeholder="Ex: Cadastrar lista de serviços"></div>
+    <div class="field-row">
+      <div class="field"><label>Prazo (opcional)</label><input type="date" id="gp-prazo"></div>
+      <div class="field"><label>Responsável (opcional)</label><input type="text" id="gp-resp" placeholder="Ex: Diego"></div>
+    </div>
+    <div class="modal-actions"><button class="cancel" id="gpCancelBtn">Cancelar</button><button class="save" id="gpSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="overlayConjunto">
   <div class="modal" style="max-width:400px;">
     <h2 id="conjTitulo">Novo conjunto de anúncios</h2>
@@ -3346,6 +3367,7 @@ function renderInicio(){
   const tarHoje = pend.filter(t=>t.vencimento.slice(0,10)===hojeStr).length;
   let pagAtr = 0;
   (data.clientes||[]).forEach(c=>Object.values(c.pagamentos||{}).forEach(p=>{ if(p.status!=='pago' && diasAte(p.vencimento)<0) pagAtr++; }));
+  let gAtr = 0; (data.clientes||[]).forEach(c=>{ gAtr += gPendAtrasadas(c).length; });
   const visHoje = (data.visitas||[]).filter(v=>v.status==='agendada' && v.data===hojeStr).length;
   const visAman = (data.visitas||[]).filter(v=>v.status==='agendada' && v.data===amanhaStr).length;
   const leadsParados = (data.compradores||[]).filter(c=>c.stage!=='fechado' && c.stage!=='perdido' && daysSince(c.ultimoContato)>=3).length;
@@ -3355,7 +3377,7 @@ function renderInicio(){
   const hora = agora.getHours();
   const saud = hora<12 ? 'Bom dia' : (hora<18 ? 'Boa tarde' : 'Boa noite');
   const plural = (n,s,p)=>n+' '+(n===1?s:p);
-  const atrasosTot = tarAtrBaru+tarAtrVert+pagAtr;
+  const atrasosTot = tarAtrBaru+tarAtrVert+pagAtr+gAtr;
   const frase = `Hoje: ${plural(tarHoje,'tarefa','tarefas')} e ${plural(visHoje,'visita','visitas')}.` + (atrasosTot ? ` Atrasado: ${atrasosTot} ${atrasosTot===1?'item':'itens'}.` : ' Nada atrasado 🎉');
 
   const card = (n, label, sub, go, extra)=>`<div class="kh click${n?'':' zero'}" style="--kc:${n?'var(--urgent)':'var(--ok)'}" role="button" tabindex="0" ${go}><div class="n">${n}</div><div class="l">${label}</div>${sub?`<div class="s">${sub}</div>`:''}</div>`;
@@ -3363,6 +3385,7 @@ function renderInicio(){
     card(tarAtrBaru, 'Tarefas atrasadas · Baru', '', 'data-ini-go="tarefas"'),
     card(tarAtrVert, 'Tarefas atrasadas · Vértice', '', 'data-ini-go="vtarefas"'),
     card(pagAtr, 'Pagamentos atrasados · Vértice', '', 'data-ini-go="vdash"'),
+    card(gAtr, 'Pendências do Perfil Google atrasadas', '', 'data-ini-go="clientes"'),
     card(visHoje+visAman, 'Visitas hoje e amanhã', `${visHoje} hoje · ${visAman} amanhã`, 'data-ini-go="visitas"'),
     card(leadsParados, 'Leads sem contato há 3+ dias', '', 'data-ini-go="buyers"'),
     card(donosParados, 'Proprietários sem contato há 3+ dias', '', 'data-ini-go="owners"'),
@@ -3837,7 +3860,7 @@ function dadoRow(k, v, extra){
 }
 /* ===== CAMPANHAS E VERBA (etapa 3) ===== */
 let campMesSel = null, campFichaId = null, fichaAba = 'campanhas';
-const FICHA_ABAS = [['dados','Dados'],['servicos','Serviços'],['campanhas','Campanhas e verba'],['relatorios','Relatórios'],['contrato','Contrato'],['briefing','Briefing'],['pagamentos','Pagamentos'],['timeline','Linha do tempo']];
+const FICHA_ABAS = [['dados','Dados'],['servicos','Serviços'],['campanhas','Campanhas e verba'],['relatorios','Relatórios'],['contrato','Contrato'],['briefing','Briefing'],['google','Perfil no Google'],['pagamentos','Pagamentos'],['timeline','Linha do tempo']];
 const CAMP_PLAT = {meta:'Meta', google:'Google'};
 const CAMP_STATUS_CLS = {ativa:'ativo', pausada:'pausado', encerrada:''};
 const CAMP_STATUS_TXT = {ativa:'Ativa', pausada:'Pausada', encerrada:'Encerrada'};
@@ -4007,6 +4030,152 @@ document.getElementById('campSaveBtn').onclick = async ()=>{
   if(i>=0) lista[i] = {...lista[i], ...base}; else lista.push({id:campId(), ...base, meses:{}});
   if(await salvarCampanhas(c, lista)) document.getElementById('overlayCampanha').classList.remove('open');
 };
+/* ---------- Perfil no Google (aba da ficha do cliente) ---------- */
+/* dados ficam em clientes_vertice/{id}.google = {numeros:{'AAAA-MM':{...}}, ficha:{}, historico:[], pendencias:[], posts:[], avaliacoesPendentes:[]} */
+function gDados(c){ return c.google||{}; }
+function gFmt(n){ return (n===undefined||n===null||n==='') ? '—' : Number(n).toLocaleString('pt-BR'); }
+function gId(){ return 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function gPendAtrasadas(c){
+  const h = localDateStr();
+  return (gDados(c).pendencias||[]).filter(x=>!x.feito && x.prazo && x.prazo<h);
+}
+function googleHtml(c){
+  const g = gDados(c);
+  const hoje = localDateStr();
+  const meses = Object.keys(g.numeros||{}).sort();
+  const mAt = meses[meses.length-1], mAnt = meses[meses.length-2];
+  const nAt = mAt ? g.numeros[mAt] : null, nAnt = mAnt ? g.numeros[mAnt] : null;
+  const met = (rot, chave, fmt)=>{
+    const v = nAt ? nAt[chave] : undefined;
+    let seta = '';
+    if(nAnt && v!=null && nAnt[chave]!=null){ const d = Number(v)-Number(nAnt[chave]); seta = d===0 ? '<div class="hi-sub">igual ao anterior</div>' : `<div class="hi-sub" style="color:${d>0?'var(--ok-text)':'var(--urgent)'};">${d>0?'↑':'↓'} ${Math.abs(d).toLocaleString('pt-BR',{maximumFractionDigits:1})}</div>`; }
+    return `<div><div class="l">${rot}</div><div class="v">${fmt?fmt(v):gFmt(v)}</div>${seta}</div>`;
+  };
+  const numerosHtml = nAt ? `<div class="hi-sub">${nAt.periodo?escapeHtml(nAt.periodo):mesLabel(mAt)}${nAnt?' · comparado com '+(nAnt.periodo?escapeHtml(nAnt.periodo):mesLabel(mAnt)):''}</div>
+    <div class="camp-met">
+      ${met('Impressões (vezes que apareceu)','impressoes')}
+      ${met('Ligações','ligacoes')}
+      ${met('Pedidos de rota','rotas')}
+      ${met('Cliques no site','cliquesSite')}
+      ${met('Avaliações no total','avaliacoesTotal')}
+      ${met('Nota média','notaMedia', x=>x==null?'—':Number(x).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}))}
+    </div>` : `<div class="hoje-empty">Sem números ainda. Use "Colar resumo do Google".</div>`;
+
+  const pend = (g.pendencias||[]).slice().sort((a,b)=> (a.feito?1:0)-(b.feito?1:0) || String(a.prazo||'9999').localeCompare(String(b.prazo||'9999')));
+  const pendHtml = pend.length ? pend.map(x=>{
+    const atras = !x.feito && x.prazo && x.prazo<hoje;
+    const sub = [x.prazo?('prazo '+dataBR(x.prazo)):'', x.responsavel?('com '+escapeHtml(x.responsavel)):''].filter(Boolean).join(' · ');
+    return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main" style="${x.feito?'text-decoration:line-through;opacity:.6;':''}">${escapeHtml(x.texto||'')}</div>${sub||atras?`<div class="hi-sub">${sub}${atras?' <span class="chip-pag atrasado" style="margin-left:6px;">atrasada</span>':''}</div>`:''}</div>
+      <div class="hi-actions"><button data-g-feito="${x.id}">${x.feito?'↩ Reabrir':'✓ Feito'}</button><button data-g-pend-del="${x.id}" title="Excluir">🗑</button></div></div>`;
+  }).join('') : `<div class="hoje-empty">Nenhuma pendência. Use "+ Pendência".</div>`;
+
+  const f = g.ficha||{};
+  const fichaHtml = [
+    dadoRow('Categoria principal', escapeHtml(f.categoriaPrincipal||'')),
+    dadoRow('Outras categorias', escapeHtml(f.categoriasSecundarias||'')),
+    dadoRow('Endereço', escapeHtml(f.endereco||'')),
+    dadoRow('Telefone', escapeHtml(f.telefone||'')),
+    dadoRow('Site / link', escapeHtml(f.site||'')),
+    dadoRow('Horários', escapeHtml(f.horarios||'')),
+    dadoRow('Descrição', escapeHtml(f.descricao||'')),
+    f.atualizadoEm ? `<div class="hi-sub" style="margin-top:6px;">Ficha atualizada em ${dataBR(f.atualizadoEm)}</div>` : ''
+  ].join('');
+  const hist = (g.historico||[]).slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).slice(0,15);
+  const histHtml = hist.length ? hist.map(h=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(h.texto||'')}</div><div class="hi-sub">${dataBR(h.data||'')}</div></div><div class="hi-actions"><button data-g-hist-del="${h.id}" title="Excluir">🗑</button></div></div>`).join('') : `<div class="hoje-empty">Nenhuma mudança registrada.</div>`;
+
+  const posts = (g.posts||[]).slice().sort((a,b)=>String(a.validade||'9999').localeCompare(String(b.validade||'9999')));
+  const postsHtml = posts.length ? posts.map(x=>{
+    const venc = x.validade && x.validade<hoje;
+    return `<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${escapeHtml(x.texto||'')}</div><div class="hi-sub"><span class="chip-pag ${x.aprovado?'pago':'pendente'}">${x.aprovado?'aprovado':'rascunho'}</span>${x.validade?' · vale até '+dataBR(x.validade):''}${venc?' <span class="chip-pag atrasado" style="margin-left:6px;">vencido: apagar ou trocar</span>':''}</div></div>
+      <div class="hi-actions"><button data-g-post-ok="${x.id}">${x.aprovado?'↩ Voltar p/ rascunho':'✓ Aprovar'}</button><button data-g-post-del="${x.id}" title="Excluir">🗑</button></div></div>`;
+  }).join('') : `<div class="hoje-empty">Nenhum post.</div>`;
+
+  const avs = g.avaliacoesPendentes||[];
+  const avsHtml = avs.length ? avs.map(x=>`<div class="hoje-item"><div style="min-width:0;"><div class="hi-main">${'★'.repeat(Math.max(0,Math.min(5,Number(x.nota)||0)))} ${escapeHtml(x.autor||'')}</div><div class="hi-sub">${escapeHtml(x.texto||'(sem texto)')}</div>${x.sugestao?`<div class="hi-sub" style="margin-top:4px;"><b>Sugestão de resposta:</b> ${escapeHtml(x.sugestao)}</div>`:''}</div>
+      <div class="hi-actions"><button data-g-av-ok="${x.id}">✓ Respondi</button></div></div>`).join('') : `<div class="hoje-empty">Nenhuma avaliação esperando resposta.</div>`;
+
+  return `<div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><h3 style="margin:0;">Perfil da Empresa no Google</h3><button class="addbtn sec" id="googleColar">📥 Colar resumo do Google</button></div>
+      <div class="hi-sub">Os números vêm do resumo que o Claude gera. O painel não escreve nada no Google.</div></div>
+    <div class="hoje-block"><h3>Números do período</h3>${numerosHtml}</div>
+    <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Pendências do perfil</h3><button class="addbtn sec" id="gPendNova">+ Pendência</button></div>${pendHtml}</div>
+    <div class="hoje-block"><h3>Ficha do perfil</h3>${fichaHtml}</div>
+    <div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Histórico de mudanças</h3><button class="addbtn sec" id="gHistNova">+ Registrar mudança</button></div>${histHtml}</div>
+    <div class="hoje-block"><h3>Posts</h3>${postsHtml}</div>
+    <div class="hoje-block"><h3>Avaliações esperando sua resposta</h3>${avsHtml}</div>`;
+}
+async function salvarGoogle(c, patch){
+  try{ await setDoc(doc(db,'clientes_vertice',c.id), {google:{...gDados(c), ...patch}}, {merge:true}); return true; }
+  catch(e){ console.error(e); alert('Não consegui salvar. Confere se a regra do Firestore da coleção clientes_vertice está publicada.'); return false; }
+}
+let gPendCliente = null;
+function bindGoogle(c, box){
+  const g = gDados(c);
+  const pane = box.querySelector('[data-pane="google"]'); if(!pane) return;
+  const q = (sel)=>pane.querySelector(sel);
+  const col = q('#googleColar'); if(col) col.onclick = ()=>{ gPendCliente = c; document.getElementById('google-texto').value=''; document.getElementById('overlayGoogle').classList.add('open'); document.getElementById('google-texto').focus(); };
+  const pn = q('#gPendNova'); if(pn) pn.onclick = ()=>{ gPendCliente = c; ['gp-texto','gp-prazo','gp-resp'].forEach(i=>document.getElementById(i).value=''); document.getElementById('overlayGPend').classList.add('open'); document.getElementById('gp-texto').focus(); };
+  const hn = q('#gHistNova'); if(hn) hn.onclick = async ()=>{
+    const t = (prompt('O que foi mudado no perfil? Ex: Troquei a descrição')||'').trim(); if(!t) return;
+    await salvarGoogle(c, {historico:(g.historico||[]).concat([{id:gId(), data:localDateStr(), texto:t}])});
+  };
+  pane.querySelectorAll('[data-g-feito]').forEach(b=>{ b.onclick = ()=>salvarGoogle(c, {pendencias:(g.pendencias||[]).map(x=>x.id!==b.dataset.gFeito?x:{...x, feito:!x.feito})}); });
+  pane.querySelectorAll('[data-g-pend-del]').forEach(b=>{ b.onclick = ()=>{ if(confirm('Excluir esta pendência?')) salvarGoogle(c, {pendencias:(g.pendencias||[]).filter(x=>x.id!==b.dataset.gPendDel)}); }; });
+  pane.querySelectorAll('[data-g-hist-del]').forEach(b=>{ b.onclick = ()=>{ if(confirm('Excluir este registro do histórico?')) salvarGoogle(c, {historico:(g.historico||[]).filter(x=>x.id!==b.dataset.gHistDel)}); }; });
+  pane.querySelectorAll('[data-g-post-ok]').forEach(b=>{ b.onclick = ()=>salvarGoogle(c, {posts:(g.posts||[]).map(x=>x.id!==b.dataset.gPostOk?x:{...x, aprovado:!x.aprovado})}); });
+  pane.querySelectorAll('[data-g-post-del]').forEach(b=>{ b.onclick = ()=>{ if(confirm('Excluir este post da lista?')) salvarGoogle(c, {posts:(g.posts||[]).filter(x=>x.id!==b.dataset.gPostDel)}); }; });
+  pane.querySelectorAll('[data-g-av-ok]').forEach(b=>{ b.onclick = ()=>salvarGoogle(c, {avaliacoesPendentes:(g.avaliacoesPendentes||[]).filter(x=>x.id!==b.dataset.gAvOk)}); });
+}
+document.getElementById('gpCancelBtn').onclick = ()=>document.getElementById('overlayGPend').classList.remove('open');
+document.getElementById('overlayGPend').onclick = e=>{ if(e.target.id==='overlayGPend') e.target.classList.remove('open'); };
+document.getElementById('gpSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(gPendCliente&&gPendCliente.id)); if(!c) return;
+  const texto = document.getElementById('gp-texto').value.trim();
+  if(!texto){ alert('Escreva o que precisa ser feito.'); return; }
+  const nova = {id:gId(), texto, prazo:document.getElementById('gp-prazo').value||'', responsavel:document.getElementById('gp-resp').value.trim(), feito:false};
+  if(await salvarGoogle(c, {pendencias:(gDados(c).pendencias||[]).concat([nova])})) document.getElementById('overlayGPend').classList.remove('open');
+};
+document.getElementById('googleCancelBtn').onclick = ()=>document.getElementById('overlayGoogle').classList.remove('open');
+document.getElementById('overlayGoogle').onclick = e=>{ if(e.target.id==='overlayGoogle') e.target.classList.remove('open'); };
+/* junta o bloco do Google com o que já existe. Não grava: devolve o objeto novo e o resumo. */
+function mesclarGoogle(c, p){
+  const g = gDados(c);
+  const novo = {...g, numeros:{...(g.numeros||{})}, ficha:{...(g.ficha||{})}, historico:(g.historico||[]).slice(), pendencias:(g.pendencias||[]).slice(), posts:(g.posts||[]).slice()};
+  const res = {numeros:false, ficha:0, pendNovas:0, pendFeitas:0, postsNovos:0, avaliacoes:null, hist:0};
+  if(p.numeros && /^\d{4}-\d{2}$/.test(String(p.mes||''))){
+    const n = {}; ['impressoes','ligacoes','rotas','cliquesSite','avaliacoesTotal','notaMedia'].forEach(k=>{ const v=numMeta(p.numeros[k]); if(v!==undefined) n[k]=v; });
+    if(p.periodo) n.periodo = String(p.periodo);
+    novo.numeros[p.mes] = {...(novo.numeros[p.mes]||{}), ...n}; res.numeros = true;
+  }
+  if(p.ficha){ ['categoriaPrincipal','categoriasSecundarias','endereco','telefone','site','horarios','descricao'].forEach(k=>{ if(p.ficha[k]!==undefined && p.ficha[k]!==null && p.ficha[k]!==''){ novo.ficha[k]=String(p.ficha[k]); res.ficha++; } }); if(res.ficha) novo.ficha.atualizadoEm = localDateStr(); }
+  (p.historico||[]).forEach(h=>{ if(!h||!h.texto) return; const d=String(h.data||localDateStr()).slice(0,10); if(!novo.historico.some(x=>x.data===d && normNome(x.texto)===normNome(h.texto))){ novo.historico.push({id:gId(), data:d, texto:String(h.texto)}); res.hist++; } });
+  (p.pendencias||[]).forEach(x=>{ if(!x||!x.texto) return; if(!novo.pendencias.some(y=>normNome(y.texto)===normNome(x.texto))){ novo.pendencias.push({id:gId(), texto:String(x.texto), prazo:String(x.prazo||'').slice(0,10), responsavel:String(x.responsavel||''), feito:false}); res.pendNovas++; } });
+  (p.pendenciasConcluidas||[]).forEach(t=>{ novo.pendencias = novo.pendencias.map(y=>{ if(!y.feito && normNome(y.texto)===normNome(t)){ res.pendFeitas++; return {...y, feito:true}; } return y; }); });
+  (p.posts||[]).forEach(x=>{ if(!x||!x.texto) return; if(!novo.posts.some(y=>normNome(y.texto)===normNome(x.texto))){ novo.posts.push({id:gId(), texto:String(x.texto), validade:String(x.validade||'').slice(0,10), aprovado:x.status==='publicado'||x.aprovado===true}); res.postsNovos++; } });
+  if(Array.isArray(p.avaliacoesPendentes)){ novo.avaliacoesPendentes = p.avaliacoesPendentes.map(a=>({id:gId(), autor:String(a.autor||''), nota:Number(a.nota)||0, texto:String(a.texto||''), sugestao:String(a.sugestao||'')})); res.avaliacoes = novo.avaliacoesPendentes.length; }
+  return {novo, res};
+}
+document.getElementById('googleSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(gPendCliente&&gPendCliente.id)); if(!c) return;
+  const txt = document.getElementById('google-texto').value.trim();
+  const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+  if(a<0 || b<=a){ alert('Não achei o bloco de dados. Cole tudo que o Claude mandou, do começo ao fim.'); return; }
+  let payload;
+  try{ payload = JSON.parse(txt.slice(a,b+1)); }catch(e){ alert('O texto colado está incompleto ou cortado. Copie o bloco inteiro de novo.'); return; }
+  if(!payload || payload.fonte!=='google'){ alert('Esse bloco não parece ser do Google (faltou "fonte":"google").'); return; }
+  const {novo, res} = mesclarGoogle(c, payload);
+  const linhas = [];
+  if(res.numeros) linhas.push('números do período atualizados');
+  if(res.ficha) linhas.push(res.ficha+' campo(s) da ficha');
+  if(res.hist) linhas.push(res.hist+' mudança(s) no histórico');
+  if(res.pendNovas) linhas.push(res.pendNovas+' pendência(s) nova(s)');
+  if(res.pendFeitas) linhas.push(res.pendFeitas+' pendência(s) marcada(s) como feita(s)');
+  if(res.postsNovos) linhas.push(res.postsNovos+' post(s) novo(s)');
+  if(res.avaliacoes!==null) linhas.push('lista de avaliações esperando resposta: '+res.avaliacoes);
+  if(!linhas.length){ alert('Nada para importar nesse bloco.'); return; }
+  if(!confirm('Importar para "'+(c.nome||'cliente')+'"?\n\n- '+linhas.join('\n- '))) return;
+  if(await salvarGoogle(c, novo)) document.getElementById('overlayGoogle').classList.remove('open');
+};
+
 /* ---------- Colar dados da Meta (importação) ---------- */
 let metaCliente = null;
 function openMetaModal(c){ metaCliente = c; document.getElementById('meta-texto').value=''; document.getElementById('overlayMeta').classList.add('open'); document.getElementById('meta-texto').focus(); }
@@ -4422,6 +4591,7 @@ function renderFicha(){
     <div class="ficha-pane${fichaAba==='dados'?' on':''}" data-pane="dados"><div class="hoje-block"><h3>Dados da empresa</h3>${dados}</div></div>
     <div class="ficha-pane${fichaAba==='servicos'?' on':''}" data-pane="servicos"><div class="hoje-block"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;"><h3 style="margin:0;">Serviços contratados</h3><button class="addbtn sec" id="fichaAddServico">Escolher serviços</button></div>${servHtml}</div></div>
     <div class="ficha-pane${fichaAba==='campanhas'?' on':''}" data-pane="campanhas">${campanhasHtml(c)}</div>
+    <div class="ficha-pane${fichaAba==='google'?' on':''}" data-pane="google">${googleHtml(c)}</div>
     <div class="ficha-pane${fichaAba==='relatorios'?' on':''}" data-pane="relatorios">${relatoriosHtml(c)}</div>
     <div class="ficha-pane${fichaAba==='contrato'?' on':''}" data-pane="contrato">${contratoHtml(c)}</div>
     <div class="ficha-pane${fichaAba==='briefing'?' on':''}" data-pane="briefing">${briefingHtml(c)}</div>
@@ -4445,6 +4615,7 @@ function renderFicha(){
   }; });
   bindPagamentoActions(box);
   bindCampanhas(c, box);
+  bindGoogle(c, box);
   bindEtapa4(c, box);
   if(afKey){ const novo = box.querySelector('[data-conj-gasto="'+afKey+'"]'); if(novo){ novo.value = afVal; novo.focus(); } }
 }

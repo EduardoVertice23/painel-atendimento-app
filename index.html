@@ -156,6 +156,160 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .cli-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px;}
 .mobilebar,.sb-backdrop{display:none;}
 .kpi-hoje{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
+/* ---------- Corretores ---------- */
+const CORR_LEMBRETE_DIAS = 1;
+let editingCorretorId = null;
+const corrAbertos = new Set();
+function corrUrlNorm(u){ return (u||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('#')[0].split('?')[0].replace(/\/+$/,''); }
+function corrNovoId(){ return 'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function corrLinkCurto(u){ return (u||'').replace(/^https?:\/\/(www\.)?/,'').slice(0,48)+((u||'').length>56?'…':''); }
+function corrDias(l){ return (l.status==='aguardando' && l.pedidoEm) ? daysSince(l.pedidoEm.slice(0,10)) : 0; }
+function corrSemResposta(l){ return l.status==='aguardando' && l.pedidoEm && corrDias(l)>=CORR_LEMBRETE_DIAS; }
+function corrTotalSemResposta(){ let n=0; (data.corretores||[]).forEach(c=>(c.links||[]).forEach(l=>{ if(corrSemResposta(l)) n++; })); return n; }
+function corrUrlLista(c){ return siteBaseUrl()+'formulario-corretor.html?c='+c.id; }
+function corrMensagem(c){
+  const first = (c.nome||'').split(' ')[0] || 'tudo bem';
+  const n = (c.links||[]).filter(l=>l.status==='aguardando').length;
+  if(n===0) return '';
+  const url = corrUrlLista(c);
+  return n===1
+    ? `Oi ${first}, tudo bem? Pode confirmar com o proprietário se esse imóvel ainda está disponível? É só tocar em Disponível ou Indisponível:\n\n${url}\n\nObrigado!`
+    : `Oi ${first}, tudo bem? Pode confirmar com os proprietários se esses imóveis ainda estão disponíveis? É só tocar em Disponível ou Indisponível em cada um:\n\n${url}\n\nObrigado!`;
+}
+function corrLeadsDoLink(url){
+  const key = corrUrlNorm(url); if(!key) return [];
+  return (data.compradores||[]).filter(c=>c.stage!=='fechado' && c.stage!=='perdido' && (corrUrlNorm(c.linkAnuncio)===key || (c.imoveisOpcoes||[]).some(o=>corrUrlNorm(o.url)===key)));
+}
+function corrStatusInfo(l){
+  if(l.status==='disponivel') return {txt:'Disponível', cor:'#2F8F6E'};
+  if(l.status==='indisponivel') return {txt:'Indisponível', cor:'#E1653D'};
+  return {txt:'Aguardando', cor:'#A7B2AB'};
+}
+function corrLinkHtml(c, l){
+  const st = corrStatusInfo(l);
+  const dias = corrDias(l);
+  const atras = corrSemResposta(l);
+  const leads = l.status==='indisponivel' ? corrLeadsDoLink(l.url) : [];
+  const dt = l.respondidoEm ? new Date(l.respondidoEm).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+  return `<div style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-top:7px;background:var(--bg);">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--ink);word-break:break-all;">${escapeHtml(corrLinkCurto(l.url))}</a>
+      <span class="status-pill" style="--status-color:${st.cor};">${st.txt}</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;">
+      ${l.status==='aguardando' ? (l.pedidoEm ? (atras ? `<b style="color:var(--urgent);">Sem resposta há ${dias} ${dias===1?'dia':'dias'}</b>` : 'Pedido enviado hoje') : 'Pedido ainda não enviado') : `Respondido em ${dt}`}
+    </div>
+    <div class="owner-actions" style="margin-top:7px;">
+      ${l.status!=='disponivel'?`<button data-ca="disponivel" data-c="${c.id}" data-l="${l.id}">✅ Disponível</button>`:''}
+      ${l.status!=='indisponivel'?`<button data-ca="indisponivel" data-c="${c.id}" data-l="${l.id}">❌ Indisponível</button>`:''}
+      ${l.status!=='aguardando'?`<button data-ca="aguardando" data-c="${c.id}" data-l="${l.id}">↩ Voltar pra aguardando</button>`:''}
+      <button class="danger" data-ca="dellink" data-c="${c.id}" data-l="${l.id}">✕</button>
+    </div>
+    ${leads.length ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12px;"><b>${leads.length} ${leads.length===1?'lead recebeu':'leads receberam'} esse imóvel — avise:</b>
+      ${leads.map(ld=>{ const wa = waLink(ld.contato, buildBuyerMessage(ld,'indisponivel','gentil')); return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;"><span>${escapeHtml(ld.nome||'Lead')}</span>${wa?`<a href="${wa}" target="_blank" rel="noopener" class="wa-send-link" data-kind="buyer" data-id="${ld.id}" style="text-decoration:none;"><button type="button" class="editbtn">💬 Avisar</button></a>`:'<span style="color:var(--text-dim);">sem telefone</span>'}</div>`; }).join('')}
+    </div>` : ''}
+  </div>`;
+}
+function corretorCardHtml(c){
+  const links = c.links||[];
+  const aguard = links.filter(l=>l.status==='aguardando').length;
+  const atras = links.filter(corrSemResposta).length;
+  const msg = corrMensagem(c);
+  const wa = (c.contato && msg) ? waLink(c.contato, msg) : null;
+  const aberto = corrAbertos.has(c.id);
+  const cor = atras ? '#E1653D' : (aguard ? '#D88820' : '#2F8F6E');
+  return `<div class="owner-card" style="--status-color:${cor}">
+    <div class="owner-top">
+      <div>
+        <div class="owner-name">${escapeHtml(c.nome||'Sem nome')}</div>
+        <div class="owner-imovel">📞 ${escapeHtml(c.contato||'sem telefone')}</div>
+      </div>
+      <span class="status-pill" style="--status-color:${cor};">${atras?atras+' sem resposta':aguard?aguard+' aguardando':links.length?'tudo respondido':'sem links'}</span>
+    </div>
+    <div class="field" style="margin:10px 0 0;"><label>Colar links dos imóveis <span>(um por linha)</span></label>
+      <textarea data-cnovos="${c.id}" placeholder="https://..."></textarea></div>
+    <div class="owner-actions">
+      <button data-ca="addlinks" data-c="${c.id}">+ Adicionar links</button>
+      ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="corr-wa" data-c="${c.id}" style="text-decoration:none;"><button type="button" style="background:var(--primary);color:#fff;border-color:var(--primary);">💬 Pedir confirmação${aguard>1?' ('+aguard+')':''}</button></a>`:''}
+      ${links.length?`<button data-ca="toggle" data-c="${c.id}">${aberto?'Esconder':'Ver'} links (${links.length})</button>`:''}
+      <button data-ca="copiar" data-c="${c.id}" data-t="${escapeHtml(corrUrlLista(c))}">🔗 Copiar link da lista</button>
+      <button data-ca="edit" data-c="${c.id}">Editar</button>
+      <button class="danger" data-ca="del" data-c="${c.id}">✕</button>
+    </div>
+    ${aberto ? links.map(l=>corrLinkHtml(c,l)).join('') : ''}
+  </div>`;
+}
+function renderCorretores(){
+  const box = document.getElementById('corretoresList'); if(!box) return;
+  const lista = data.corretores||[];
+  if(!lista.length){ box.innerHTML = '<div class="empty"><div class="big">Nenhum corretor ainda</div><div>Toque em "+ Novo corretor" pra começar.</div></div>'; return; }
+  box.innerHTML = lista.map(corretorCardHtml).join('');
+  bindCorretores(box);
+}
+function bindCorretores(box){
+  bindWaSendLinks();
+  const achar = id=>(data.corretores||[]).find(x=>x.id===id);
+  const salvarLinks = (c, links)=>setDoc(doc(db,'corretores',c.id), {links}, {merge:true});
+  box.querySelectorAll('.corr-wa').forEach(a=>{
+    a.addEventListener('click', ()=>{
+      const c = achar(a.dataset.c); if(!c) return;
+      const agora = new Date().toISOString();
+      const links = (c.links||[]).map(l=> (l.status==='aguardando' && !l.pedidoEm) ? {...l, pedidoEm:agora} : l);
+      salvarLinks(c, links).catch(()=>{});
+    });
+  });
+  box.querySelectorAll('[data-ca]').forEach(b=>{
+    b.onclick = async ()=>{
+      const c = achar(b.dataset.c); if(!c) return;
+      const act = b.dataset.ca;
+      const links = c.links||[];
+      if(act==='addlinks'){
+        const ta = box.querySelector('[data-cnovos="'+c.id+'"]');
+        const novas = (ta.value||'').split(/\s+/).map(x=>x.trim()).filter(x=>/^https?:\/\//i.test(x));
+        if(!novas.length){ alert('Cole pelo menos um link começando com http'); return; }
+        const existentes = new Set(links.map(l=>corrUrlNorm(l.url)));
+        const add = [];
+        novas.forEach(u=>{ const k=corrUrlNorm(u); if(existentes.has(k)) return; existentes.add(k); add.push({id:corrNovoId(), url:u, status:'aguardando', pedidoEm:null, respondidoEm:null}); });
+        if(!add.length){ alert('Esses links já estão na lista desse corretor.'); return; }
+        corrAbertos.add(c.id);
+        await salvarLinks(c, [...links, ...add]);
+      }
+      else if(act==='toggle'){ if(corrAbertos.has(c.id)) corrAbertos.delete(c.id); else corrAbertos.add(c.id); renderCorretores(); }
+      else if(act==='copiar'){ copyText(b.dataset.t, b); }
+      else if(act==='edit'){ openCorretorModal(c); }
+      else if(act==='del'){ if(confirm('Remover esse corretor e a lista de links dele?')) await deleteDoc(doc(db,'corretores',c.id)); }
+      else if(act==='dellink'){ if(confirm('Remover esse link?')) await salvarLinks(c, links.filter(l=>l.id!==b.dataset.l)); }
+      else if(act==='disponivel' || act==='indisponivel'){
+        await salvarLinks(c, links.map(l=> l.id===b.dataset.l ? {...l, status:act, respondidoEm:new Date().toISOString()} : l));
+      }
+      else if(act==='aguardando'){
+        await salvarLinks(c, links.map(l=> l.id===b.dataset.l ? {...l, status:'aguardando', respondidoEm:null, pedidoEm:new Date().toISOString()} : l));
+      }
+    };
+  });
+}
+function openCorretorModal(c){
+  editingCorretorId = c ? c.id : null;
+  document.getElementById('corretorModalTitle').textContent = c ? 'Editar corretor' : 'Novo corretor';
+  document.getElementById('co-nome').value = c ? (c.nome||'') : '';
+  document.getElementById('co-contato').value = c ? (c.contato||'') : '';
+  document.getElementById('overlayCorretor').classList.add('open');
+}
+document.getElementById('openAddCorretor').onclick = ()=>openCorretorModal(null);
+document.getElementById('corretorCancelBtn').onclick = ()=>document.getElementById('overlayCorretor').classList.remove('open');
+document.getElementById('overlayCorretor').onclick = e=>{ if(e.target.id==='overlayCorretor') e.target.classList.remove('open'); };
+document.getElementById('corretorSaveBtn').onclick = async ()=>{
+  const nome = document.getElementById('co-nome').value.trim();
+  const contato = document.getElementById('co-contato').value.trim();
+  if(!nome){ alert('Digite o nome do corretor'); return; }
+  if(!contato){ alert('Digite o telefone do corretor'); return; }
+  const id = editingCorretorId || doc(corretoresCol).id;
+  const rec = { nome, contato, contatoDigits: contato.replace(/\D/g,'') };
+  if(!editingCorretorId){ rec.links = []; rec.criadoEm = new Date().toISOString(); }
+  await setDoc(doc(db,'corretores',id), rec, {merge:true});
+  document.getElementById('overlayCorretor').classList.remove('open');
+};
+
 /* ---------- Tela Início ---------- */
 #view-inicio .ini-hello{font-family:'Montserrat',sans-serif;font-weight:700;font-size:22px;color:var(--ink);}
 #view-inicio .ini-frase{color:var(--text-dim);font-size:14px;margin-top:4px;line-height:1.5;}
@@ -437,6 +591,7 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
       <div class="tab" data-view="buyers" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Leads</div>
       <div class="tab" data-view="imoveis" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4"/></svg>Imóveis</div>
       <div class="tab" data-view="visitas" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Visitas</div>
+      <div class="tab" data-view="corretores" data-lado="baru"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18.5 14.8c1.6.7 2.5 2.3 2.5 5.2"/></svg>Corretores</div>
       <div class="tab" data-view="clientes" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.2c2.4.3 4 2.1 4 4.8"/></svg>Clientes</div>
       <div class="tab" data-view="briefings" data-lado="vertice" style="display:none;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h7M9 17h7"/></svg>Briefings</div>
   </nav>
@@ -584,6 +739,14 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
   <div id="imoveisList"></div>
 </div>
 
+<div class="view" id="view-corretores">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="font-size:12.5px;color:var(--text-dim);max-width:520px;">Cole os links dos imóveis no cartão do corretor e mande o pedido pelo WhatsApp. Ele responde tocando em Disponível ou Indisponível.</div>
+    <button class="addbtn" id="openAddCorretor">+ Novo corretor</button>
+  </div>
+  <div id="corretoresList"></div>
+</div>
+
 <div class="view" id="view-visitas">
   <div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="addbtn" id="openAddVisita">+ Nova visita</button></div>
   <div class="filterlabel">Mostrar</div>
@@ -592,6 +755,18 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 </div>
 
 </div>
+</div>
+
+<div class="overlay" id="overlayCorretor">
+  <div class="modal" style="max-width:420px;">
+    <h2 id="corretorModalTitle">Novo corretor</h2>
+    <div class="field"><label>Nome</label><input type="text" id="co-nome" placeholder="Ex: Marcos Silva"></div>
+    <div class="field"><label>Telefone (WhatsApp)</label><input type="text" id="co-contato" placeholder="(11) 99999-9999" inputmode="tel"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="corretorCancelBtn">Cancelar</button>
+      <button class="save" id="corretorSaveBtn">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <div class="overlay" id="overlayVisita">
@@ -1121,6 +1296,7 @@ const buyersCol = collection(db, 'compradores');
 const imoveisCol = collection(db, 'imoveis');
 const visitasCol = collection(db, 'visitas');
 const tarefasCol = collection(db, 'tarefas');
+const corretoresCol = collection(db, 'corretores');
 const briefingsCol = collection(db, 'briefings_clientes_vertice');
 const briefingsGmnCol = collection(db, 'briefings_perfil_google');
 let brfListaA = [], brfListaB = [];
@@ -1209,7 +1385,7 @@ const BUYER_STAGE_MSG_ALUGUEL = {
   perdido:'Perguntar o motivo da pausa, sem pressão, e manter a porta aberta.',
 };
 
-let data = { proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[], briefings:[], clientes:[], servicos:[] };
+let data = { corretores:[], proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[], briefings:[], clientes:[], servicos:[] };
 let personaFilter=null, priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
@@ -1400,6 +1576,11 @@ function startListeners(){
     data.clientes.forEach(garantirPagamentos);
     renderClientes(); renderHoje();
   }, err=>{ console.error(err); const b=document.getElementById('clientesBox'); if(b) b.innerHTML = '<div class="hoje-block"><div class="hoje-empty">Não consegui ler os clientes. Falta publicar a regra do Firestore da coleção clientes_vertice.</div></div>'; });
+
+  onSnapshot(corretoresCol, snap=>{
+    data.corretores = snap.docs.map(d=>({id:d.id, ...d.data()})).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+    renderCorretores(); renderHoje();
+  }, err=>{ console.error(err); const b=document.getElementById('corretoresList'); if(b) b.innerHTML = '<div class="empty"><div class="big">Não consegui ler os corretores</div><div>Falta publicar a regra nova no Firebase (me peça o passo a passo).</div></div>'; });
 
   onSnapshot(tarefasCol, snap=>{
     data.tarefas = snap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -3410,6 +3591,7 @@ function renderInicio(){
     card(tarAtrVert, 'Tarefas atrasadas · Vértice', '', 'data-ini-go="vtarefas"'),
     card(pagAtr, 'Pagamentos atrasados · Vértice', '', 'data-ini-go="vdash"'),
     card(gAtr, 'Pendências do Perfil Google atrasadas', '', 'data-ini-go="clientes"'),
+    card(corrTotalSemResposta(), 'Corretores sem resposta há 1+ dia', '', 'data-ini-go="corretores"'),
     card(visHoje+visAman, 'Visitas hoje e amanhã', `${visHoje} hoje · ${visAman} amanhã`, 'data-ini-go="visitas"'),
     card(leadsParados, 'Leads sem contato há 3+ dias', '', 'data-ini-go="buyers"'),
     card(donosParados, 'Proprietários sem contato há 3+ dias', '', 'data-ini-go="owners"'),

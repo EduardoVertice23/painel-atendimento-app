@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#11241F">
+<title>Baru Imóveis — Confirmar disponibilidade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --ink:#11241F; --bg:#F2F6F4; --card:#FFFFFF; --line:#DCE6E1;
+  --primary:#2F8F6E; --urgent:#E1653D; --text:#1B2A24; --text-dim:#5B6B63;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:560px;margin:0 auto;padding:28px 20px 60px;}
+header{text-align:center;margin-bottom:22px;}
+.mark{width:48px;height:48px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Newsreader',serif;font-weight:700;font-size:20px;margin:0 auto 12px;}
+h1{font-family:'Newsreader',serif;font-weight:600;font-size:22px;color:var(--ink);margin:0 0 6px;}
+p.sub{color:var(--text-dim);font-size:14px;margin:0;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px;margin-bottom:12px;}
+.item-link{display:block;font-size:14px;font-weight:600;color:var(--ink);word-break:break-all;margin-bottom:12px;}
+.bigchoice{display:flex;gap:10px;}
+.bigchoice button{flex:1;padding:15px 8px;border-radius:12px;border:2px solid var(--line);background:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text-dim);}
+.bigchoice button:disabled{opacity:.6;}
+.bigchoice button.sel-yes{border-color:var(--primary);background:color-mix(in srgb, var(--primary) 12%, white);color:var(--ink);}
+.bigchoice button.sel-no{border-color:var(--urgent);background:color-mix(in srgb, var(--urgent) 10%, white);color:var(--ink);}
+.saved{font-size:12px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+.saved.err{color:var(--urgent);}
+.msg{text-align:center;padding:40px 20px;color:var(--text-dim);}
+.hidden{display:none;}
+.done{text-align:center;color:var(--primary);font-weight:700;margin:16px 0 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">B</div>
+    <h1>Confirmar disponibilidade</h1>
+    <p class="sub" id="sub">Toque em Disponível ou Indisponível em cada imóvel.</p>
+  </header>
+
+  <div id="loading" class="card msg">Carregando...</div>
+  <div id="notfound" class="card msg hidden">Não encontramos essa lista. Fale com o Paulo pra receber um link novo.</div>
+  <div id="empty" class="card msg hidden">Não há imóveis nessa lista agora. Obrigado!</div>
+  <div id="list"></div>
+  <p class="done hidden" id="done">Tudo respondido. Obrigado! 🙌</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
+  authDomain: "atendimentoclientebv-658e7.firebaseapp.com",
+  projectId: "atendimentoclientebv-658e7",
+  storageBucket: "atendimentoclientebv-658e7.firebasestorage.app",
+  messagingSenderId: "641137924211",
+  appId: "1:641137924211:web:30adb0e6924abed1b7b206"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const id = new URLSearchParams(location.search).get('c');
+let corretor = null;
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function curto(u){ return (u||'').replace(/^https?:\/\/(www\.)?/,'').slice(0,60)+((u||'').length>68?'…':''); }
+const $ = x=>document.getElementById(x);
+
+function mostrar(idShow){
+  ['loading','notfound','empty'].forEach(x=>$(x).classList.add('hidden'));
+  if(idShow) $(idShow).classList.remove('hidden');
+}
+
+function render(){
+  const links = corretor.links||[];
+  if(!links.length){ mostrar('empty'); $('list').innerHTML=''; return; }
+  mostrar(null);
+  // pendentes primeiro, mantendo a ordem original dentro de cada grupo
+  const ordem = [...links.map((l,i)=>({l,i}))].sort((a,b)=>{
+    const pa = a.l.status==='aguardando' ? 0 : 1, pb = b.l.status==='aguardando' ? 0 : 1;
+    return pa-pb || a.i-b.i;
+  });
+  $('list').innerHTML = ordem.map(({l})=>`
+    <div class="card" data-id="${escapeHtml(l.id)}">
+      <a class="item-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(curto(l.url))}</a>
+      <div class="bigchoice">
+        <button data-r="disponivel" class="${l.status==='disponivel'?'sel-yes':''}">✅ Disponível</button>
+        <button data-r="indisponivel" class="${l.status==='indisponivel'?'sel-no':''}">❌ Indisponível</button>
+      </div>
+      <div class="saved">${l.status==='aguardando' ? '' : 'Resposta registrada. Pode mudar se precisar.'}</div>
+    </div>`).join('');
+  $('done').classList.toggle('hidden', links.some(l=>l.status==='aguardando'));
+  $('list').querySelectorAll('.card').forEach(card=>{
+    card.querySelectorAll('button[data-r]').forEach(btn=>{
+      btn.onclick = async ()=>{
+        const status = btn.dataset.r;
+        const lid = card.dataset.id;
+        const antes = corretor.links;
+        const novos = antes.map(l=> l.id===lid ? {...l, status, respondidoEm:new Date().toISOString()} : l);
+        card.querySelectorAll('button').forEach(b=>b.disabled=true);
+        try{
+          await updateDoc(doc(db,'corretores',id), { links: novos });
+          corretor.links = novos;
+          render();
+        }catch(e){
+          card.querySelectorAll('button').forEach(b=>b.disabled=false);
+          const sv = card.querySelector('.saved'); sv.textContent = 'Não consegui salvar. Tente de novo.'; sv.classList.add('err');
+        }
+      };
+    });
+  });
+}
+
+async function init(){
+  if(!id){ mostrar('notfound'); return; }
+  try{
+    const snap = await getDoc(doc(db,'corretores',id));
+    if(!snap.exists()){ mostrar('notfound'); return; }
+    corretor = snap.data();
+    const first = (corretor.nome||'').split(' ')[0];
+    if(first) $('sub').textContent = `Oi, ${first}! Toque em Disponível ou Indisponível em cada imóvel.`;
+    render();
+  }catch(e){ mostrar('notfound'); }
+}
+init();
+</script>
+</body>
+</html>

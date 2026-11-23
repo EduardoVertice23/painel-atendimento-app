@@ -166,15 +166,14 @@ function corrLinkCurto(u){ return (u||'').replace(/^https?:\/\/(www\.)?/,'').sli
 function corrDias(l){ return (l.status==='aguardando' && l.pedidoEm) ? daysSince(l.pedidoEm.slice(0,10)) : 0; }
 function corrSemResposta(l){ return l.status==='aguardando' && l.pedidoEm && corrDias(l)>=CORR_LEMBRETE_DIAS; }
 function corrTotalSemResposta(){ let n=0; (data.corretores||[]).forEach(c=>(c.links||[]).forEach(l=>{ if(corrSemResposta(l)) n++; })); return n; }
-function corrUrlLista(c){ return siteBaseUrl()+'formulario-corretor.html?c='+c.id; }
 function corrMensagem(c){
   const first = (c.nome||'').split(' ')[0] || 'tudo bem';
-  const n = (c.links||[]).filter(l=>l.status==='aguardando').length;
-  if(n===0) return '';
-  const url = corrUrlLista(c);
-  return n===1
-    ? `Oi ${first}, tudo bem? Pode confirmar com o proprietário se esse imóvel ainda está disponível? É só tocar em Disponível ou Indisponível:\n\n${url}\n\nObrigado!`
-    : `Oi ${first}, tudo bem? Pode confirmar com os proprietários se esses imóveis ainda estão disponíveis? É só tocar em Disponível ou Indisponível em cada um:\n\n${url}\n\nObrigado!`;
+  const pend = (c.links||[]).filter(l=>l.status==='aguardando');
+  if(!pend.length) return '';
+  if(pend.length===1)
+    return `Oi ${first}, tudo bem? Pode confirmar com o proprietário se esse imóvel ainda está disponível?\n\n${pend[0].url}\n\nMe avisa por aqui. Obrigado!`;
+  const lista = pend.map((l,i)=>`${i+1}) ${l.url}`).join('\n\n');
+  return `Oi ${first}, tudo bem? Pode confirmar com os proprietários se esses imóveis ainda estão disponíveis?\n\n${lista}\n\nMe avisa por aqui, dizendo o número de cada um. Obrigado!`;
 }
 function corrLeadsDoLink(url){
   const key = corrUrlNorm(url); if(!key) return [];
@@ -232,7 +231,6 @@ function corretorCardHtml(c){
       <button data-ca="addlinks" data-c="${c.id}">+ Adicionar links</button>
       ${wa?`<a href="${wa}" target="_blank" rel="noopener" class="corr-wa" data-c="${c.id}" style="text-decoration:none;"><button type="button" style="background:var(--primary);color:#fff;border-color:var(--primary);">💬 Pedir confirmação${aguard>1?' ('+aguard+')':''}</button></a>`:''}
       ${links.length?`<button data-ca="toggle" data-c="${c.id}">${aberto?'Esconder':'Ver'} links (${links.length})</button>`:''}
-      <button data-ca="copiar" data-c="${c.id}" data-t="${escapeHtml(corrUrlLista(c))}">🔗 Copiar link da lista</button>
       <button data-ca="edit" data-c="${c.id}">Editar</button>
       <button class="danger" data-ca="del" data-c="${c.id}">✕</button>
     </div>
@@ -275,7 +273,6 @@ function bindCorretores(box){
         await salvarLinks(c, [...links, ...add]);
       }
       else if(act==='toggle'){ if(corrAbertos.has(c.id)) corrAbertos.delete(c.id); else corrAbertos.add(c.id); renderCorretores(); }
-      else if(act==='copiar'){ copyText(b.dataset.t, b); }
       else if(act==='edit'){ openCorretorModal(c); }
       else if(act==='del'){ if(confirm('Remover esse corretor e a lista de links dele?')) await deleteDoc(doc(db,'corretores',c.id)); }
       else if(act==='dellink'){ if(confirm('Remover esse link?')) await salvarLinks(c, links.filter(l=>l.id!==b.dataset.l)); }
@@ -741,7 +738,7 @@ document.getElementById('corretorSaveBtn').onclick = async ()=>{
 
 <div class="view" id="view-corretores">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-    <div style="font-size:12.5px;color:var(--text-dim);max-width:520px;">Cole os links dos imóveis no cartão do corretor e mande o pedido pelo WhatsApp. Ele responde tocando em Disponível ou Indisponível.</div>
+    <div style="font-size:12.5px;color:var(--text-dim);max-width:520px;">Cole os links dos imóveis no cartão do corretor e mande o pedido pelo WhatsApp. Quando ele responder, marque aqui Disponível ou Indisponível.</div>
     <button class="addbtn" id="openAddCorretor">+ Novo corretor</button>
   </div>
   <div id="corretoresList"></div>

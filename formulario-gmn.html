@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#021535">
+<title>Vértice Marketing Digital — Briefing do Perfil no Google</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap');
+:root{color-scheme:light;--ink:#021535;--bg:#F4F6FA;--card:#fff;--line:#DDE3EC;--primary:#021535;--on-primary:#fff;--gold:#D88820;--text:#14213A;--dim:#5A667A;--err:#C42B2B;--ok:#2F8F6E;--warn-bg:#FBF1DD;--warn-fg:#7A4E0C;--sel-bg:#E3EAF6}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--ink:#F2F5FB;--bg:#050E21;--card:#0C1B3A;--line:#1E3059;--primary:#D88820;--on-primary:#021535;--gold:#E3A33F;--text:#E6ECF8;--dim:#9AA8C4;--err:#F26B6B;--ok:#4CC29A;--warn-bg:rgba(216,136,32,.16);--warn-fg:#F0C27A;--sel-bg:rgba(216,136,32,.18)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 120px}
+.logo{display:block;width:100%;max-width:260px;border-radius:12px;margin:4px auto 14px}
+h1,h2{font-family:'Newsreader',serif;color:var(--ink);margin:0;font-weight:600}
+h1{font-size:24px;text-align:center}
+.lead{text-align:center;color:var(--dim);margin:6px 0 16px;font-size:15px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.warn{background:var(--warn-bg);color:var(--warn-fg);border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:14px;font-weight:500}
+.cfgwarn{background:#FBE4E4;color:#8F1D1D;border:2px solid var(--err)}
+.privacy{font-size:13.5px;color:var(--dim)}
+.privacy b{color:var(--text)}
+.progress{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:6px}
+#bar{height:100%;width:0;background:var(--gold);transition:width .25s ease}
+#stepLabel{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+h2{font-size:21px;margin:18px 0 2px}
+.sub{color:var(--dim);font-size:14px;margin:0 0 14px}
+.q{margin-bottom:20px}
+.ql{display:block;font-weight:600;font-size:15.5px;margin-bottom:6px}
+.opt-tag{font-weight:400;color:var(--dim);font-size:13px}
+.help{font-size:13.5px;color:var(--dim);margin:0 0 8px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:14px}
+details summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details ol{margin:8px 0 2px;padding-left:20px}
+details li{margin-bottom:5px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts.num{flex-direction:row;flex-wrap:wrap}
+.opts.num .opt{flex:1 0 56px;text-align:center}
+.opt{width:100%;min-height:52px;padding:12px 14px;text-align:left;font:inherit;font-size:15.5px;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;cursor:pointer}
+.opt.sel{background:var(--primary);color:var(--on-primary);border-color:var(--primary);font-weight:600}
+input[type=text],textarea{width:100%;font:inherit;font-size:16px;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--text)}
+textarea{min-height:96px;resize:vertical}
+input:focus,textarea:focus,.opt:focus-visible{outline:3px solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:1px}
+.inwrap{position:relative}
+.inwrap .suf{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none}
+.err{color:var(--err);font-size:13.5px;margin-top:5px;display:none}
+.q.bad .err{display:block}
+.q.bad input,.q.bad textarea{border-color:var(--err)}
+.q.bad .opt{border-color:var(--err)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px;margin-top:10px}
+.check input{width:24px;height:24px;margin:1px 0 0;flex:0 0 auto;accent-color:var(--primary)}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:10}
+.nav .in{max-width:560px;margin:0 auto;display:flex;gap:10px}
+.btn{flex:1;min-height:54px;border-radius:14px;font:inherit;font-size:16.5px;font-weight:600;border:1.5px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.btn.main{flex:2;background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.btn:disabled{opacity:.55}
+.done{text-align:center;padding:30px 6px}
+.done h2{font-size:26px;margin-bottom:8px}
+.done ol{text-align:left;max-width:420px;margin:14px auto;padding-left:22px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="logo-vertice.jpg" alt="Vértice Marketing Digital">
+  <h1 id="titulo">Briefing do Perfil no Google</h1>
+  <p class="lead" id="lead"></p>
+  <div class="warn cfgwarn" id="cfgwarn" hidden>PÁGINA EM CONFIGURAÇÃO. Ainda não envie este link ao cliente.</div>
+  <div class="warn" id="jaEnviou" hidden></div>
+  <div id="app">
+    <div id="stepLabel"><span id="stepTxt"></span><span id="stepName"></span></div>
+    <div class="progress"><div id="bar"></div></div>
+    <div id="stepBox"></div>
+  </div>
+  <div id="doneBox" class="done" hidden></div>
+  <input class="hp" type="text" id="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+</div>
+<div class="nav" id="nav"><div class="in">
+  <button class="btn" id="bBack" type="button">Voltar</button>
+  <button class="btn" id="bSkip" type="button" hidden>Pular e enviar</button>
+  <button class="btn main" id="bNext" type="button">Continuar</button>
+</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* Preenchido na publicação. Enquanto algum estiver vazio, a página avisa e não deixa enviar. */
+const CONFIG = {"email": "contatoverticemk@gmail.com"};
+const CLIENTE = (new URLSearchParams(location.search).get('cliente')||'').trim().slice(0,80);
+const COLECAO = 'briefings_clientes_vertice';
+const LS_KEY = 'briefing_gmn_'+CLIENTE.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'_');
+const SECOES = [{"id": "s1", "titulo": "Acesso ao perfil", "sub": "Sem esse acesso a Vértice não consegue cuidar do perfil da sua empresa no Google.", "obrig": true, "fields": [{"key": "g1_acesso", "n": 1, "type": "choice", "req": true, "label": "Você já adicionou a Vértice como gerente do Perfil da Empresa no Google?", "help": "gmb", "opts": [["ja_dei", "Já adicionei a Vértice como gerente"], ["preciso_ajuda", "Preciso de ajuda para adicionar"], ["sem_perfil", "Ainda não tenho perfil no Google"], ["nao_verificado", "Tenho o perfil, mas ainda não foi verificado"]]}, {"key": "g1_email_google", "n": 2, "type": "text", "req": false, "max": 120, "label": "E-mail da conta Google que administra o perfil", "help_txt": "Só o e-mail. Nunca envie senha."}]}, {"id": "s2", "titulo": "Dados do negócio", "sub": "Essas informações aparecem para quem pesquisa a sua empresa no Google.", "obrig": true, "fields": [{"key": "g2_nome_negocio", "n": 3, "type": "text", "req": true, "max": 120, "label": "Nome do negócio, como aparece no Google"}, {"key": "g2_responsavel", "n": 4, "type": "text", "req": true, "max": 80, "label": "Seu nome (quem responde pelo negócio)"}, {"key": "g2_telefone", "n": 5, "type": "phone", "req": true, "label": "Telefone ou WhatsApp que os clientes devem usar"}, {"key": "g2_email", "n": 6, "type": "text", "req": false, "max": 120, "label": "E-mail do negócio"}, {"key": "g2_endereco", "n": 7, "type": "text", "req": true, "max": 120, "label": "Endereço (rua e número)"}, {"key": "g2_bairro", "n": 8, "type": "text", "req": true, "max": 80, "label": "Bairro"}, {"key": "g2_cidade", "n": 9, "type": "text", "req": true, "max": 80, "label": "Cidade"}, {"key": "g2_atendimento", "n": 10, "type": "choice", "req": true, "label": "Como você atende?", "opts": [["local", "No local: o cliente vai até o endereço"], ["domicilio", "Eu vou até o cliente"], ["ambos", "Os dois"]]}, {"key": "g2_site", "n": 11, "type": "text", "req": false, "max": 160, "label": "Site ou Instagram do negócio"}, {"key": "g2_horarios", "n": 12, "type": "textarea", "req": true, "max": 400, "label": "Horário de funcionamento, dia por dia", "help_txt": "Exemplo: segunda a sexta, 8h às 18h; sábado, 8h às 12h; domingo, fechado."}, {"key": "g2_feriados", "n": 13, "type": "textarea", "req": false, "max": 300, "label": "Horário no Natal (24 e 25/12) e no Ano Novo (31/12 e 01/01)", "help_txt": "Se ainda não sabe, deixe em branco. O Eduardo pergunta de novo mais perto da data."}]}, {"id": "s3", "titulo": "Serviços ou produtos", "sub": "O que você vende ou faz, para o perfil mostrar o que os clientes procuram.", "obrig": true, "fields": [{"key": "g3_servicos", "n": 14, "type": "textarea", "req": true, "max": 1200, "label": "Lista do que você vende ou faz, com o preço quando tiver", "help_txt": "Um item por linha. Exemplo: Troca de pneu - R$ 40."}, {"key": "g3_mais_procurado", "n": 15, "type": "textarea", "req": false, "max": 400, "label": "O que os clientes mais procuram?"}, {"key": "g3_diferencial", "n": 16, "type": "textarea", "req": false, "max": 400, "label": "Por que o cliente deve escolher você e não o concorrente?"}, {"key": "g3_pagamento", "n": 17, "type": "text", "req": false, "max": 160, "label": "Formas de pagamento que você aceita"}]}, {"id": "s4", "titulo": "Avaliações e fotos", "sub": "Opcional, mas ajuda muito a aparecer nas buscas.", "obrig": false, "fields": [{"key": "g4_quem_pede", "n": 18, "type": "choice", "req": false, "label": "Quem pede avaliação para os clientes hoje?", "opts": [["eu", "Eu mesmo"], ["funcionario", "Um funcionário"], ["ninguem", "Ninguém pede hoje"]]}, {"key": "g4_como_pede", "n": 19, "type": "textarea", "req": false, "max": 300, "label": "Como e quando você pede a avaliação?"}, {"key": "g4_link_fotos", "n": 20, "type": "text", "req": false, "max": 200, "label": "Link da pasta com fotos e vídeos do negócio (Google Drive)"}, {"key": "g4_fotos_mes", "n": 21, "type": "choice", "req": false, "label": "Você consegue mandar fotos novas todo mês?", "opts": [["sim", "Sim, todo mês"], ["as_vezes", "Às vezes"], ["preciso_ajuda", "Preciso de ajuda para tirar"]]}]}];
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAF-XHOh4SqOtBBTXPdTSnoolujiTCquSc",
+  authDomain: "atendimentoclientebv-658e7.firebaseapp.com",
+  projectId: "atendimentoclientebv-658e7",
+  storageBucket: "atendimentoclientebv-658e7.firebasestorage.app",
+  messagingSenderId: "641137924211",
+  appId: "1:641137924211:web:30adb0e6924abed1b7b206"
+};
+const db = getFirestore(initializeApp(firebaseConfig));
+
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const configOk = !!(CLIENTE && CONFIG.email);
+const FIELDS = SECOES.flatMap(s=>s.fields.map(f=>({...f, secao:s.id})));
+
+let S = (function(){ try{ const d=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(d&&d.raw) return {raw:d.raw, step:Math.min(d.step||0,SECOES.length-1), consent:!!d.consent, enviadoVersao:d.enviadoVersao||0}; }catch(e){} return {raw:{},step:0,consent:false,enviadoVersao:0}; })();
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ---------- máscaras e leitura de valores ---------- */
+function maskMoney(v){ let d=String(v).replace(/\D/g,'').slice(0,11).replace(/^0+(?=\d)/,''); if(d==='') return ''; return 'R$ '+(parseInt(d,10)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function parseMoney(v){ const d=String(v==null?'':v).replace(/\D/g,''); return d===''?null:Math.round(parseInt(d,10))/100; }
+function maskPct(v){ let s=String(v).replace(/[^\d,.]/g,'').replace(/\./g,','); const i=s.indexOf(','); if(i>=0) s=s.slice(0,i+1)+s.slice(i+1).replace(/,/g,'').slice(0,2); s=s.replace(/^0+(?=\d)/,''); if(parseFloat(s.replace(',','.'))>100) s='100'; return s; }
+function parsePct(v){ const s=String(v==null?'':v).replace(',','.'); if(s===''||s==='.') return null; const n=parseFloat(s); return isNaN(n)?null:n; }
+function maskInt(v){ return String(v).replace(/\D/g,'').slice(0,7).replace(/^0+(?=\d)/,''); }
+function maskPhone(v){ const d=String(v).replace(/\D/g,'').slice(0,11); if(!d) return ''; if(d.length<=2) return '('+d; if(d.length<=6) return `(${d.slice(0,2)}) ${d.slice(2)}`; if(d.length<=10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; }
+const digits = v=>String(v==null?'':v).replace(/\D/g,'');
+
+/* ---------- desenho dos campos ---------- */
+function helpHtml(f){
+  let h='';
+  if(f.help==='gmb') h+=`<details><summary>Como dar o acesso (passo a passo)</summary><ol>
+    <li>No Google, pesquise o nome da sua empresa e abra a ficha dela (o perfil com mapa e avaliações). Entre na conta que administra a ficha.</li>
+    <li>Toque em <b>Configurações do perfil</b> (ou nos três pontinhos) e procure <b>Pessoas e acesso</b> (ou "Gerenciadores").</li>
+    <li>Toque em <b>Adicionar</b> e digite o e-mail <b>${esc(CONFIG.email)}</b>.</li>
+    <li>Em "Função", escolha <b>Gerente</b> e confirme.</li></ol></details>`;
+  if(f.help==='meta') h+=`<details><summary>Como me adicionar como parceira (passo a passo)</summary><ol>
+    <li>Abra o Gerenciador de Negócios da Meta (business.facebook.com) com a conta que administra a empresa.</li>
+    <li>Vá em <b>Configurações da empresa</b> e procure <b>Parceiros</b>.</li>
+    <li>Toque em <b>Adicionar</b> e escolha dar acesso a um parceiro.</li>
+    <li>Digite o ID da empresa: <b>${esc(CONFIG.businessId)}</b>, e libere o acesso à Página e ao Instagram da loja.</li></ol></details>`;
+  if(f.help_txt) h+=`<p class="help">${esc(f.help_txt)}</p>`;
+  return h;
+}
+function ctlHtml(f){
+  const v = S.raw[f.key]==null ? '' : S.raw[f.key];
+  if(f.type==='choice') return `<div class="opts">${f.opts.map(o=>`<button type="button" class="opt${v===o[0]?' sel':''}" data-v="${o[0]}">${esc(o[1])}</button>`).join('')}</div>`;
+  if(f.type==='num10') return `<div class="opts num">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" class="opt${String(v)===String(n)?' sel':''}" data-v="${n}">${n}</button>`).join('')}</div>`;
+  if(f.type==='custo_margem'){
+    const m=S.raw[f.key+'_modo']||'', val=S.raw[f.key+'_valor']||'';
+    return `<div class="opts"><button type="button" class="opt${m==='custo'?' sel':''}" data-modo="custo">Sei o custo médio da peça (R$)</button><button type="button" class="opt${m==='margem'?' sel':''}" data-modo="margem">Sei a margem bruta (%)</button></div>
+      <div class="inwrap" style="margin-top:8px" ${m?'':'hidden'}><input type="text" inputmode="${m==='margem'?'decimal':'numeric'}" data-cm value="${esc(val)}" placeholder="${m==='margem'?'Ex.: 60':'Ex.: R$ 40,00'}" autocomplete="off">${m==='margem'?'<span class="suf">%</span>':''}</div>`;
+  }
+  if(f.type==='textarea') return `<textarea maxlength="${f.max}" data-in>${esc(v)}</textarea>`;
+  if(f.type==='pct') return `<div class="inwrap"><input type="text" inputmode="decimal" data-in value="${esc(v)}" placeholder="Ex.: 6" autocomplete="off"><span class="suf">%</span></div>`;
+  if(f.type==='money') return `<input type="text" inputmode="numeric" data-in value="${esc(v)}" placeholder="R$ 0,00" autocomplete="off">`;
+  if(f.type==='int') return `<input type="text" inputmode="numeric" data-in value="${esc(v)}" placeholder="Ex.: 80" autocomplete="off">`;
+  if(f.type==='phone') return `<input type="text" inputmode="tel" data-in value="${esc(v)}" placeholder="(11) 91234-5678" autocomplete="off">`;
+  return `<input type="text" maxlength="${f.max}" data-in value="${esc(v)}" autocomplete="off">`;
+}
+function qHtml(f){
+  return `<div class="q" data-k="${f.key}"><label class="ql">${f.n?f.n+'. ':''}${esc(f.label)}${f.req?'':' <span class="opt-tag">(opcional)</span>'}</label>${helpHtml(f)}${ctlHtml(f)}<div class="err"></div></div>`;
+}
+function consentHtml(){
+  return `<div class="box privacy"><b>Seus dados.</b> As respostas são usadas só para cuidar do perfil da sua empresa no Google. Ficam guardadas com a Vértice Marketing Digital, não são vendidas nem repassadas, e você pode pedir a exclusão quando quiser pelo e-mail <b>${esc(CONFIG.email)}</b>.</div>
+    <div class="warn">Não envie senhas. O acesso é por permissão, e você pode retirar quando quiser.</div>
+    <div class="q" data-k="__consent"><label class="check"><input type="checkbox" id="consent" ${S.consent?'checked':''}><span>Li e concordo com o uso dos meus dados como descrito acima.</span></label><div class="err">Marque a caixinha para continuar.</div></div>`;
+}
+function render(){
+  const sec=SECOES[S.step], last=S.step===SECOES.length-1;
+  $('#stepTxt').textContent=`Etapa ${S.step+1} de ${SECOES.length}`;
+  $('#stepName').textContent=sec.obrig?'Obrigatória':'Opcional';
+  $('#bar').style.width=((S.step+1)/SECOES.length*100)+'%';
+  $('#stepBox').innerHTML=`<h2>${esc(sec.titulo)}</h2><p class="sub">${esc(sec.sub)}</p>`+(S.step===0?consentHtml():'')+sec.fields.map(qHtml).join('');
+  $('#bBack').hidden = S.step===0;
+  $('#bSkip').hidden = !(S.step===3);
+  $('#bNext').textContent = last ? 'Enviar' : (S.step===2 ? 'Continuar (opcional)' : 'Continuar');
+  bind(); window.scrollTo(0,0);
+}
+function bind(){
+  const box=$('#stepBox');
+  const cons=$('#consent'); if(cons) cons.onchange=()=>{ S.consent=cons.checked; save(); clearBad('__consent'); };
+  box.querySelectorAll('.q[data-k]').forEach(q=>{
+    const f=FIELDS.find(x=>x.key===q.dataset.k); if(!f) return;
+    q.querySelectorAll('.opt[data-v]').forEach(b=>b.onclick=()=>{ S.raw[f.key]=(S.raw[f.key]===b.dataset.v&&!f.req)?'':b.dataset.v; save(); q.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.v===S.raw[f.key])); q.classList.remove('bad'); });
+    q.querySelectorAll('.opt[data-modo]').forEach(b=>b.onclick=()=>{ S.raw[f.key+'_modo']=b.dataset.modo; S.raw[f.key+'_valor']=''; save(); q.outerHTML=qHtml(f); bind(); });
+    const cm=q.querySelector('[data-cm]'); if(cm) cm.oninput=()=>{ const modo=S.raw[f.key+'_modo']; cm.value = modo==='margem'?maskPct(cm.value):maskMoney(cm.value); S.raw[f.key+'_valor']=cm.value; save(); q.classList.remove('bad'); };
+    const inp=q.querySelector('[data-in]'); if(inp) inp.oninput=()=>{
+      if(f.type==='money') inp.value=maskMoney(inp.value); else if(f.type==='pct') inp.value=maskPct(inp.value); else if(f.type==='int') inp.value=maskInt(inp.value); else if(f.type==='phone') inp.value=maskPhone(inp.value);
+      S.raw[f.key]=inp.value; save(); q.classList.remove('bad'); };
+  });
+}
+function clearBad(k){ const q=$(`.q[data-k="${k}"]`); if(q) q.classList.remove('bad'); }
+
+/* ---------- validação ---------- */
+function problema(f){
+  const v = S.raw[f.key]==null ? '' : S.raw[f.key];
+  if(f.type==='custo_margem'){
+    const m=S.raw[f.key+'_modo'], raw=S.raw[f.key+'_valor']||'';
+    if(!m) return 'Escolha uma das duas opções.';
+    const n = m==='custo'?parseMoney(raw):parsePct(raw);
+    if(n===null||n<=0) return m==='custo'?'Digite o custo da peça.':'Digite a margem (maior que 0).';
+    if(m==='margem'&&n>100) return 'A margem não pode passar de 100%.';
+    return '';
+  }
+  if(!f.req) return '';
+  if(f.type==='choice'||f.type==='num10') return v===''?'Escolha uma opção.':'';
+  if(f.type==='money'){ const n=parseMoney(v); if(n===null) return 'Preencha este campo.'; if(f.min>0&&n<f.min) return 'O valor precisa ser maior que zero.'; return ''; }
+  if(f.type==='pct'){ const n=parsePct(v); return n===null?'Preencha este campo.':(n>100?'Máximo 100%.':''); }
+  if(f.type==='phone'){ const d=digits(v); return (d.length<10||d.length>11)?'Digite o DDD e o número.':''; }
+  return String(v).trim()===''?'Preencha este campo.':'';
+}
+function validaEtapa(i){
+  let primeiro=null;
+  if(i===0 && !S.consent){ const q=$('.q[data-k="__consent"]'); if(q){ q.classList.add('bad'); primeiro=primeiro||q; } }
+  SECOES[i].fields.forEach(f=>{
+    const msg=problema(f), q=$(`.q[data-k="${f.key}"]`);
+    if(msg){ if(q){ q.classList.add('bad'); q.querySelector('.err').textContent=msg; primeiro=primeiro||q; } }
+    else if(q) q.classList.remove('bad');
+  });
+  if(primeiro) primeiro.scrollIntoView({behavior:'smooth',block:'center'});
+  return !primeiro;
+}
+function primeiraEtapaInvalida(){
+  if(!S.consent) return 0;
+  for(let i=0;i<SECOES.length;i++){ if(!SECOES[i].obrig) continue; if(SECOES[i].fields.some(f=>problema(f))) return i; }
+  return -1;
+}
+
+/* ---------- envio ---------- */
+function montaPayload(){
+  const p={};
+  FIELDS.forEach(f=>{
+    const raw = S.raw[f.key]==null ? '' : S.raw[f.key];
+    if(f.type==='custo_margem'){ const m=S.raw[f.key+'_modo'], val=S.raw[f.key+'_valor']||''; p.s2_custo_peca = m==='custo'?parseMoney(val):null; p.s2_margem_bruta_pct = m==='margem'?parsePct(val):null; return; }
+    if(f.type==='money') p[f.key]=parseMoney(raw);
+    else if(f.type==='pct') p[f.key]=parsePct(raw);
+    else if(f.type==='int') p[f.key]= raw===''?null:parseInt(raw,10);
+    else if(f.type==='num10') p[f.key]=parseInt(raw,10);
+    else if(f.type==='phone') p[f.key]=digits(raw);
+    else if(f.type==='choice') p[f.key]=String(raw);
+    else p[f.key]=String(raw).trim();
+  });
+  p.cliente=CLIENTE; p.tipo='gmn'; p.versao=(S.enviadoVersao||0)+1; p.aceitePrivacidade=true; p.enviadoEm=serverTimestamp();
+  return p;
+}
+function mostraFim(){
+  $('#app').hidden=true; $('#nav').hidden=true; $('#jaEnviou').hidden=true;
+  const box=$('#doneBox'); box.hidden=false;
+  box.innerHTML=`<h2>Pronto! Recebemos o seu briefing.</h2>
+    <p>Obrigado pelo tempo. O que acontece agora:</p>
+    <ol><li>O Eduardo confere as informações e o acesso ao perfil.</li><li>Se precisar de algum ajuste, ele chama você no WhatsApp.</li><li>Com tudo certo, ele atualiza o perfil da sua empresa no Google.</li></ol>
+    <p>Faltou alguma informação? Abra este mesmo link de novo, complete e envie outra vez. O que você já digitou continua salvo neste celular.</p>`;
+  window.scrollTo(0,0);
+}
+async function enviar(){
+  if(!configOk){ alert('Esta página ainda está em configuração. Fale com o Eduardo.'); return; }
+  const i=primeiraEtapaInvalida();
+  if(i>=0){ S.step=i; save(); render(); validaEtapa(i); return; }
+  if($('#hp').value){ mostraFim(); return; }   // robô: finge que enviou e não grava
+  const bN=$('#bNext'), bS=$('#bSkip'); bN.disabled=true; bS.disabled=true; const txt=bN.textContent; bN.textContent='Enviando...';
+  try{
+    const payload=montaPayload();
+    await setDoc(doc(collection(db,COLECAO)), payload);
+    S.enviadoVersao=payload.versao; save(); mostraFim();
+  }catch(e){
+    console.error(e); bN.disabled=false; bS.disabled=false; bN.textContent=txt;
+    alert('Não consegui enviar. Confira a internet e tente de novo. Se continuar, avise o Eduardo.');
+  }
+}
+$('#bBack').onclick=()=>{ if(S.step>0){ S.step--; save(); render(); } };
+$('#bSkip').onclick=()=>enviar();
+$('#bNext').onclick=()=>{
+  if(!validaEtapa(S.step)) return;
+  if(S.step===SECOES.length-1){ enviar(); return; }
+  S.step++; save(); render();
+};
+
+/* ---------- início ---------- */
+$('#lead').textContent = 'São poucas perguntas, e você pode parar e voltar quando quiser: o que digitar fica salvo neste celular.'; if(CLIENTE) $('#titulo').textContent = 'Briefing do Perfil no Google: '+CLIENTE;
+if(!configOk) $('#cfgwarn').hidden=false;
+if(S.enviadoVersao){ const j=$('#jaEnviou'); j.hidden=false; j.textContent=`Você já enviou este briefing (versão ${S.enviadoVersao}). Pode completar e enviar de novo quando quiser. O envio mais recente é o que vale.`; }
+render();
+</script>
+</body>
+</html>

@@ -643,6 +643,7 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
       <div class="field" style="flex:1;"><label>CNPJ <span>(opcional)</span></label><input type="text" id="cli-cnpj" inputmode="numeric" placeholder="00.000.000/0000-00"></div>
     </div>
     <div class="field"><label>Dono <span>(quem responde pela empresa)</span></label><input type="text" id="cli-dono" placeholder="Nome do dono"></div>
+    <div class="field"><label>Endereço <span>(rua, número, bairro e cidade)</span></label><input type="text" id="cli-endereco" placeholder="Ex: Rua Exemplo, 100, Barra Funda, São Paulo"></div>
     <div class="field-row">
       <div class="field" style="flex:1;"><label>Telefone / WhatsApp</label><input type="tel" id="cli-telefone" placeholder="(11) 90000-0000"></div>
       <div class="field" style="flex:1;"><label>E-mail</label><input type="email" id="cli-email" placeholder="contato@empresa.com"></div>
@@ -757,6 +758,15 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
       <div class="field"><label>Responsável (opcional)</label><input type="text" id="gp-resp" placeholder="Ex: Diego"></div>
     </div>
     <div class="modal-actions"><button class="cancel" id="gpCancelBtn">Cancelar</button><button class="save" id="gpSaveBtn">Salvar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayBrfApl">
+  <div class="modal" style="max-width:560px;">
+    <h2 id="baTitulo">Atualizar ficha com o briefing</h2>
+    <div style="font-size:12.5px;color:var(--text-dim);margin:-4px 0 10px;">Marque o que você aceita. Só entra na ficha o que estiver marcado. O que já está igual não aparece.</div>
+    <div id="baLista"></div>
+    <div class="modal-actions"><button class="cancel" id="baCancelBtn">Cancelar</button><button class="save" id="baSaveBtn">Atualizar ficha</button></div>
   </div>
 </div>
 
@@ -4077,6 +4087,8 @@ function googleHtml(c){
     dadoRow('Telefone', escapeHtml(f.telefone||'')),
     dadoRow('Site / link', escapeHtml(f.site||'')),
     dadoRow('Horários', escapeHtml(f.horarios||'')),
+    dadoRow('Horário de Natal e Ano Novo', escapeHtml(f.feriados||'')),
+    dadoRow('Serviços e preços', escapeHtml(f.servicos||'')),
     dadoRow('Descrição', escapeHtml(f.descricao||'')),
     f.atualizadoEm ? `<div class="hi-sub" style="margin-top:6px;">Ficha atualizada em ${dataBR(f.atualizadoEm)}</div>` : ''
   ].join('');
@@ -4146,7 +4158,7 @@ function mesclarGoogle(c, p){
     if(p.periodo) n.periodo = String(p.periodo);
     novo.numeros[p.mes] = {...(novo.numeros[p.mes]||{}), ...n}; res.numeros = true;
   }
-  if(p.ficha){ ['categoriaPrincipal','categoriasSecundarias','endereco','telefone','site','horarios','descricao'].forEach(k=>{ if(p.ficha[k]!==undefined && p.ficha[k]!==null && p.ficha[k]!==''){ novo.ficha[k]=String(p.ficha[k]); res.ficha++; } }); if(res.ficha) novo.ficha.atualizadoEm = localDateStr(); }
+  if(p.ficha){ ['categoriaPrincipal','categoriasSecundarias','endereco','telefone','site','horarios','feriados','servicos','descricao'].forEach(k=>{ if(p.ficha[k]!==undefined && p.ficha[k]!==null && p.ficha[k]!==''){ novo.ficha[k]=String(p.ficha[k]); res.ficha++; } }); if(res.ficha) novo.ficha.atualizadoEm = localDateStr(); }
   (p.historico||[]).forEach(h=>{ if(!h||!h.texto) return; const d=String(h.data||localDateStr()).slice(0,10); if(!novo.historico.some(x=>x.data===d && normNome(x.texto)===normNome(h.texto))){ novo.historico.push({id:gId(), data:d, texto:String(h.texto)}); res.hist++; } });
   (p.pendencias||[]).forEach(x=>{ if(!x||!x.texto) return; if(!novo.pendencias.some(y=>normNome(y.texto)===normNome(x.texto))){ novo.pendencias.push({id:gId(), texto:String(x.texto), prazo:String(x.prazo||'').slice(0,10), responsavel:String(x.responsavel||''), feito:false}); res.pendNovas++; } });
   (p.pendenciasConcluidas||[]).forEach(t=>{ novo.pendencias = novo.pendencias.map(y=>{ if(!y.feito && normNome(y.texto)===normNome(t)){ res.pendFeitas++; return {...y, feito:true}; } return y; }); });
@@ -4174,6 +4186,89 @@ document.getElementById('googleSaveBtn').onclick = async ()=>{
   if(!linhas.length){ alert('Nada para importar nesse bloco.'); return; }
   if(!confirm('Importar para "'+(c.nome||'cliente')+'"?\n\n- '+linhas.join('\n- '))) return;
   if(await salvarGoogle(c, novo)) document.getElementById('overlayGoogle').classList.remove('open');
+};
+
+/* ---------- Atualizar a ficha com o briefing (com aprovação) ---------- */
+function brfFmtTel(d){ d=String(d||'').replace(/\D/g,''); return d.length===11 ? `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}` : (d.length===10 ? `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}` : d); }
+function brfMudancas(c, b){
+  const g = gDados(c), f = g.ficha||{};
+  const out = [];
+  const t = x=>String(x==null?'':x).trim();
+  const add = (rotulo, atual, novo, aplica)=>{ if(t(novo)==='') return; if(t(atual)===t(novo)) return; out.push({rotulo, atual:t(atual), novo:t(novo), aplica}); };
+  const jaTemPend = txt=>(g.pendencias||[]).some(x=>normNome(x.texto)===normNome(txt));
+  const addPend = (texto, resp, dias)=>{
+    if(jaTemPend(texto)) return;
+    let prazo = ''; if(dias){ const d = new Date(); d.setDate(d.getDate()+dias); prazo = localDateStr(d); }
+    out.push({rotulo:'Pendência nova', atual:'—', novo:texto+(prazo?' (prazo '+dataBR(prazo)+')':''), aplica:acc=>{ acc.pend.push({id:gId(), texto, prazo, responsavel:resp||'', feito:false}); }});
+  };
+  const mes = mesKey(new Date());
+  if(b.tipo==='gmn'){
+    const end = [b.g2_endereco, b.g2_bairro, b.g2_cidade].map(t).filter(Boolean).join(', ');
+    const tel = brfFmtTel(b.g2_telefone);
+    add('Dono (responsável)', c.dono, b.g2_responsavel, acc=>{ acc.cliente.dono = t(b.g2_responsavel); });
+    add('Telefone / WhatsApp', c.telefone, tel, acc=>{ acc.cliente.telefone = tel; acc.ficha.telefone = tel; });
+    add('E-mail', c.email, b.g2_email, acc=>{ acc.cliente.email = t(b.g2_email); });
+    add('Endereço', c.endereco, end, acc=>{ acc.cliente.endereco = end; acc.ficha.endereco = end; });
+    add('Site ou Instagram (ficha do perfil)', f.site, b.g2_site, acc=>{ acc.ficha.site = t(b.g2_site); });
+    add('Horários (ficha do perfil)', f.horarios, b.g2_horarios, acc=>{ acc.ficha.horarios = t(b.g2_horarios); });
+    add('Horário de Natal e Ano Novo (ficha do perfil)', f.feriados, b.g2_feriados, acc=>{ acc.ficha.feriados = t(b.g2_feriados); });
+    add('Serviços e preços (ficha do perfil)', f.servicos, b.g3_servicos, acc=>{ acc.ficha.servicos = t(b.g3_servicos); });
+    const resp = t(b.g2_responsavel);
+    if(b.g1_acesso && b.g1_acesso!=='ja_dei') addPend('Receber acesso de gerente ao perfil do Google', resp, 3);
+    if(brfVazio(b.g4_link_fotos)) addPend('Receber a pasta de fotos do negócio', resp, 7);
+    if(brfVazio(b.g2_feriados)) addPend('Perguntar o horário de Natal e Ano Novo', resp, 0);
+    if(b.g4_fotos_mes==='preciso_ajuda') addPend('Ajudar o cliente a tirar fotos novas', 'Eduardo', 0);
+  }else{
+    const end = [b.s3_endereco, b.s3_bairro, b.s3_cidade].map(t).filter(Boolean).join(', ');
+    const tel = brfFmtTel(b.s3_whatsapp);
+    add('Telefone / WhatsApp', c.telefone, tel, acc=>{ acc.cliente.telefone = tel; });
+    add('Endereço', c.endereco, end, acc=>{ acc.cliente.endereco = end; acc.ficha.endereco = end; });
+    const inv = numOuNull(b.s2_invest_mensal);
+    const vb = verbaDoMes(c, mes);
+    if(inv!==null && inv>0 && !(vb && Math.abs(vb.valor-inv)<0.005)){
+      out.push({rotulo:'Verba de '+mesLabel(mes)+' (o cliente aceita investir)', atual:vb?brl(vb.valor):'—', novo:brl(inv), aplica:acc=>{ acc.verbas[mes] = inv; }});
+    }
+    if(b.s1_gmb_acesso && b.s1_gmb_acesso!=='ja_dei') addPend('Receber acesso de gerente ao perfil do Google', c.dono||'', 3);
+  }
+  return out;
+}
+let baCliente = null, baLista = [];
+function abrirAplicarBriefing(c, tipo){
+  const bs = (briefingDoCliente(c)||[]).filter(b=> tipo==='gmn' ? b.tipo==='gmn' : b.tipo!=='gmn');
+  if(!bs.length){ alert('Esse cliente ainda não respondeu esse briefing.'); return; }
+  const b = bs[0];
+  baCliente = c; baLista = brfMudancas(c, b);
+  document.getElementById('baTitulo').textContent = 'Briefing de '+brfDataTxt(b)+' (versão '+(b.versao||1)+')';
+  const box = document.getElementById('baLista');
+  if(!baLista.length){ box.innerHTML = '<div class="hoje-empty">Nada para atualizar: a ficha já está igual ao briefing.</div>'; document.getElementById('baSaveBtn').style.display='none'; }
+  else{
+    document.getElementById('baSaveBtn').style.display='';
+    box.innerHTML = baLista.map((m,i)=>`<label class="hoje-item" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;"><input type="checkbox" data-ba="${i}" checked style="width:20px;height:20px;flex:none;margin-top:2px;"><div style="min-width:0;"><div class="hi-main">${escapeHtml(m.rotulo)}</div><div class="hi-sub">Hoje: ${escapeHtml(m.atual||'—')}</div><div class="hi-sub" style="color:var(--text);"><b>Novo:</b> ${escapeHtml(m.novo)}</div></div></label>`).join('');
+  }
+  document.getElementById('overlayBrfApl').classList.add('open');
+}
+document.getElementById('baCancelBtn').onclick = ()=>document.getElementById('overlayBrfApl').classList.remove('open');
+document.getElementById('overlayBrfApl').onclick = e=>{ if(e.target.id==='overlayBrfApl') e.target.classList.remove('open'); };
+document.getElementById('baSaveBtn').onclick = async ()=>{
+  const c = data.clientes.find(x=>x.id===(baCliente&&baCliente.id)); if(!c) return;
+  const marcadas = [...document.querySelectorAll('#baLista [data-ba]')].filter(x=>x.checked).map(x=>baLista[Number(x.dataset.ba)]);
+  if(!marcadas.length){ alert('Nenhuma linha marcada.'); return; }
+  const acc = {cliente:{}, ficha:{}, pend:[], verbas:{}};
+  marcadas.forEach(m=>m.aplica(acc));
+  const g = gDados(c);
+  const patch = {...acc.cliente};
+  if(Object.keys(acc.verbas).length) patch.verbas = acc.verbas;
+  if(Object.keys(acc.ficha).length || acc.pend.length){
+    const hoje = localDateStr();
+    const gNovo = {...g};
+    if(Object.keys(acc.ficha).length){
+      gNovo.ficha = {...(g.ficha||{}), ...acc.ficha, atualizadoEm:hoje};
+      gNovo.historico = (g.historico||[]).concat([{id:gId(), data:hoje, texto:'Ficha atualizada pelo briefing do cliente ('+Object.keys(acc.ficha).length+' campo(s))'}]);
+    }
+    if(acc.pend.length) gNovo.pendencias = (g.pendencias||[]).concat(acc.pend);
+    patch.google = gNovo;
+  }
+  if(await salvarCampoCliente(c, patch)) document.getElementById('overlayBrfApl').classList.remove('open');
 };
 
 /* ---------- Colar dados da Meta (importação) ---------- */
@@ -4429,18 +4524,25 @@ function briefingDoCliente(c){
   const n = normNome(c.nome); if(!n) return [];
   return data.briefings.filter(b=>{ const bn = normNome(b.cliente); return bn && (bn===n || bn.includes(n) || n.includes(bn)); }).sort((a,b)=>brfMs(b)-brfMs(a));
 }
+function gmnLinkDe(c){ return siteBaseUrl()+'formulario-gmn.html?cliente='+encodeURIComponent(c.nome||''); }
+function brfStatusHtml(lista){
+  if(lista===null) return '<span class="chip-status pausado">Não consigo ler ainda</span> <span class="hi-sub">(falta o seu UID nas regras do Firebase)</span>';
+  if(!lista.length) return '<span class="chip-status pausado">Ainda não respondeu</span>';
+  return `<span class="chip-status ativo">Respondeu em ${brfDataTxt(lista[0])}</span> <span class="hi-sub">versão ${lista[0].versao||1}</span>`;
+}
 function briefingHtml(c){
   const link = briefingLinkDe(c);
   const bs = briefingDoCliente(c);
-  let status;
-  if(bs===null) status = '<span class="chip-status pausado">Não consigo ler ainda</span> <span class="hi-sub">(falta o seu UID nas regras do Firebase)</span>';
-  else if(!bs.length) status = '<span class="chip-status pausado">Ainda não respondeu</span>';
-  else status = `<span class="chip-status ativo">Respondeu em ${brfDataTxt(bs[0])}</span> <span class="hi-sub">versão ${bs[0].versao||1}</span>`;
+  const bsG = bs===null ? null : bs.filter(b=>b.tipo==='gmn');
+  const bsT = bs===null ? null : bs.filter(b=>b.tipo!=='gmn');
+  const botApl = (id, lista)=> (lista && lista.length) ? `<button class="addbtn sec" id="${id}" style="padding:6px 12px;font-size:12.5px;">Atualizar ficha com o briefing</button>` : '';
   const rows = [
-    dadoRow('Formulário', link?escapeHtml(link):'', link?`<button class="addbtn sec" id="brfCopiarLink" style="padding:6px 12px;font-size:12.5px;">Copiar link</button>`:''),
-    dadoRow('Status', status)
+    link ? dadoRow('Formulário de tráfego', escapeHtml(link), `<button class="addbtn sec" id="brfCopiarLink" style="padding:6px 12px;font-size:12.5px;">Copiar link</button>`) : '',
+    link ? dadoRow('Status do tráfego', brfStatusHtml(bsT), botApl('brfAplT', bsT)) : '',
+    dadoRow('Formulário do Perfil no Google', escapeHtml(gmnLinkDe(c)), `<button class="addbtn sec" id="brfCopiarGmn" style="padding:6px 12px;font-size:12.5px;">Copiar link</button>`),
+    dadoRow('Status do Perfil no Google', brfStatusHtml(bsG), botApl('brfAplG', bsG))
   ].join('');
-  return `<div class="hoje-block">${secHead('Briefing',`<button class="addbtn sec" id="brfEditarLink">${link?'Editar link':'Definir link'}</button><button class="addbtn sec" id="brfVerRespostas">Ver respostas</button>`)}${rows}</div>`;
+  return `<div class="hoje-block">${secHead('Briefing',`<button class="addbtn sec" id="brfEditarLink">${link?'Editar link de tráfego':'Definir link de tráfego'}</button><button class="addbtn sec" id="brfVerRespostas">Ver respostas</button>`)}${rows}</div>`;
 }
 function eventosTimeline(c){
   const ev = [];
@@ -4480,6 +4582,9 @@ function bindEtapa4(c, box){
   if(q('ctEditar')) q('ctEditar').onclick = ()=>openContratoModal(c);
   if(q('brfCopiarLink')) q('brfCopiarLink').onclick = e=>copyText(briefingLinkDe(c), e.target);
   if(q('brfEditarLink')) q('brfEditarLink').onclick = ()=>{ blCliente=c; document.getElementById('bl-link').value = briefingLinkDe(c); document.getElementById('overlayBrfLink').classList.add('open'); };
+  if(q('brfCopiarGmn')) q('brfCopiarGmn').onclick = e=>copyText(gmnLinkDe(c), e.target);
+  if(q('brfAplG')) q('brfAplG').onclick = ()=>abrirAplicarBriefing(c, 'gmn');
+  if(q('brfAplT')) q('brfAplT').onclick = ()=>abrirAplicarBriefing(c, 'trafego');
   if(q('brfVerRespostas')) q('brfVerRespostas').onclick = ()=>{ document.querySelector('.tabs .tab[data-view="briefings"]').click(); };
   if(q('notaAdd')) q('notaAdd').onclick = async ()=>{
     const texto = q('notaTexto').value.trim(), dt = q('notaData').value;
@@ -4563,6 +4668,7 @@ function renderFicha(){
   const dados = [
     dadoRow('Dono', escapeHtml(c.dono||'')),
     dadoRow('Telefone', escapeHtml(c.telefone||''), wa?`<a href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;"><button class="addbtn sec" style="padding:6px 12px;font-size:12.5px;">💬 Abrir WhatsApp</button></a>`:''),
+    dadoRow('Endereço', escapeHtml(c.endereco||'')),
     dadoRow('E-mail', c.email?`<a href="mailto:${escapeHtml(c.email)}" style="color:var(--text);">${escapeHtml(c.email)}</a>`:''),
     dadoRow('CNPJ', escapeHtml(c.cnpj||'')),
     dadoRow('Início do contrato', c.inicio?dataBR(c.inicio):''),
@@ -4634,6 +4740,7 @@ function openClienteModal(c){
   document.getElementById('cli-status').value = c ? (c.status||'ativo') : 'ativo';
   document.getElementById('cli-cnpj').value = c ? (c.cnpj||'') : '';
   document.getElementById('cli-dono').value = c ? (c.dono||'') : '';
+  document.getElementById('cli-endereco').value = c ? (c.endereco||'') : '';
   document.getElementById('cli-telefone').value = c ? (c.telefone||'') : '';
   document.getElementById('cli-email').value = c ? (c.email||'') : '';
   document.getElementById('cli-inicio').value = c ? (c.inicio||'') : '';
@@ -4654,6 +4761,7 @@ document.getElementById('clienteSaveBtn').onclick = async ()=>{
     status: document.getElementById('cli-status').value,
     cnpj: document.getElementById('cli-cnpj').value.trim(),
     dono: document.getElementById('cli-dono').value.trim(),
+    endereco: document.getElementById('cli-endereco').value.trim(),
     telefone: document.getElementById('cli-telefone').value.trim(),
     email: document.getElementById('cli-email').value.trim(),
     inicio: document.getElementById('cli-inicio').value || null,
@@ -4788,6 +4896,8 @@ document.getElementById('apagarTudoBtn').onclick = async ()=>{
 
 /* ---------- BRIEFINGS (aba, só leitura) ---------- */
 const BRIEFING_VIEW = [{"id": "s1", "titulo": "Acessos", "obrig": true, "items": [{"key": "s1_gmb_acesso", "label": "Acesso ao Perfil da Empresa no Google (antigo Google Meu Negócio)", "type": "choice", "n": 1, "opts": {"ja_dei": "Já dei o acesso", "preciso_ajuda": "Preciso de ajuda", "ficha_nao_verificada": "A ficha ainda não está no meu nome ou não foi verificada"}}, {"key": "s1_instagram_comercial", "label": "O Instagram da loja é uma conta comercial e está conectado a uma Página do Facebook?", "type": "choice", "n": 2, "opts": {"sim": "Sim", "nao": "Não", "nao_sei": "Não sei"}}, {"key": "s1_meta_parceira", "label": "Você já adicionou a Vértice como parceira no Gerenciador de Negócios da Meta (Facebook e Instagram)?", "type": "choice", "n": 3, "opts": {"sim": "Sim", "nao": "Não", "preciso_ajuda": "Preciso de ajuda"}}, {"key": "s1_cartao_empresa", "label": "Você tem um cartão da empresa para pagar os anúncios?", "type": "choice", "n": 4, "opts": {"sim": "Sim", "nao": "Não"}}]}, {"id": "s2", "titulo": "Números da loja", "obrig": true, "items": [{"key": "s2_ticket_medio", "label": "Ticket médio: quanto, em média, cada cliente gasta por compra?", "type": "money", "n": 5}, {"key": "s2_custo_peca", "n": 6, "label": "Custo médio da peça", "type": "money"}, {"key": "s2_margem_bruta_pct", "label": "Margem bruta", "type": "pct"}, {"key": "s2_imposto_pct", "label": "Imposto sobre a venda (Simples, MEI ou outro), em %", "type": "pct", "n": 7}, {"key": "s2_taxa_maquininha_pct", "label": "Taxa da maquininha ou do Pix, em %", "type": "pct", "n": 8}, {"key": "s2_frete_embalagem", "label": "Frete e embalagem que a loja paga por pedido (em R$)", "type": "money", "n": 9}, {"key": "s2_trocas_de_10", "label": "De cada 10 vendas, quantas voltam em troca ou devolução?", "type": "num10", "n": 10}, {"key": "s2_invest_mensal", "label": "Quanto você aceita investir em anúncios por mês (em R$)?", "type": "money", "n": 11}]}, {"id": "s3", "titulo": "A loja", "obrig": true, "items": [{"key": "s3_endereco", "label": "Endereço da loja (rua e número)", "type": "text", "n": 12}, {"key": "s3_bairro", "label": "Bairro", "type": "text"}, {"key": "s3_cidade", "label": "Cidade", "type": "text"}, {"key": "s3_whatsapp", "label": "WhatsApp que vai atender os clientes que chegarem pelos anúncios", "type": "phone", "n": 13}, {"key": "s3_quem_responde", "label": "Quem responde as mensagens e em quais dias e horários?", "type": "textarea", "n": 14}, {"key": "s3_quem_aprova", "label": "Quem aprova as artes (imagens e vídeos) dos anúncios?", "type": "text", "n": 15}]}, {"id": "s4", "titulo": "Importante", "obrig": false, "items": [{"key": "s4_faturamento_mensal", "label": "Faturamento médio por mês nos últimos 6 meses (em R$)", "type": "money", "n": 16, "opt": true}, {"key": "s4_vendas_mes", "label": "Quantas vendas por mês, em média?", "type": "int", "n": 17, "opt": true}, {"key": "s4_top5_produtos", "label": "Os 5 produtos que mais vendem (nome e preço)", "type": "textarea", "n": 18, "opt": true}, {"key": "s4_link_drive", "label": "Link da pasta com fotos e vídeos da loja (Google Drive)", "type": "text", "n": 19, "opt": true}, {"key": "s4_formas_pagamento", "label": "Formas de pagamento que a loja aceita", "type": "text", "n": 20, "opt": true}, {"key": "s4_desconto_pix", "label": "Desconto no Pix (qual?)", "type": "text", "opt": true}, {"key": "s4_politica_troca", "label": "Política de troca", "type": "textarea", "opt": true}, {"key": "s4_tem_site", "label": "A loja tem site ou loja virtual?", "type": "choice", "n": 21, "opts": {"sim": "Sim", "nao": "Não"}, "opt": true}, {"key": "s4_plataforma_site", "label": "Se tem, qual plataforma? (exemplos: Shopify, Nuvemshop)", "type": "text", "opt": true}, {"key": "s4_tem_lista_clientes", "label": "Você tem uma lista de clientes (nomes e telefones)?", "type": "choice", "n": 22, "opts": {"sim": "Sim", "nao": "Não"}, "opt": true}]}, {"id": "s5", "titulo": "Se quiser adiantar", "obrig": false, "items": [{"key": "s5_concorrentes", "label": "Quais lojas concorrentes você observa?", "type": "textarea", "n": 23, "opt": true}, {"key": "s5_ja_anunciou", "label": "Você já anunciou antes? O que funcionou e o que não funcionou?", "type": "textarea", "n": 24, "opt": true}, {"key": "s5_elogios_reclamacoes", "label": "Quais são os principais elogios e reclamações que você ouve dos clientes?", "type": "textarea", "n": 25, "opt": true}, {"key": "s5_faixa_idade", "label": "Qual faixa de idade mais compra na loja?", "type": "text", "n": 26, "opt": true}, {"key": "s5_duvidas_clientes", "label": "Quais dúvidas os clientes costumam ter antes de comprar?", "type": "textarea", "n": 27, "opt": true}, {"key": "s5_quem_cuida_instagram", "label": "Quem cuida do Instagram da loja hoje?", "type": "text", "n": 28, "opt": true}, {"key": "s5_resultado_90_dias", "label": "Que resultado você espera em 90 dias?", "type": "textarea", "n": 29, "opt": true}, {"key": "s5_frequencia_relatorio", "label": "Com que frequência você quer receber o relatório de resultados?", "type": "choice", "n": 30, "opts": {"semanal": "Toda semana", "quinzenal": "A cada 15 dias", "mensal": "Todo mês"}, "opt": true}]}];
+const BRIEFING_VIEW_GMN = [{"id": "s1", "titulo": "Acesso ao perfil", "obrig": true, "items": [{"key": "g1_acesso", "label": "Você já adicionou a Vértice como gerente do Perfil da Empresa no Google?", "type": "choice", "n": 1, "opts": {"ja_dei": "Já adicionei a Vértice como gerente", "preciso_ajuda": "Preciso de ajuda para adicionar", "sem_perfil": "Ainda não tenho perfil no Google", "nao_verificado": "Tenho o perfil, mas ainda não foi verificado"}}, {"key": "g1_email_google", "label": "E-mail da conta Google que administra o perfil", "type": "text", "n": 2}]}, {"id": "s2", "titulo": "Dados do negócio", "obrig": true, "items": [{"key": "g2_nome_negocio", "label": "Nome do negócio, como aparece no Google", "type": "text", "n": 3}, {"key": "g2_responsavel", "label": "Seu nome (quem responde pelo negócio)", "type": "text", "n": 4}, {"key": "g2_telefone", "label": "Telefone ou WhatsApp que os clientes devem usar", "type": "phone", "n": 5}, {"key": "g2_email", "label": "E-mail do negócio", "type": "text", "n": 6}, {"key": "g2_endereco", "label": "Endereço (rua e número)", "type": "text", "n": 7}, {"key": "g2_bairro", "label": "Bairro", "type": "text", "n": 8}, {"key": "g2_cidade", "label": "Cidade", "type": "text", "n": 9}, {"key": "g2_atendimento", "label": "Como você atende?", "type": "choice", "n": 10, "opts": {"local": "No local: o cliente vai até o endereço", "domicilio": "Eu vou até o cliente", "ambos": "Os dois"}}, {"key": "g2_site", "label": "Site ou Instagram do negócio", "type": "text", "n": 11}, {"key": "g2_horarios", "label": "Horário de funcionamento, dia por dia", "type": "textarea", "n": 12}, {"key": "g2_feriados", "label": "Horário no Natal (24 e 25/12) e no Ano Novo (31/12 e 01/01)", "type": "textarea", "n": 13}]}, {"id": "s3", "titulo": "Serviços ou produtos", "obrig": true, "items": [{"key": "g3_servicos", "label": "Lista do que você vende ou faz, com o preço quando tiver", "type": "textarea", "n": 14}, {"key": "g3_mais_procurado", "label": "O que os clientes mais procuram?", "type": "textarea", "n": 15}, {"key": "g3_diferencial", "label": "Por que o cliente deve escolher você e não o concorrente?", "type": "textarea", "n": 16}, {"key": "g3_pagamento", "label": "Formas de pagamento que você aceita", "type": "text", "n": 17}]}, {"id": "s4", "titulo": "Avaliações e fotos", "obrig": false, "items": [{"key": "g4_quem_pede", "label": "Quem pede avaliação para os clientes hoje?", "type": "choice", "n": 18, "opts": {"eu": "Eu mesmo", "funcionario": "Um funcionário", "ninguem": "Ninguém pede hoje"}}, {"key": "g4_como_pede", "label": "Como e quando você pede a avaliação?", "type": "textarea", "n": 19}, {"key": "g4_link_fotos", "label": "Link da pasta com fotos e vídeos do negócio (Google Drive)", "type": "text", "n": 20}, {"key": "g4_fotos_mes", "label": "Você consegue mandar fotos novas todo mês?", "type": "choice", "n": 21, "opts": {"sim": "Sim, todo mês", "as_vezes": "Às vezes", "preciso_ajuda": "Preciso de ajuda para tirar"}}]}];
+function brfView(b){ return b && b.tipo==='gmn' ? BRIEFING_VIEW_GMN : BRIEFING_VIEW; }
 function brfMs(b){ const t=b.enviadoEm; return t && t.toMillis ? t.toMillis() : 0; }
 function brfDataTxt(b){ const ms=brfMs(b); return ms ? new Date(ms).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : 'agora'; }
 function brfVazio(v){ return v===null || v===undefined || v===''; }
@@ -4816,12 +4926,12 @@ function renderBriefings(){
   }
   if(!data.briefings.length){ box.innerHTML = `<div class="hoje-block"><div class="hoje-empty">Nenhum briefing recebido ainda.</div></div>`; return; }
   const lista = [...data.briefings].sort((a,b)=>brfMs(b)-brfMs(a));
-  const recente = {}; lista.forEach(b=>{ if(!recente[b.cliente]) recente[b.cliente]=b.id; });
+  const recente = {}; lista.forEach(b=>{ const k=b.cliente+'|'+(b.tipo||'trafego'); if(!recente[k]) recente[k]=b.id; });
   box.innerHTML = lista.map(b=>{
     let resp=0, tot=0;
-    BRIEFING_VIEW.forEach(s=>{ if(s.obrig) return; s.items.forEach(it=>{ tot++; if(!brfVazio(b[it.key])) resp++; }); });
-    const secoes = BRIEFING_VIEW.map(s=>`<div class="brf-sec"><div class="brf-sec-t">${escapeHtml(s.titulo)}</div>${s.items.map(it=>`<div class="brf-row"><div class="brf-l">${it.n?it.n+'. ':''}${escapeHtml(it.label)}</div><div class="brf-v">${brfValorHtml(it,b[it.key])}</div></div>`).join('')}</div>`).join('');
-    return `<details class="hoje-block brf"><summary><b>${escapeHtml(b.cliente||'Cliente')}</b> · enviado em ${brfDataTxt(b)} · versão ${b.versao||1}${recente[b.cliente]===b.id?'<span class="brf-tag">mais recente</span>':''}<div class="hi-sub">Opcionais respondidos: ${resp} de ${tot}</div></summary>
+    brfView(b).forEach(s=>{ if(s.obrig) return; s.items.forEach(it=>{ tot++; if(!brfVazio(b[it.key])) resp++; }); });
+    const secoes = brfView(b).map(s=>`<div class="brf-sec"><div class="brf-sec-t">${escapeHtml(s.titulo)}</div>${s.items.map(it=>`<div class="brf-row"><div class="brf-l">${it.n?it.n+'. ':''}${escapeHtml(it.label)}</div><div class="brf-v">${brfValorHtml(it,b[it.key])}</div></div>`).join('')}</div>`).join('');
+    return `<details class="hoje-block brf"><summary><b>${escapeHtml(b.cliente||'Cliente')}</b> <span class="chip-status" style="margin-left:0;">${b.tipo==='gmn'?'Perfil no Google':'Tráfego pago'}</span> · enviado em ${brfDataTxt(b)} · versão ${b.versao||1}${recente[b.cliente+'|'+(b.tipo||'trafego')]===b.id?'<span class="brf-tag">mais recente</span>':''}<div class="hi-sub">Opcionais respondidos: ${resp} de ${tot}</div></summary>
       <div style="margin:12px 0 0;"><button class="addbtn" data-brf-copy="${b.id}" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">Copiar resumo</button> <button class="addbtn" data-brf-del="${b.id}" style="background:var(--card);color:var(--urgent);border:1px solid var(--line);margin-left:6px;">🗑 Excluir</button></div>${secoes}</details>`;
   }).join('');
   box.querySelectorAll('[data-brf-copy]').forEach(btn=>{ btn.onclick = ev=>{ ev.preventDefault(); ev.stopPropagation(); copiarBriefing(btn.dataset.brfCopy, btn); }; });
@@ -4837,7 +4947,7 @@ document.getElementById('copyBriefingLink').onclick = e=>{ copyText(siteBaseUrl(
 function copiarBriefing(id, btn){
   const b = data.briefings.find(x=>x.id===id); if(!b) return;
   let txt = `BRIEFING ${String(b.cliente||'').toUpperCase()} (versão ${b.versao||1}, enviado em ${brfDataTxt(b)})\n`;
-  BRIEFING_VIEW.forEach(s=>{ txt += `\n${s.titulo.toUpperCase()}\n`; s.items.forEach(it=>{ txt += `- ${it.label}: ${fmtBrf(it,b[it.key])}\n`; }); });
+  brfView(b).forEach(s=>{ txt += `\n${s.titulo.toUpperCase()}\n`; s.items.forEach(it=>{ txt += `- ${it.label}: ${fmtBrf(it,b[it.key])}\n`; }); });
   const ok = ()=>{ btn.textContent='Copiado!'; setTimeout(()=>{ btn.textContent='Copiar resumo'; },1500); };
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie o texto abaixo:', txt));
   else prompt('Copie o texto abaixo:', txt);

@@ -302,12 +302,33 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .pri-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--dot-color);}
 .pri-chip.active{border-color:var(--dot-color);color:var(--ink);background:color-mix(in srgb, var(--dot-color) 10%, var(--card));}
 
+/* Barra de ferramentas compacta da tela Leads */
+.tb{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.tb-search{flex:1 1 220px;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:var(--card);color:var(--ink);}
+.tb-btn{padding:9px 12px;font-size:12.5px;}
+.tb-count{display:none;margin-left:6px;background:var(--gold);color:#021535;border-radius:10px;padding:0 7px;font-size:11px;font-weight:700;}
+.tb-count.on{display:inline-block;}
+.tb-btn.active{border-color:var(--gold);}
+.tb-filter{position:relative;}
+.tb-pop{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:40;min-width:280px;max-width:90vw;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 8px 28px rgba(2,21,53,.18);}
+.tb-pop.open{display:block;}
+@media(max-width:700px){.tb-filter{position:static;}.tb-pop{left:0;right:0;max-width:none;}}
+.tb-pop .filterlabel{padding-top:2px;}
+.chipbar.wrap{flex-wrap:wrap;overflow:visible;padding-bottom:10px;}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card);}
+.seg-btn{padding:7px 10px;font-size:11.5px;font-weight:600;color:var(--text-dim);cursor:pointer;white-space:nowrap;}
+.seg-btn+.seg-btn{border-left:1px solid var(--line);}
+.seg-btn.active{background:var(--ink);color:#fff;}
+:root[data-theme="dark"] .seg-btn.active{background:var(--gold);color:#021535;}
+#view-buyers.view{padding-top:14px;}
+#view-buyers .board{margin-top:0;}
+
 .board{display:flex;gap:12px;padding:16px 0 4px;overflow-x:auto;align-items:flex-start;background:var(--board-bg);margin:0 0 20px;border-radius:16px;padding-left:14px;padding-right:14px;}
 .col{flex:1 1 200px;min-width:180px;}
 @media (min-width:1400px){ .col{min-width:0;} }
-.col-head{display:flex;align-items:center;justify-content:space-between;padding:0 4px 10px;}
-.col-title{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--stage-color);}
-.col-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);background:var(--card);padding:1px 7px;border-radius:10px;}
+.col-head{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 4px 10px;}
+.col-title{min-width:0;font-size:11.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--stage-color);overflow-wrap:break-word;}
+.col-count{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);background:var(--card);padding:1px 7px;border-radius:10px;}
 .dropzone{min-height:60px;border-radius:12px;transition:background .15s;padding-bottom:6px;}
 .dropzone.over{background:color-mix(in srgb,var(--primary) 10%,transparent);outline:1.5px dashed var(--primary);}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:9px;cursor:grab;border-top:3px solid var(--stage-color);}
@@ -327,7 +348,7 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .card.expanded .card-details{display:block;}
 .expand-hint{font-size:10.5px;color:var(--text-faint);text-align:center;margin-top:6px;}
 .card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;}
-.card-name{font-family:'Montserrat',sans-serif;font-weight:600;font-size:14.5px;color:var(--ink);flex:1;line-height:1.25;}
+.card-name{font-family:'Montserrat',sans-serif;font-weight:600;font-size:14.5px;color:var(--ink);flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.25;}
 .op-tag{font-size:10px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.03em;}
 .price-range{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink);margin:4px 0;font-weight:500;}
 .next-action{font-size:12px;color:var(--text);margin:6px 0 4px;padding-top:6px;border-top:1px solid var(--line);}
@@ -555,20 +576,23 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 </div>
 
 <div class="view" id="view-buyers">
-  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-    <button class="addbtn" id="copyFormLinkBtn" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">🔗 Copiar link do formulário</button>
-    <button class="addbtn" id="openImportBuyer" style="background:var(--card);color:var(--ink);border:1px solid var(--line);">📋 Importar em massa</button>
-    <button class="addbtn" id="openAddBuyer">+ Novo cliente</button>
+  <div class="tb" id="buyerToolbar">
+    <input type="text" id="buyerSearchInput" class="tb-search" placeholder="🔎 Buscar por nome ou telefone...">
+    <div class="tb-filter">
+      <button type="button" class="addbtn sec tb-btn" id="buyerFilterBtn">⚙ Filtrar<span class="tb-count" id="buyerFilterCount"></span></button>
+      <div class="tb-pop" id="buyerFilterPop">
+        <div class="filterlabel">Tipo de operação</div>
+        <div class="chipbar wrap" id="operationbar"></div>
+        <div class="filterlabel">Prioridade (triagem)</div>
+        <div class="chipbar wrap" id="prioritybar"></div>
+        <button type="button" class="editbtn" id="buyerFilterClear">Limpar filtros</button>
+      </div>
+    </div>
+    <div class="seg" id="viewSwitcher"></div>
+    <button class="addbtn sec tb-btn" id="copyFormLinkBtn">🔗 Copiar link</button>
+    <button class="addbtn sec tb-btn" id="openImportBuyer">📋 Importar em massa</button>
+    <button class="addbtn tb-btn" id="openAddBuyer">+ Novo cliente</button>
   </div>
-  <div class="field" style="margin-bottom:14px;"><input type="text" id="buyerSearchInput" placeholder="🔎 Buscar por nome ou telefone..." style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13.5px;background:var(--card);"></div>
-  <div class="filterlabel">Visualização</div>
-  <div class="chipbar" id="viewSwitcher"></div>
-  <div class="filterlabel">Tipo de operação</div>
-  <div class="chipbar" id="operationbar"></div>
-  <div class="filterlabel">Prioridade (triagem)</div>
-  <div class="chipbar" id="prioritybar"></div>
-  <div class="filterlabel">Perfil (opcional)</div>
-  <div class="chipbar" id="personabar"></div>
   <div class="board" id="board"></div>
 </div>
 
@@ -1232,7 +1256,7 @@ const BUYER_STAGE_MSG_ALUGUEL = {
 };
 
 let data = { corretores:[], proprietarios:[], compradores:[], imoveis:[], visitas:[], tarefas:[], briefings:[], clientes:[], servicos:[] };
-let personaFilter=null, priorityFilter=null, operationFilter=null;
+let priorityFilter=null, operationFilter=null;
 let editingOwnerId=null, editingBuyerId=null, selectedPersona=null;
 
 async function setOwnerStage(id, stage){
@@ -1910,7 +1934,7 @@ function renderOperationBar(){
     return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${o.color}" data-o="${o.id}"><span class="dot"></span>${o.label}</div>`;
   }).join('');
   document.querySelectorAll('#operationbar .pri-chip').forEach(el=>{
-    el.onclick = ()=>{ operationFilter = operationFilter===el.dataset.o?null:el.dataset.o; renderOperationBar(); renderBoard(); };
+    el.onclick = ()=>{ operationFilter = operationFilter===el.dataset.o?null:el.dataset.o; renderOperationBar(); renderBoard(); updateBuyerFilterBtn(); };
   });
 }
 function renderPriorityBar(){
@@ -1918,31 +1942,43 @@ function renderPriorityBar(){
     const active = priorityFilter===g.id;
     return `<div class="pri-chip ${active?'active':''}" style="--dot-color:${g.color}" data-g="${g.id}"><span class="dot"></span>${g.label}</div>`;
   }).join('');
-  document.querySelectorAll('#prioritybar .pri-chip').forEach(el=>{ el.onclick = ()=>{ priorityFilter = priorityFilter===el.dataset.g?null:el.dataset.g; renderPriorityBar(); renderBoard(); }; });
-}
-function renderPersonaBar(){
-  document.getElementById('personabar').innerHTML = PERSONAS.map(p=>{
-    const active = personaFilter===p.id;
-    return `<div class="pchip ${active?'active':''}" style="--mono-color:${p.color}" data-p="${p.id}"><span class="mono">${p.mono}</span>${p.label.replace('O ','')}</div>`;
-  }).join('');
-  document.querySelectorAll('.pchip').forEach(el=>{ el.onclick = ()=>{ personaFilter = personaFilter===el.dataset.p?null:el.dataset.p; renderPersonaBar(); renderBoard(); }; });
+  document.querySelectorAll('#prioritybar .pri-chip').forEach(el=>{ el.onclick = ()=>{ priorityFilter = priorityFilter===el.dataset.g?null:el.dataset.g; renderPriorityBar(); renderBoard(); updateBuyerFilterBtn(); }; });
 }
 let viewMode = window.matchMedia('(max-width: 640px)').matches ? 'grid' : 'kanban';
 
 function renderViewSwitcher(){
   const opts = [
-    {id:'kanban', label:'☰ Kanban'},
-    {id:'grid', label:'▦ Grade'},
-    {id:'table', label:'☰ Lista'},
+    {id:'kanban', label:'Kanban'},
+    {id:'grid', label:'Grade'},
+    {id:'table', label:'Lista'},
   ];
   document.getElementById('viewSwitcher').innerHTML = opts.map(o=>{
     const active = viewMode===o.id;
-    return `<div class="pri-chip ${active?'active':''}" style="--dot-color:var(--primary)" data-v="${o.id}">${o.label}</div>`;
+    return `<div class="seg-btn ${active?'active':''}" data-v="${o.id}">${o.label}</div>`;
   }).join('');
-  document.querySelectorAll('#viewSwitcher .pri-chip').forEach(el=>{
+  document.querySelectorAll('#viewSwitcher .seg-btn').forEach(el=>{
     el.onclick = ()=>{ viewMode = el.dataset.v; renderViewSwitcher(); renderBoard(); };
   });
 }
+
+/* Botão "Filtrar" da tela Leads: abre/fecha a janelinha e mostra quantos filtros estão ligados */
+function updateBuyerFilterBtn(){
+  const n = (operationFilter?1:0) + (priorityFilter?1:0);
+  const cnt = document.getElementById('buyerFilterCount');
+  cnt.textContent = n; cnt.classList.toggle('on', n>0);
+  document.getElementById('buyerFilterBtn').classList.toggle('active', n>0);
+}
+(function(){
+  const btn = document.getElementById('buyerFilterBtn');
+  const pop = document.getElementById('buyerFilterPop');
+  btn.onclick = (e)=>{ e.stopPropagation(); pop.classList.toggle('open'); };
+  pop.addEventListener('click', (e)=>e.stopPropagation());
+  document.addEventListener('click', ()=>pop.classList.remove('open'));
+  document.getElementById('buyerFilterClear').onclick = ()=>{
+    operationFilter=null; priorityFilter=null;
+    renderOperationBar(); renderPriorityBar(); renderBoard(); updateBuyerFilterBtn();
+  };
+})();
 
 function bindBuyerCardEvents(){
   bindMsgPanels();
@@ -2302,7 +2338,7 @@ function buyerCardHtml(c, stageColor){
   if(c.quartos) specChips.push(c.quartos==='Studio' ? 'Studio' : c.quartos+' dorm.');
   if(c.vaga==='sim') specChips.push('com vaga');
   if(c.vaga==='nao') specChips.push('sem vaga');
-  const dim = (personaFilter && c.persona!==personaFilter) || (priorityFilter && pri.id!==priorityFilter) || (operationFilter && c.operacao!==operationFilter);
+  const dim = (priorityFilter && pri.id!==priorityFilter) || (operationFilter && c.operacao!==operationFilter);
   const sug = suggestBuyer(c);
   const wa = waLink(c.contato, sug.ready);
   const opcoes = c.imoveisOpcoes||[];
@@ -2312,11 +2348,13 @@ function buyerCardHtml(c, stageColor){
 
   return `<div class="card ${dim?'dim':''} ${expanded?'expanded':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
     <div class="card-summary" data-toggle="${c.id}">
-      <div class="pri-badge" style="--pri-color:${pri.color};margin-bottom:6px;"><span class="dot"></span>${pri.label}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:2px 6px;margin-bottom:6px;">
+        <div class="pri-badge" style="--pri-color:${pri.color};"><span class="dot"></span>${pri.label}</div>
+        <span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span>
+      </div>
       <div class="card-top">
         ${persona?`<span class="mono-sm" style="background:${persona.color}" title="${persona.label}">${persona.mono}</span>`:''}
         <span class="card-name">${escapeHtml(c.nome)}</span>
-        <span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span>
       </div>
       ${c.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
       ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
@@ -5184,7 +5222,6 @@ renderOwnerContatoBar();
 renderViewSwitcher();
 renderOperationBar();
 renderPriorityBar();
-renderPersonaBar();
 renderImovelViewSwitcher();
 renderImovelStatusBar();
 renderImoveis();

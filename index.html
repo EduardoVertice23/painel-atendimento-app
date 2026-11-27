@@ -343,6 +343,16 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .heat-never{--heat:#B80000;}
 .heat-never .heat-band{background:repeating-linear-gradient(135deg,#B80000 0 10px,#E5172B 10px 20px);font-size:12px;}
 .card.heat-never{border-color:#B80000;box-shadow:0 0 0 2px #B80000;}
+/* Cards de Leads mais compactos (só na tela Leads) */
+#board .card{padding:8px 10px 7px;margin-bottom:6px;border-radius:10px;}
+#board .card .heat-band{margin:-8px -10px 6px;padding:3px 9px;font-size:10.5px;border-radius:7px 7px 0 0;}
+#board .card.heat-never .heat-band{font-size:11px;}
+#board .card-summary > div[style*="space-between"]{margin-bottom:2px !important;}
+#board .card-name{font-size:13px;line-height:1.2;}
+#board .card-top{margin-bottom:1px;}
+#board .card .pri-badge{font-size:10px;}
+#board .card .expand-hint{display:none;}
+#board .col-head{padding-bottom:7px;}
 tr.heat-ok td:first-child,tr.heat-warn td:first-child,tr.heat-late td:first-child,tr.heat-never td:first-child{box-shadow:inset 7px 0 0 var(--heat);padding-left:16px !important;}
 @keyframes highlightFlash{
   0%{box-shadow:0 0 0 0 transparent; background:var(--card); transform:scale(1);}

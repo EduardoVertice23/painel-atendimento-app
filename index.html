@@ -334,6 +334,24 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:9px;cursor:grab;border-top:3px solid var(--stage-color);}
 .card:active{cursor:grabbing;}
 .card.dim{opacity:.3;}
+/* Cores dos cards de Leads = tempo sem contato */
+.card.heat-ok{background:color-mix(in srgb,#2F8F6E 16%,var(--card));border-color:color-mix(in srgb,#2F8F6E 45%,var(--line));}
+.card.heat-warn{background:color-mix(in srgb,#E8B02A 26%,var(--card));border-color:color-mix(in srgb,#E8B02A 65%,var(--line));}
+.card.heat-late{background:color-mix(in srgb,#C42B2B 17%,var(--card));border-color:color-mix(in srgb,#C42B2B 55%,var(--line));}
+.card.heat-never{background:color-mix(in srgb,#C42B2B 27%,var(--card));border-color:#C42B2B;box-shadow:0 0 0 2px color-mix(in srgb,#C42B2B 35%,transparent);}
+.card.heat-ok,.card.heat-warn,.card.heat-late,.card.heat-never{border-top-color:var(--stage-color);}
+.heat-label{font-size:11px;font-weight:700;margin-top:4px;}
+.heat-ok .heat-label{color:#1E6B4F;}
+.heat-warn .heat-label{color:#8A5A10;}
+.heat-late .heat-label,.heat-never .heat-label{color:#C42B2B;}
+.heat-never .heat-label{font-size:11.5px;letter-spacing:.03em;}
+:root[data-theme="dark"] .heat-ok .heat-label{color:#6FD1A8;}
+:root[data-theme="dark"] .heat-warn .heat-label{color:#F2C45A;}
+:root[data-theme="dark"] .heat-late .heat-label,:root[data-theme="dark"] .heat-never .heat-label{color:#FF8A8A;}
+tr.heat-ok{background:color-mix(in srgb,#2F8F6E 14%,transparent);}
+tr.heat-warn{background:color-mix(in srgb,#E8B02A 22%,transparent);}
+tr.heat-late{background:color-mix(in srgb,#C42B2B 14%,transparent);}
+tr.heat-never{background:color-mix(in srgb,#C42B2B 24%,transparent);}
 @keyframes highlightFlash{
   0%{box-shadow:0 0 0 0 transparent; background:var(--card); transform:scale(1);}
   10%{box-shadow:0 0 0 8px color-mix(in srgb,var(--urgent) 75%,transparent); background:color-mix(in srgb, var(--urgent) 16%, var(--card)); transform:scale(1.02);}
@@ -1278,6 +1296,19 @@ function siteBaseUrl(){
 function chipsFrom(str){ return (str||'').split(',').map(s=>s.trim()).filter(Boolean); }
 function personaOf(id){ return PERSONAS.find(p=>p.id===id); }
 
+/* Cor do card = tempo sem contato (combinado com o Eduardo em 27/11/2026):
+   verde 0-1 dia, amarelo 2 dias, vermelho 3+ dias.
+   Lead na etapa "Novo" que ainda não teve o botão "Contato hoje" tocado = vermelho forte "Nunca contatado".
+   Fechado e Perdido/Pausado ficam sem cor de alerta (mesma regra da lista de atrasados). */
+function contatoHeat(c){
+  if(c.stage==='fechado' || c.stage==='perdido') return {id:'off', label:''};
+  if(c.stage==='novo' && !c.chamado) return {id:'never', label:'⚠ NUNCA CONTATADO'};
+  const d = daysSince(c.ultimoContato);
+  if(d>=3) return {id:'late', label: d>=999 ? '⚠ Sem contato registrado' : `⚠ ${d} dias sem contato`};
+  if(d===2) return {id:'warn', label:'2 dias sem contato'};
+  return {id:'ok', label: d===0 ? 'Contato hoje' : 'Contato ontem'};
+}
+
 function priorityInfo(c){
   if(c.responde==='sumiu') return {...PRIORITY_GROUPS[3], label:'Sumiu'};
   const anyFilled = c.responde || c.orcamento || c.motivo;
@@ -1991,7 +2022,7 @@ function bindBuyerCardEvents(){
     };
   });
   document.querySelectorAll('[data-bact="contato"]').forEach(b=>{
-    b.onclick = async ()=>{ await setDoc(doc(db,'compradores',b.dataset.id), {ultimoContato: new Date().toISOString().slice(0,10)}, {merge:true}); };
+    b.onclick = async ()=>{ await setDoc(doc(db,'compradores',b.dataset.id), {ultimoContato: new Date().toISOString().slice(0,10), chamado: true}, {merge:true}); };
   });
   document.querySelectorAll('.stage-select').forEach(sel=>{ sel.onchange = ()=>moveBuyer(sel.dataset.id, sel.value); });
   document.querySelectorAll('[data-bact="edit"]').forEach(b=>{ b.onclick=()=>openBuyerModal(data.compradores.find(c=>c.id===b.dataset.id)); });
@@ -2071,7 +2102,7 @@ function renderBoardTable(){
     const overdue = days>=OVERDUE_DAYS_BUYER;
     const priceRange = (c.precomin||c.precomax) ? `${c.precomin?money(c.precomin):'—'} – ${c.precomax?money(c.precomax):'—'}` : '—';
     const wa = waLink(c.contato, suggestBuyer(c).ready);
-    return `<tr style="border-bottom:1px solid var(--line);">
+    return `<tr class="heat-row heat-${contatoHeat(c).id}" style="border-bottom:1px solid var(--line);">
       <td style="padding:10px 8px;">
         <div style="font-family:'Montserrat',sans-serif;font-weight:600;color:var(--ink);">${escapeHtml(c.nome)}</div>
         ${c.contato?`<div style="font-size:11.5px;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
@@ -2345,8 +2376,9 @@ function buyerCardHtml(c, stageColor){
   const waOpcoes = opcoes.length ? waLink(c.contato, suggestOptionsMessage(c)) : null;
   const waIndisponivel = c.linkAnuncio ? waLink(c.contato, suggestUnavailableMessage(c)) : null;
   const expanded = expandedCards.has(c.id);
+  const heat = contatoHeat(c);
 
-  return `<div class="card ${dim?'dim':''} ${expanded?'expanded':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
+  return `<div class="card heat-${heat.id} ${dim?'dim':''} ${expanded?'expanded':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
     <div class="card-summary" data-toggle="${c.id}">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:2px 6px;margin-bottom:6px;">
         <div class="pri-badge" style="--pri-color:${pri.color};"><span class="dot"></span>${pri.label}</div>
@@ -2357,6 +2389,7 @@ function buyerCardHtml(c, stageColor){
         <span class="card-name">${escapeHtml(c.nome)}</span>
       </div>
       ${c.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
+      ${heat.label?`<div class="heat-label">${heat.label}</div>`:''}
       ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
     <div class="card-details">

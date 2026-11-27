@@ -334,24 +334,16 @@ textarea.rel-ta{width:100%;min-height:110px;border:1px solid var(--line);border-
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:9px;cursor:grab;border-top:3px solid var(--stage-color);}
 .card:active{cursor:grabbing;}
 .card.dim{opacity:.3;}
-/* Cores dos cards de Leads = tempo sem contato */
-.card.heat-ok{background:color-mix(in srgb,#2F8F6E 16%,var(--card));border-color:color-mix(in srgb,#2F8F6E 45%,var(--line));}
-.card.heat-warn{background:color-mix(in srgb,#E8B02A 26%,var(--card));border-color:color-mix(in srgb,#E8B02A 65%,var(--line));}
-.card.heat-late{background:color-mix(in srgb,#C42B2B 17%,var(--card));border-color:color-mix(in srgb,#C42B2B 55%,var(--line));}
-.card.heat-never{background:color-mix(in srgb,#C42B2B 27%,var(--card));border-color:#C42B2B;box-shadow:0 0 0 2px color-mix(in srgb,#C42B2B 35%,transparent);}
-.card.heat-ok,.card.heat-warn,.card.heat-late,.card.heat-never{border-top-color:var(--stage-color);}
-.heat-label{font-size:11px;font-weight:700;margin-top:4px;}
-.heat-ok .heat-label{color:#1E6B4F;}
-.heat-warn .heat-label{color:#8A5A10;}
-.heat-late .heat-label,.heat-never .heat-label{color:#C42B2B;}
-.heat-never .heat-label{font-size:11.5px;letter-spacing:.03em;}
-:root[data-theme="dark"] .heat-ok .heat-label{color:#6FD1A8;}
-:root[data-theme="dark"] .heat-warn .heat-label{color:#F2C45A;}
-:root[data-theme="dark"] .heat-late .heat-label,:root[data-theme="dark"] .heat-never .heat-label{color:#FF8A8A;}
-tr.heat-ok{background:color-mix(in srgb,#2F8F6E 14%,transparent);}
-tr.heat-warn{background:color-mix(in srgb,#E8B02A 22%,transparent);}
-tr.heat-late{background:color-mix(in srgb,#C42B2B 14%,transparent);}
-tr.heat-never{background:color-mix(in srgb,#C42B2B 24%,transparent);}
+/* Cores dos cards de Leads = tempo sem contato: faixa viva no topo do card (fundo do card não muda) */
+.heat-band{margin:-13px -13px 9px;padding:5px 10px;border-radius:9px 9px 0 0;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:var(--heat);}
+.heat-ok{--heat:#16A34A;}
+.heat-warn{--heat:#FFC400;}
+.heat-warn .heat-band{color:#2A1F00;}
+.heat-late{--heat:#E5172B;}
+.heat-never{--heat:#B80000;}
+.heat-never .heat-band{background:repeating-linear-gradient(135deg,#B80000 0 10px,#E5172B 10px 20px);font-size:12px;}
+.card.heat-never{border-color:#B80000;box-shadow:0 0 0 2px #B80000;}
+tr.heat-ok td:first-child,tr.heat-warn td:first-child,tr.heat-late td:first-child,tr.heat-never td:first-child{box-shadow:inset 7px 0 0 var(--heat);padding-left:16px !important;}
 @keyframes highlightFlash{
   0%{box-shadow:0 0 0 0 transparent; background:var(--card); transform:scale(1);}
   10%{box-shadow:0 0 0 8px color-mix(in srgb,var(--urgent) 75%,transparent); background:color-mix(in srgb, var(--urgent) 16%, var(--card)); transform:scale(1.02);}
@@ -2297,7 +2289,9 @@ function bindAddMatchButtons(){
       const novaOpcao = { url: im.link || '(sem link cadastrado)', nota: imovelResumoTexto(im) };
       const atual = lead.imoveisOpcoes || [];
       if(atual.some(o=>o.nota===novaOpcao.nota)) { b.textContent = 'Já adicionado'; return; }
-      await setDoc(doc(db,'compradores',lead.id), { imoveisOpcoes: [...atual, novaOpcao] }, {merge:true});
+      const upd = { imoveisOpcoes: [...atual, novaOpcao] };
+      if(lead.stage==='novo' || lead.stage==='qualificando'){ upd.stage = 'procurando'; upd.stageChangedAt = new Date().toISOString(); }
+      await setDoc(doc(db,'compradores',lead.id), upd, {merge:true});
       b.textContent = '✓ Adicionado';
     };
   });
@@ -2335,6 +2329,11 @@ function bindWaSendLinks(){
       const update = { ultimoContato: new Date().toISOString().slice(0,10) };
       if(col==='proprietarios'){
         update.mensagemEnviada = true;
+      } else {
+        // Lead: enviar mensagem conta como contato feito; se estava em "Novo", vai para "Qualificando"
+        update.chamado = true;
+        const lead = (data.compradores||[]).find(x=>x.id===a.dataset.id);
+        if(lead && lead.stage==='novo'){ update.stage = 'qualificando'; update.stageChangedAt = new Date().toISOString(); }
       }
       setDoc(doc(db, col, a.dataset.id), update, {merge:true}).catch(()=>{});
     });
@@ -2380,6 +2379,7 @@ function buyerCardHtml(c, stageColor){
 
   return `<div class="card heat-${heat.id} ${dim?'dim':''} ${expanded?'expanded':''}" draggable="true" data-id="${c.id}" style="--stage-color:${stageColor}">
     <div class="card-summary" data-toggle="${c.id}">
+      ${heat.label?`<div class="heat-band">${heat.label}</div>`:''}
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:2px 6px;margin-bottom:6px;">
         <div class="pri-badge" style="--pri-color:${pri.color};"><span class="dot"></span>${pri.label}</div>
         <span class="op-tag">${c.operacao==='aluguel'?'Aluguel':'Compra'}</span>
@@ -2389,7 +2389,6 @@ function buyerCardHtml(c, stageColor){
         <span class="card-name">${escapeHtml(c.nome)}</span>
       </div>
       ${c.contato?`<div class="op-tag" style="text-transform:none;font-weight:500;color:var(--text-dim);">📞 ${escapeHtml(c.contato)}</div>`:''}
-      ${heat.label?`<div class="heat-label">${heat.label}</div>`:''}
       ${!expanded?`<div class="expand-hint">toque para ver detalhes ▾</div>`:''}
     </div>
     <div class="card-details">
@@ -2614,6 +2613,11 @@ document.getElementById('buyerSaveBtn').onclick = async ()=>{
   };
   const id = editingBuyerId || rec.contatoDigits || doc(buyersCol).id;
   const antesB = (data.compradores||[]).find(x=>x.id===id);
+  // Colocou link de imóvel (ou opção de imóvel) e o lead ainda estava em Novo/Qualificando: vai para "Procurando imóveis"
+  const novoLink = rec.linkAnuncio && rec.linkAnuncio !== ((antesB && antesB.linkAnuncio) || '');
+  const maisOpcoes = (rec.imoveisOpcoes||[]).length > (((antesB && antesB.imoveisOpcoes)||[]).length);
+  const etapaManual = antesB && antesB.stage!==rec.stage;
+  if((novoLink || maisOpcoes) && !etapaManual && (rec.stage==='novo' || rec.stage==='qualificando')) rec.stage = 'procurando';
   const mudouEtapa = !antesB || antesB.stage!==rec.stage;
   if(mudouEtapa) rec.stageChangedAt = new Date().toISOString();
   await setDoc(doc(db,'compradores',id), rec, {merge:true});
